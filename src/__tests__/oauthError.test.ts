@@ -18,6 +18,8 @@ describe('OAuthAuthenticationRequiredError', () => {
     const token = 'test-token';
     const error1 = new OAuthAuthenticationRequiredError(url1, resourceServerUrl, token);
     const error2 = new OAuthAuthenticationRequiredError(url2, resourceServerUrl, token);
+    expect(error1.url).toBe(url1);
+    expect(error2.url).toBe(url2);
     expect(error1.idempotencyKey).toBe(error2.idempotencyKey);
   });
 
