@@ -2,14 +2,25 @@ import * as oauth from 'oauth4webapi';
 import { URL } from 'url';
 import { FetchLike, ClientCredentials, PKCEValues, AccessToken, OAuthDb} from './types';
 import { OAuthGlobalClient } from './oAuthGlobalClient.js';
+import crypto from 'crypto';
 
 export class OAuthAuthenticationRequiredError extends Error {
+  public readonly idempotencyKey: string;
   constructor(
     public readonly url: string,
-    public readonly resourceServerUrl: string
+    public readonly resourceServerUrl: string,
+    token?: string
   ) {
     super(`OAuth authentication required. Resource server url: ${resourceServerUrl}`);
     this.name = 'OAuthAuthenticationRequiredError';
+    this.idempotencyKey = OAuthAuthenticationRequiredError.getIdempotencyKey(url, resourceServerUrl, token);
+  }
+
+  static getIdempotencyKey(url: string, resourceServerUrl: string, token?: string): string {
+    const baseUrl = OAuthClient.trimToPath(url);
+    const source = `${baseUrl}|${resourceServerUrl}|${token}`;
+    const idempotencyKey = crypto.createHash('sha256').update(source).digest('hex');
+    return idempotencyKey;
   }
 }
 
@@ -69,8 +80,9 @@ export class OAuthClient extends OAuthGlobalClient {
           console.log(`No resource url found in response www-authenticate header, falling back to the called url ${calledUrl} (this could be incorrect if the called server is just proxying back an oauth failure)`);
           resourceUrl = calledUrl;
         }
+        const token = await this.getAccessToken(calledUrl);
         console.log(`Throwing OAuthAuthenticationRequiredError for ${calledUrl}, resource: ${resourceUrl}`);
-        throw new OAuthAuthenticationRequiredError(calledUrl, resourceUrl);
+        throw new OAuthAuthenticationRequiredError(calledUrl, resourceUrl, token?.accessToken);
       }
     }
   
