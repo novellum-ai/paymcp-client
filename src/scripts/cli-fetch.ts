@@ -13,7 +13,7 @@ function validateEnv() {
 // Parse command line arguments
 function parseArgs() {
   const args = process.argv.slice(2);
-  const url = args[0] || 'https://browser-use.corp.pr0xy.co';
+  const url = args[0] || 'https://browser-use.corp.novellum.ai';
   const toolName = args[1] || 'checkBalance';
   
   // Parse named arguments
