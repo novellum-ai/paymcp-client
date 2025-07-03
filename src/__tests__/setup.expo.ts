@@ -6,6 +6,13 @@ global.navigator = {
   product: 'ReactNative',
 } as any;
 
+// Polyfill TextEncoder for Jest environment
+if (typeof global.TextEncoder === 'undefined') {
+  const { TextEncoder, TextDecoder } = require('util');
+  global.TextEncoder = TextEncoder;
+  global.TextDecoder = TextDecoder;
+}
+
 // Mock Expo modules
 jest.mock('expo-sqlite', () => ({
   openDatabaseSync: jest.fn(() => ({

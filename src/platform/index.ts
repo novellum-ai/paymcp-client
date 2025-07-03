@@ -64,7 +64,7 @@ if (isReactNative) {
   
   crypto = {
     digest: async (data: Uint8Array) => {
-      return nodeCrypto.createHash('sha256').update(data).digest();
+      return new Uint8Array(nodeCrypto.createHash('sha256').update(data).digest());
     },
     randomUUID: () => nodeCrypto.randomUUID(),
     toHex: (data: Uint8Array) => Buffer.from(data).toString('hex'),
