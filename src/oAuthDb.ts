@@ -1,14 +1,14 @@
-import * as SQLite from 'expo-sqlite';
+import { sqlite, SQLiteDatabase } from './platform/index.js';
 import type { AccessToken, ClientCredentials, OAuthDb, PKCEValues } from './types';
 
 export interface OAuthDbConfig {
-  dbPathOrDb?: string | SQLite.SQLiteDatabase;
+  dbPathOrDb?: string | SQLiteDatabase;
   encrypt: (data: string) => string;
   decrypt: (data: string) => string;
 }
 
 export class SqliteOAuthDb implements OAuthDb {
-  private db: SQLite.SQLiteDatabase;
+  private db: SQLiteDatabase;
   private initialized = false;
   private encrypt: (data: string) => string;
   private decrypt: (data: string) => string;
@@ -29,7 +29,7 @@ export class SqliteOAuthDb implements OAuthDb {
     encrypt,
     decrypt
   }: OAuthDbConfig) {
-    this.db = typeof dbPathOrDb === 'string' ? SQLite.openDatabaseSync(dbPathOrDb) : dbPathOrDb;
+    this.db = typeof dbPathOrDb === 'string' ? sqlite.openDatabaseSync(dbPathOrDb) : dbPathOrDb;
     this.encrypt = encrypt;
     this.decrypt = decrypt;
   }

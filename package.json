@@ -14,8 +14,10 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "npm run test:node && npm run test:expo",
     "test:watch": "vitest",
+    "test:node": "vitest run",
+    "test:expo": "jest --config jest.expo.config.js",
     "cli": "tsx src/scripts/cli.ts",
     "cli:fetch": "tsx src/scripts/cli-fetch.ts"
   },
@@ -37,8 +39,11 @@
     "tweetnacl-util": "^0.15.1"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.13.0",
+    "better-sqlite3": "^12.2.0",
     "fetch-mock": "^12.5.2",
+    "jest-expo": "^53.0.9",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
     "vitest": "^3.0.9"

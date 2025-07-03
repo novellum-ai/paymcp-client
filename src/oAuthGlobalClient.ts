@@ -1,5 +1,4 @@
 import * as oauth from 'oauth4webapi';
-import { URL } from 'react-native-url-polyfill';
 import { ClientCredentials, FetchLike, OAuthGlobalDb, TokenData } from './types';
 
 export interface OAuthGlobalClientConfig {
@@ -37,8 +36,16 @@ export class OAuthGlobalClient {
   }
 
   static trimToPath = (url: string): string => {
-    const urlObj = new URL(url);
-    return `${urlObj.origin}${urlObj.pathname}`;
+    try {
+      const urlObj = new URL(url);
+      return `${urlObj.origin}${urlObj.pathname}`;
+    } catch (error) {
+      // If the URL is invalid, try to construct a valid one
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        return `https://${url}`;
+      }
+      throw error;
+    }
   }
 
   static getParentPath = (url: string): string | null => {

@@ -1,29 +1,27 @@
 //import { fetch as expoFetch } from 'expo/fetch';
 import * as oauth from 'oauth4webapi';
 
-import * as Crypto from 'expo-crypto';
-
 import { OAuthGlobalClient } from './oAuthGlobalClient.js';
-import crypto from 'crypto';
+import { crypto } from './platform/index.js';
 import { AccessToken, ClientCredentials, FetchLike, OAuthDb, PKCEValues } from './types.js';
 
 export class OAuthAuthenticationRequiredError extends Error {
-  public readonly idempotencyKey: string;
-  constructor(
+  private constructor(
     public readonly url: string,
     public readonly resourceServerUrl: string,
-    token?: string
+    public readonly idempotencyKey: string
   ) {
     super(`OAuth authentication required. Resource server url: ${resourceServerUrl}`);
     this.name = 'OAuthAuthenticationRequiredError';
-    this.idempotencyKey = OAuthAuthenticationRequiredError.getIdempotencyKey(url, resourceServerUrl, token);
+    this.idempotencyKey = idempotencyKey;
   }
 
-  static getIdempotencyKey(url: string, resourceServerUrl: string, token?: string): string {
+  static async create(url: string, resourceServerUrl: string, token?: string): Promise<OAuthAuthenticationRequiredError> {
     const baseUrl = OAuthClient.trimToPath(url);
     const source = `${baseUrl}|${resourceServerUrl}|${token}`;
-    const idempotencyKey = crypto.createHash('sha256').update(source).digest('hex');
-    return idempotencyKey;
+    const hash = await crypto.digest(new TextEncoder().encode(source));
+    const idempotencyKey = crypto.toHex(hash);
+    return new OAuthAuthenticationRequiredError(url, resourceServerUrl, idempotencyKey);
   }
 }
 
@@ -136,7 +134,7 @@ export class OAuthClient extends OAuthGlobalClient {
         }
         const token = await this.getAccessToken(calledUrl);
         console.log(`Throwing OAuthAuthenticationRequiredError for ${calledUrl}, resource: ${resourceUrl}`);
-        throw new OAuthAuthenticationRequiredError(calledUrl, resourceUrl, token?.accessToken);
+        throw await OAuthAuthenticationRequiredError.create(calledUrl, resourceUrl, token?.accessToken);
       }
     }
   
@@ -244,12 +242,10 @@ export class OAuthClient extends OAuthGlobalClient {
     const codeVerifier = oauth.generateRandomCodeVerifier();
     console.log('codeVerifier', codeVerifier);
     // Calculate the code challenge
-    // Don't use the oauth module to do this because it relies on crypto functions that
-    // aren't available in React Native / Expo
+    // Use our platform-agnostic crypto implementation
     let codeChallenge: string | undefined;
     try {
-      codeChallenge = encodeBase64Url(await Crypto.digest(
-        Crypto.CryptoDigestAlgorithm.SHA256,
+      codeChallenge = encodeBase64Url(await crypto.digest(
         new TextEncoder().encode(codeVerifier)
       ));
     } catch (e: any) {
