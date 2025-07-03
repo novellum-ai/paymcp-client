@@ -11,14 +11,13 @@ function payMcpClient(fetchFn: FetchLike, solanaPaymentMaker?: PaymentMaker, db?
     makePayment: vi.fn().mockResolvedValue('testPaymentId'),
     signBySource: vi.fn().mockResolvedValue('testSignature')
   };
-  return new PayMcpClient(
-    "bdj",
-    db ?? new SqliteOAuthDb(':memory:'),
-    isPublic,
-    {'solana': solanaPaymentMaker},
+  return new PayMcpClient({
+    userId: "bdj",
+    db: db ?? new SqliteOAuthDb({dbPathOrDb: ':memory:', encrypt: (x) => x, decrypt: (x) => x}),
+    paymentMakers: {'solana': solanaPaymentMaker},
     fetchFn,
-    strict
-  );
+    strict,
+  });
 }
 describe('payMcpClient.fetch', () => {
   it('should bubble up OAuthAuthenticationRequiredError on OAuth-but-not-PayMcp challenge', async () => {
