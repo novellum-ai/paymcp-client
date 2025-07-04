@@ -2,12 +2,14 @@
 // Only include tests relevant to cross-platform or Expo/React Native logic
 
 import { describe, it, expect } from '@jest/globals';
-import { isReactNative, crypto, sqlite } from '../platform';
+import { getIsReactNative, crypto, sqlite } from '../platform';
 
 describe('Platform Abstraction (Expo)', () => {
   it('should detect React Native environment', () => {
     // This should be true in React Native/Expo tests
-    expect(typeof isReactNative).toBe('boolean');
+    expect(typeof getIsReactNative()).toBe('boolean');
+    // Should be true in our test environment
+    expect(getIsReactNative()).toBe(true);
   });
 
   it('should have working crypto implementation', async () => {

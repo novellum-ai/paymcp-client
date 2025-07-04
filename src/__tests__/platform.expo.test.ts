@@ -2,12 +2,12 @@
 // Only include tests relevant to cross-platform or Expo/React Native logic
 
 import { describe, it, expect } from '@jest/globals';
-import { isReactNative, crypto, sqlite } from '../platform';
+import { getIsReactNative, crypto, sqlite } from '../platform';
 
 describe('Platform Abstraction (Expo)', () => {
   it('should detect platform correctly', () => {
     // This should be true in React Native/Expo tests
-    expect(typeof isReactNative).toBe('boolean');
+    expect(typeof getIsReactNative()).toBe('boolean');
   });
 
   it('should have working crypto implementation', async () => {
@@ -28,22 +28,16 @@ describe('Platform Abstraction (Expo)', () => {
     const db = sqlite.openDatabaseSync(':memory:');
     
     // Test CREATE TABLE
-    await db.execAsync(`
-      CREATE TABLE test (
-        id INTEGER PRIMARY KEY,
-        name TEXT
-      )
-    `);
+    await db.execAsync('CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT)');
 
     // Test INSERT
-    const insertStmt = await db.prepareAsync('INSERT INTO test (name) VALUES (?)');
-    await insertStmt.executeAsync('test-name');
-    await insertStmt.finalizeAsync();
+    const stmt = await db.prepareAsync('INSERT INTO test (name) VALUES (?)');
+    await stmt.executeAsync('test-name');
+    await stmt.finalizeAsync();
 
     // Test SELECT
     const selectStmt = await db.prepareAsync('SELECT * FROM test WHERE name = ?');
-    const result = await selectStmt.executeAsync('test-name');
-    const row = await result.getFirstAsync();
+    const row = await (await selectStmt.executeAsync('test-name')).getFirstAsync();
     await selectStmt.finalizeAsync();
 
     expect(row).not.toBeNull();

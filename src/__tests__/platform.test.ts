@@ -1,10 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { isReactNative, crypto, sqlite } from '../platform/index.js';
+import { getIsReactNative, crypto, sqlite } from '../platform/index.js';
 
-describe('Platform Abstraction', () => {
+describe('Platform Abstraction (Node)', () => {
   it('should detect platform correctly', () => {
-    // This will be false in Node.js tests, true in React Native tests
-    expect(typeof isReactNative).toBe('boolean');
+    expect(typeof getIsReactNative()).toBe('boolean');
   });
 
   it('should have working crypto implementation', async () => {

@@ -24,12 +24,15 @@ export interface SQLiteResult<T> {
   getFirstAsync: () => Promise<T | null>;
 }
 
-// Platform detection
-export const isReactNative = typeof global !== 'undefined' && global.navigator?.product === 'ReactNative';
+// Platform detection - supports both Expo and bare React Native
+export function getIsReactNative() {
+  const nav = (typeof navigator !== 'undefined' ? navigator : (typeof global !== 'undefined' ? (global as any).navigator : undefined));
+  return !!nav && nav.product === 'ReactNative';
+}
 export const isNode = typeof process !== 'undefined' && process.versions?.node;
 
 // Apply URL polyfill for React Native/Expo
-if (isReactNative) {
+if (getIsReactNative()) {
   require('react-native-url-polyfill/auto');
 }
 
@@ -37,10 +40,23 @@ if (isReactNative) {
 export let crypto: PlatformCrypto;
 export let sqlite: PlatformSQLite;
 
-if (isReactNative) {
-  // React Native implementation
-  const expoCrypto = require('expo-crypto');
-  const expoSqlite = require('expo-sqlite');
+if (getIsReactNative()) {
+  // React Native implementation - supports both Expo and bare React Native
+  let expoCrypto: any;
+  let expoSqlite: any;
+  
+  try {
+    // Try Expo packages first
+    expoCrypto = require('expo-crypto');
+    expoSqlite = require('expo-sqlite');
+  } catch (error) {
+    // Fallback for bare React Native - would need alternative implementations
+    // For now, we'll throw a helpful error
+    throw new Error(
+      'React Native detected but expo-crypto and expo-sqlite packages are required. ' +
+      'Please install them: npm install expo-crypto expo-sqlite'
+    );
+  }
   
   crypto = {
     digest: async (data: Uint8Array) => {
