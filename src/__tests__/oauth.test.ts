@@ -44,9 +44,13 @@ describe('oauthClient', () => {
       await expect(client.fetch('https://example.com/mcp')).rejects.toThrow(OAuthAuthenticationRequiredError);
     });
 
-    it('should throw OAuthAuthenticationRequiredError with resource server url from www-authenticate header for proxied requests', async () => {
+    it('should throw OAuthAuthenticationRequiredError with resource server url from www-authenticate header for old-style proxied requests', async () => {
+      // This tests covers a www-authenticate header with the format: 
+      //   www-authenticate: https://something.else/.well-known/oauth-protected-resource/mcp
+      // This is NOT a valid www-authenticate header, and also doesn't conform with the updated 2025-06-18 version of
+      // the MCP spec. However, it is what we were originally using for proxying requests, so we still support it.
       const f = fetchMock.createInstance().getOnce('https://example.com/mcp', 
-       {status: 401, headers: {'www-authenticate': 'https://something.else/.well-known/oauth-protected-resource/mcp'}});
+        {status: 401, headers: {'www-authenticate': 'https://something.else/.well-known/oauth-protected-resource/mcp'}});
       mockResourceServer(f, 'https://example.com', '/mcp');
       mockAuthorizationServer(f, 'https://paymcp.com');
 
@@ -54,7 +58,7 @@ describe('oauthClient', () => {
       await expect(client.fetch('https://example.com/mcp')).rejects.toThrow('OAuth authentication required. Resource server url: https://something.else/mcp');
     });
 
-    it('should throw OAuthAuthenticationRequiredError with resource server url from updated www-authenticate header format', async () => {
+    it('should throw OAuthAuthenticationRequiredError with resource server url from MCP-spec www-authenticate header format', async () => {
       const f = fetchMock.createInstance().getOnce('https://example.com/mcp', 
         {status: 401, headers: {'www-authenticate': 'Bearer resource_metadata="https://something.else/.well-known/oauth-protected-resource/mcp"'}});
       mockResourceServer(f, 'https://example.com', '/mcp');

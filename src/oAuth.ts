@@ -95,12 +95,17 @@ export class OAuthClient extends OAuthGlobalClient {
       return null;
     }
     const header = response.headers.get('www-authenticate') || '';
-    let wwwAuthenticate = header || '';
     const match = header.match(/^Bearer resource_metadata="([^"]+)"$/);
     if (match) {
-      wwwAuthenticate = match[1];
+      return this.normalizeResourceServerUrl(match[1]);
     }
-    return this.normalizeResourceServerUrl(wwwAuthenticate);
+    // handle 'www-authenticate: https://mymcp.com/mcp'
+    // This is NOT a valid www-authenticate header, and also doesn't conform with the updated 2025-06-18 version of
+    // the MCP spec. However, it is what we were originally using for proxying requests, so we still support it.
+    if (header.match(/^https?:\/\//)) {
+      return this.normalizeResourceServerUrl(header);
+    }
+    return null;
   }
 
   fetch: FetchLike = async (url, init) => {
