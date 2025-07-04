@@ -6,7 +6,7 @@ import { crypto } from './platform/index.js';
 import { AccessToken, ClientCredentials, FetchLike, OAuthDb, PKCEValues } from './types.js';
 
 export class OAuthAuthenticationRequiredError extends Error {
-  private constructor(
+  constructor(
     public readonly url: string,
     public readonly resourceServerUrl: string,
     public readonly idempotencyKey: string
