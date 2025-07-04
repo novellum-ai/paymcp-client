@@ -75,7 +75,7 @@ export class OAuthClient extends OAuthGlobalClient {
     callbackUrl,
     isPublic,
     fetchFn = fetch,
-    sideChannelFetch = fetch,
+    sideChannelFetch = fetchFn,
     strict = true
   }: OAuthClientConfig) {
     super({

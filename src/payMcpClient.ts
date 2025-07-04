@@ -21,7 +21,7 @@ export class PayMcpClient {
     db,
     paymentMakers,
     fetchFn = fetch,
-    sideChannelFetch = fetch,
+    sideChannelFetch = fetchFn,
     strict = true
   }: PayMcpClientConfig) {
     // PayMcpClient should never actually use the callback url - instead of redirecting the user to 
