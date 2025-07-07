@@ -306,7 +306,7 @@ export class OAuthClient extends OAuthGlobalClient {
         codeVerifier, 
         options
       );
-      console.log("response", response);
+      console.log(`Authorization code grant response status: ${response.status}`);
     } catch (e: any) {
       console.log("E", e, e.cause, e.error, e.error_description, e.stack);
     }
@@ -326,7 +326,7 @@ export class OAuthClient extends OAuthGlobalClient {
     let credentials = await this.getClientCredentials(authorizationServer);
     console.log('credentials', credentials);
     let [response, client] = await this.makeTokenRequestAndClient(authorizationServer, credentials, codeVerifier, authResponse);
-    console.log('response', response);
+    console.log(`Token exchange response status: ${response.status} ${response.statusText}`);
     console.log('client', client);
     if(response.status === 403 || response.status === 401) {
       console.log(`Bad response status exchanging code for token: ${response.statusText}. Could be due to bad client credentials - trying to re-register`);
@@ -437,7 +437,7 @@ export class OAuthClient extends OAuthGlobalClient {
     // Make the request with the access token
     try {
       const response = await this.fetchFn(url, init);
-      console.log('response', response);
+      console.log(`Response status: ${response.status} ${response.statusText}`);
       return response;
     } catch (e: any) {
       console.log("E", e, e.stack);

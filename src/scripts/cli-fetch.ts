@@ -83,7 +83,7 @@ async function main() {
       }
     );
     
-    console.log('Response:', data);
+    console.log(`Response status: ${data.status} ${data.statusText}`);
     console.log('Body:', await data.text());
   } catch (error) {
     if (error instanceof Error) {
