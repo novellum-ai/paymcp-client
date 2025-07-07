@@ -306,7 +306,6 @@ export class OAuthClient extends OAuthGlobalClient {
     // TODO: re-evaluate if we should recurse up to parent paths to find tokens
     // IIRC this is mainly to support SSE transport's separate /mcp and /mcp/message paths
     while (!tokenData && parentPath){
-      console.log(`No access token found for ${url}, trying parent ${parentPath}`);
       tokenData = await this.db.getAccessToken(this.userId, parentPath);
       parentPath = OAuthClient.getParentPath(parentPath);
     }
