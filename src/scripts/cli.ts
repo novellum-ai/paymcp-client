@@ -44,11 +44,7 @@ async function main() {
   }
   
   // Create a SQLite database instance
-  const db = new SqliteOAuthDb({
-    dbPathOrDb: ':memory:', 
-    encrypt: (data: string) => data, 
-    decrypt: (data: string) => data
-  });
+  const db = new SqliteOAuthDb({ db: ':memory:' });
   
   try {
     validateEnv();

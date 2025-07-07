@@ -7,10 +7,7 @@ import { SqliteOAuthDb } from '../oAuthDb';
 describe('SqliteOAuthDb (Expo)', () => {
   it('can be imported and instantiated without error', () => {
     expect(() => {
-      new SqliteOAuthDb({
-        encrypt: (s) => s,
-        decrypt: (s) => s,
-      });
+      new SqliteOAuthDb();
     }).not.toThrow();
   });
 

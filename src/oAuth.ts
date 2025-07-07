@@ -1,4 +1,3 @@
-//import { fetch as expoFetch } from 'expo/fetch';
 import * as oauth from 'oauth4webapi';
 
 import { OAuthGlobalClient } from './oAuthGlobalClient.js';
@@ -288,14 +287,14 @@ export class OAuthClient extends OAuthGlobalClient {
     // Save the access token in the database
     await this.db.saveAccessToken(this.userId, url, {
       resourceUrl,
-      accessToken: result!.access_token,
-      refreshToken: result!.refresh_token,
-      expiresAt: result!.expires_in 
-        ? Date.now() + result!.expires_in * 1000
+      accessToken: result.access_token,
+      refreshToken: result.refresh_token,
+      expiresAt: result.expires_in 
+        ? Date.now() + result.expires_in * 1000
         : undefined
     });
     
-    return result!.access_token;
+    return result.access_token;
   }
 
   protected getAccessToken = async (url: string): Promise<AccessToken | null> => {

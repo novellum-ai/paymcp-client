@@ -2,9 +2,9 @@ import { sqlite, SQLiteDatabase } from './platform/index';
 import type { AccessToken, ClientCredentials, OAuthDb, PKCEValues } from './types';
 
 export interface OAuthDbConfig {
-  dbPathOrDb?: string | SQLiteDatabase;
-  encrypt: (data: string) => string;
-  decrypt: (data: string) => string;
+  db?: string | SQLiteDatabase;
+  encrypt?: (data: string) => string;
+  decrypt?: (data: string) => string;
 }
 
 export class SqliteOAuthDb implements OAuthDb {
@@ -14,22 +14,15 @@ export class SqliteOAuthDb implements OAuthDb {
   private decrypt: (data: string) => string;
 
   static getDefaultDbPath(): string {
-    // TODO: Test default db path on React Native and on Node
-
-    //const dbDir = path.join(process.cwd(), 'db');
-    //if (!fs.existsSync(dbDir)) {
-      //fs.mkdirSync(dbDir, { recursive: true });
-    //}
-    //return path.join(dbDir, 'oauthClient.db');
     return 'db/oauthClient.db';
   }
 
   constructor({
-    dbPathOrDb = SqliteOAuthDb.getDefaultDbPath(),
-    encrypt,
-    decrypt
-  }: OAuthDbConfig) {
-    this.db = typeof dbPathOrDb === 'string' ? sqlite.openDatabaseSync(dbPathOrDb) : dbPathOrDb;
+    db = SqliteOAuthDb.getDefaultDbPath(),
+    encrypt = (data: string) => data,
+    decrypt = (data: string) => data
+  }: OAuthDbConfig = {}) {
+    this.db = typeof db === 'string' ? sqlite.openDatabaseSync(db) : db;
     this.encrypt = encrypt;
     this.decrypt = decrypt;
   }

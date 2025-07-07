@@ -13,7 +13,7 @@ function payMcpClient(fetchFn: FetchLike, solanaPaymentMaker?: PaymentMaker, db?
   };
   return new PayMcpClient({
     userId: "bdj",
-    db: db ?? new SqliteOAuthDb({dbPathOrDb: ':memory:', encrypt: (x) => x, decrypt: (x) => x}),
+    db: db ?? new SqliteOAuthDb({db: ':memory:'}),
     paymentMakers: {'solana': solanaPaymentMaker},
     fetchFn,
     strict,
