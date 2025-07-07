@@ -151,7 +151,6 @@ export class PayMcpClient {
       // Try to fetch the resource
       return await this.oauthClient.fetch(url, init);
     } catch (error: unknown) {
-      console.log('fetch error', error);
       // If we get an OAuth authentication required error, handle it
       if (error instanceof OAuthAuthenticationRequiredError) {
         console.log(`OAuth authentication required - PayMCP client starting payment flow for resource metadata ${error.resourceServerUrl}`);
