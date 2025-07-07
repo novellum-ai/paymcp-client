@@ -36,29 +36,19 @@ if (getIsReactNative()) {
   require('react-native-url-polyfill/auto');
 }
 
-// Export platform-specific implementations
-export let crypto: PlatformCrypto;
-export let sqlite: PlatformSQLite;
-
-if (getIsReactNative()) {
-  // React Native implementation - supports both Expo and bare React Native
+// Platform factory functions
+function createReactNativeCrypto(): PlatformCrypto {
   let expoCrypto: any;
-  let expoSqlite: any;
-  
   try {
-    // Try Expo packages first
     expoCrypto = require('expo-crypto');
-    expoSqlite = require('expo-sqlite');
   } catch (error) {
-    // Fallback for bare React Native - would need alternative implementations
-    // For now, we'll throw a helpful error
     throw new Error(
-      'React Native detected but expo-crypto and expo-sqlite packages are required. ' +
-      'Please install them: npm install expo-crypto expo-sqlite'
+      'React Native detected but expo-crypto package is required. ' +
+      'Please install it: npm install expo-crypto'
     );
   }
   
-  crypto = {
+  return {
     digest: async (data: Uint8Array) => {
       const hash = await expoCrypto.digestStringAsync(
         expoCrypto.CryptoDigestAlgorithm.SHA256,
@@ -69,33 +59,81 @@ if (getIsReactNative()) {
     randomUUID: () => expoCrypto.randomUUID(),
     toHex: (data: Uint8Array) => Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(''),
   };
+}
+
+function createReactNativeSQLite(): PlatformSQLite {
+  let expoSqlite: any;
+  try {
+    expoSqlite = require('expo-sqlite');
+  } catch (error) {
+    throw new Error(
+      'React Native detected but expo-sqlite package is required. ' +
+      'Please install it: npm install expo-sqlite'
+    );
+  }
   
-  sqlite = {
+  return {
     openDatabaseSync: (name: string) => expoSqlite.openDatabaseSync(name),
   };
-} else {
-  // Node.js implementation
-  const nodeCrypto = require('crypto');
-  const Database = require('better-sqlite3');
-  
-  crypto = {
-    digest: async (data: Uint8Array) => {
-      return new Uint8Array(nodeCrypto.createHash('sha256').update(data).digest());
-    },
-    randomUUID: () => nodeCrypto.randomUUID(),
-    toHex: (data: Uint8Array) => Buffer.from(data).toString('hex'),
+}
+
+function createNodeCrypto(): PlatformCrypto {
+  // Use a function that will be called only when needed
+  const getCrypto = () => {
+    try {
+      return require('crypto');
+    } catch (error) {
+      throw new Error('Node.js crypto module not available');
+    }
   };
   
-  sqlite = {
+  return {
+    digest: async (data: Uint8Array) => {
+      const crypto = getCrypto();
+      return new Uint8Array(crypto.createHash('sha256').update(data).digest());
+    },
+    randomUUID: () => {
+      if (typeof process !== 'undefined' && process.versions?.node) {
+        const crypto = getCrypto();
+        return crypto.randomUUID();
+      }
+      throw new Error('randomUUID not available in this environment');
+    },
+    toHex: (data: Uint8Array) => Buffer.from(data).toString('hex'),
+  };
+}
+
+function createNodeSQLite(): PlatformSQLite {
+  // Use a function that will be called only when needed
+  const getBetterSqlite3 = () => {
+    try {
+      return require('better-sqlite3');
+    } catch (error) {
+      throw new Error('better-sqlite3 not available. Please install it: npm install better-sqlite3');
+    }
+  };
+  
+  return {
     openDatabaseSync: (name: string) => {
-      const db = new Database(name === ':memory:' ? ':memory:' : name);
+      // Initialize database lazily
+      let db: any = null;
+      
+      const getDb = () => {
+        if (!db) {
+          const Database = getBetterSqlite3();
+          db = new Database(name === ':memory:' ? ':memory:' : name);
+        }
+        return db;
+      };
       
       return {
         execAsync: async (sql: string) => {
-          db.exec(sql);
+          const database = getDb();
+          database.exec(sql);
         },
         prepareAsync: (sql: string) => {
-          const stmt = db.prepare(sql);
+          const database = getDb();
+          const stmt = database.prepare(sql);
           return Promise.resolve({
             executeAsync: async <T>(...params: any[]) => {
               // Use .all() for SELECT, .run() for others
@@ -124,9 +162,24 @@ if (getIsReactNative()) {
           });
         },
         closeAsync: async () => {
-          db.close();
+          if (db) {
+            db.close();
+            db = null;
+          }
         },
       };
     },
   };
+}
+
+// Export platform-specific implementations
+export let crypto: PlatformCrypto;
+export let sqlite: PlatformSQLite;
+
+if (getIsReactNative()) {
+  crypto = createReactNativeCrypto();
+  sqlite = createReactNativeSQLite();
+} else {
+  crypto = createNodeCrypto();
+  sqlite = createNodeSQLite();
 } 

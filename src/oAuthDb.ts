@@ -1,4 +1,4 @@
-import { sqlite, SQLiteDatabase } from './platform/index.js';
+import { sqlite, SQLiteDatabase } from './platform/index';
 import type { AccessToken, ClientCredentials, OAuthDb, PKCEValues } from './types';
 
 export interface OAuthDbConfig {
