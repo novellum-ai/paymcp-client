@@ -45,4 +45,5 @@ export type TokenData = {
   aud?: string|string[],
 }
 
-export type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
+// This should match MCP SDK's version, however they don't export it
+export type FetchLike = (url: string | URL, init?: RequestInit) => Promise<Response>;
