@@ -25,21 +25,6 @@ export class OAuthAuthenticationRequiredError extends Error {
   }
 }
 
-// TODO: fetchHack is required on React Native - I've commented it out, but it'll break
-/*const fetchHack = async (url: string, init: RequestInit) => {
-  const resp1 = await expoFetch(url, init as any);
-  const resp2 = new Response();
-  (resp2 as any).headers = resp1.headers;
-  (resp2 as any).status = resp1.status;
-  (resp2 as any).statusText = resp1.statusText;
-  (resp2 as any).ok = resp1.ok;
-  (resp2 as any).type = resp1.type;
-  (resp2 as any).url = resp1.url;
-  (resp2 as any).bodyUsed = false;
-  (resp2 as any).json = async () => await resp1.json();
-  return resp2;
-}*/
-
 const CHUNK_SIZE = 0x8000
 function encodeBase64Url(input: Uint8Array | ArrayBuffer) {
   if (input instanceof ArrayBuffer) {
@@ -147,14 +132,10 @@ export class OAuthClient extends OAuthGlobalClient {
   }
 
   makeAuthorizationUrl = async (url: string, resourceUrl: string): Promise<URL> => {
-    console.log('entering makeAuthorizationUrl');
     resourceUrl = this.normalizeResourceServerUrl(resourceUrl);
     const authorizationServer = await this.getAuthorizationServer(resourceUrl);
-    console.log('authorizationServer', authorizationServer);
     const credentials = await this.getClientCredentials(authorizationServer);
-    console.log('credentials', credentials);
     const pkceValues = await this.generatePKCE(url, resourceUrl);
-    console.log('pkceValues', pkceValues);
     const authorizationUrl = new URL(authorizationServer.authorization_endpoint || '');
     authorizationUrl.searchParams.set('client_id', credentials.clientId);
     authorizationUrl.searchParams.set('redirect_uri', credentials.redirectUri);
@@ -162,7 +143,6 @@ export class OAuthClient extends OAuthGlobalClient {
     authorizationUrl.searchParams.set('code_challenge', pkceValues.codeChallenge);
     authorizationUrl.searchParams.set('code_challenge_method', 'S256');
     authorizationUrl.searchParams.set('state', pkceValues.state);
-    console.log('returning from makeAuthorizationUrl', authorizationUrl);
     return authorizationUrl;
   }
 
@@ -194,10 +174,6 @@ export class OAuthClient extends OAuthGlobalClient {
       token_endpoint_auth_method: 'client_secret_post'
     };
     
-    console.log('validating auth response',authorizationServer,
-      client,
-      callbackUrl,
-      state);
     // Validate the authorization response
     const authResponse = await oauth.validateAuthResponse(
       authorizationServer,
@@ -205,7 +181,6 @@ export class OAuthClient extends OAuthGlobalClient {
       callbackUrl,
       state
     );
-    console.log('authResponse', authResponse instanceof URLSearchParams, (globalThis as any).REACT_NATIVE_URL_POLYFILL, authResponse.get('code'));
 
     // Exchange the code for tokens
     await this.exchangeCodeForToken(authResponse, pkceValues, authorizationServer);
@@ -239,27 +214,18 @@ export class OAuthClient extends OAuthGlobalClient {
     codeChallenge: string;
     state: string;
   }> => {
-    console.log('entering generatePKCE');
     resourceUrl = this.normalizeResourceServerUrl(resourceUrl);
-    console.log('resourceUrl', resourceUrl);
 
     // Generate a random code verifier
     const codeVerifier = oauth.generateRandomCodeVerifier();
-    console.log('codeVerifier', codeVerifier);
     // Calculate the code challenge
     // Use our platform-agnostic crypto implementation
     let codeChallenge: string | undefined;
-    try {
-      codeChallenge = encodeBase64Url(await crypto.digest(
-        new TextEncoder().encode(codeVerifier)
-      ));
-    } catch (e: any) {
-      console.log("E", e, e.stack);
-    }
-    console.log('codeChallenge', codeChallenge);
+    codeChallenge = encodeBase64Url(await crypto.digest(
+      new TextEncoder().encode(codeVerifier)
+    ));
     // Generate a random state
     const state = oauth.generateRandomState();
-    console.log('state', state);
 
     // Save the PKCE values in the database
     await this.db.savePKCEValues(this.userId, state, {
@@ -269,7 +235,6 @@ export class OAuthClient extends OAuthGlobalClient {
       resourceUrl
     });
     
-    console.log(`Generated PKCE values with state: ${state}`);
     return { codeVerifier, codeChallenge: codeChallenge!, state };
   }
 
@@ -282,35 +247,20 @@ export class OAuthClient extends OAuthGlobalClient {
     const [client, clientAuth] = this.makeOAuthClientAndAuth(credentials);
 
     const options: oauth.TokenEndpointRequestOptions = {
-      //[oauth.customFetch]: fetchHack,
       [oauth.customFetch]: this.sideChannelFetch,
       [oauth.allowInsecureRequests]: this.allowInsecureRequests
     };
-    /*const parameters = new URLSearchParams(options.additionalParameters)
-    parameters.set('redirect_uri', credentials.redirectUri)
-    parameters.set('code', authResponse.get('code') || '')
-    parameters.set('code_verifier', codeVerifier)
-    console.log(
-      authResponse instanceof URLSearchParams,
-      authResponse.get('code'),
-      parameters.toString()
-    );*/
     let response: Response | undefined;
-    try {
-      response = await oauth.authorizationCodeGrantRequest(
-        authorizationServer,
-        client,
-        clientAuth,
-        authResponse,
-        credentials.redirectUri,
-        codeVerifier, 
-        options
-      );
-      console.log(`Authorization code grant response status: ${response.status}`);
-    } catch (e: any) {
-      console.log("E", e, e.cause, e.error, e.error_description, e.stack);
-    }
-    return [response!, client];
+    response = await oauth.authorizationCodeGrantRequest(
+      authorizationServer,
+      client,
+      clientAuth,
+      authResponse,
+      credentials.redirectUri,
+      codeVerifier, 
+      options
+    );
+    return [response, client];
   }
 
   protected exchangeCodeForToken = async (
@@ -318,37 +268,23 @@ export class OAuthClient extends OAuthGlobalClient {
     pkceValues: PKCEValues,
     authorizationServer: oauth.AuthorizationServer
   ): Promise<string> => {
-    console.log(`Exchanging code for tokens`);
-    
     const { codeVerifier, url, resourceUrl } = pkceValues;
     
     // Get the client credentials
     let credentials = await this.getClientCredentials(authorizationServer);
-    console.log('credentials', credentials);
     let [response, client] = await this.makeTokenRequestAndClient(authorizationServer, credentials, codeVerifier, authResponse);
-    console.log(`Token exchange response status: ${response.status} ${response.statusText}`);
-    console.log('client', client);
     if(response.status === 403 || response.status === 401) {
       console.log(`Bad response status exchanging code for token: ${response.statusText}. Could be due to bad client credentials - trying to re-register`);
       credentials = await this.registerClient(authorizationServer);
       [response, client] = await this.makeTokenRequestAndClient(authorizationServer, credentials, codeVerifier, authResponse);
     }
-    console.log("A")
 
-    let result: oauth.TokenEndpointResponse | undefined;
-    try {
-      // Process the token response
-      result = await oauth.processAuthorizationCodeResponse(
-        authorizationServer,
-        client,
-        response
-      );
-      console.log("result", result);
-    } catch (e: any) {
-      console.log("E", e, e.cause, e.error, e.error_description, e.stack);
-    }
+    const result = await oauth.processAuthorizationCodeResponse(
+      authorizationServer,
+      client,
+      response
+    );
     
-    console.log("B", this.userId, url);
     // Save the access token in the database
     await this.db.saveAccessToken(this.userId, url, {
       resourceUrl,
@@ -358,7 +294,6 @@ export class OAuthClient extends OAuthGlobalClient {
         ? Date.now() + result!.expires_in * 1000
         : undefined
     });
-    console.log("C")
     
     return result!.access_token;
   }
@@ -422,7 +357,6 @@ export class OAuthClient extends OAuthGlobalClient {
     console.log(`Making ${init?.method || 'GET'} request to ${url}`);
     
     const tokenData = await this.getAccessToken(url);
-    console.log('tokenData', tokenData);
     if (!tokenData) {
       console.log(`No access token found for resource server ${url}. Passing no authorization header.`);
     }
@@ -433,15 +367,9 @@ export class OAuthClient extends OAuthGlobalClient {
       headers.set('Authorization', `Bearer ${tokenData.accessToken}`);
       init.headers = headers;
     }
-    console.log('init', init);
     // Make the request with the access token
-    try {
-      const response = await this.fetchFn(url, init);
-      console.log(`Response status: ${response.status} ${response.statusText}`);
-      return response;
-    } catch (e: any) {
-      console.log("E", e, e.stack);
-      throw e;
-    }
+    const response = await this.fetchFn(url, init);
+    console.log(`Response status: ${response.status} ${response.statusText}`);
+    return response;
   }
 }

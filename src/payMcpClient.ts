@@ -46,12 +46,10 @@ export class PayMcpClient {
   }
 
   protected handleAuthFailure = async (oauthError: OAuthAuthenticationRequiredError): Promise<string> => {
-    console.log('entering handleAuthFailure');
     const authorizationUrl = await this.oauthClient.makeAuthorizationUrl(
       oauthError.url, 
       oauthError.resourceServerUrl
     );
-    console.log('authorizationUrl', authorizationUrl);
 
     if (authorizationUrl.searchParams.get('payMcp') !== '1') {
       console.log(`PayMCP: authorization url was not a PayMcp url, aborting: ${authorizationUrl}`);
@@ -90,11 +88,10 @@ export class PayMcpClient {
 
     const paymentMaker = this.paymentMakers.get(requestedNetwork);
     if (!paymentMaker) {
-      console.log(`PayMCP: payment network ${requestedNetwork} not set up for this server (available: ${Array.from(this.paymentMakers.keys()).join(', ')}) - re-throwing so it can be chained to the caller (if any)`);
+      console.log(`PayMCP: payment network ${requestedNetwork} not set up for this server (available networks: ${Array.from(this.paymentMakers.keys()).join(', ')}) - re-throwing so it can be chained to the caller (if any)`);
       throw oauthError;
     }
 
-    console.log('paymentmaker');
     const paymentId = await paymentMaker.makePayment(amount, currency, destination, authorizationUrl.searchParams.get('resourceName') || undefined);
     console.log(`PayMCP: made payment of ${amount} ${currency} on ${requestedNetwork}: ${paymentId}`);
 
@@ -106,7 +103,6 @@ export class PayMcpClient {
     const authToken = Buffer.from(`${paymentId}:${signature}`).toString('base64');
 
     // Make a fetch call to the authorization URL with the payment ID
-    console.log(`PayMCP: fetching authorization URL ${authorizationUrl.toString()} with auth token ${authToken}`);
     // redirect=false is a hack
     // The OAuth spec calls for the authorization url to return with a redirect, but fetch
     // on mobile will automatically follow the redirect (it doesn't support the redirect=manual option)
@@ -114,6 +110,7 @@ export class PayMcpClient {
     // redirect URL (which might not even exist for agentic paymcp clients)
     //   So paymcp servers are set up to instead return a 200 with the redirect URL in the body
     // if we pass redirect=false.
+    // TODO: Remove the redirect=false hack once we have a way to handle the redirect on mobile
     const response = await this.sideChannelFetch(authorizationUrl.toString()+'&redirect=false', {
       method: 'GET',
       redirect: 'manual',
@@ -160,11 +157,9 @@ export class PayMcpClient {
         console.log(`OAuth authentication required - PayMCP client starting payment flow for resource metadata ${error.resourceServerUrl}`);
         // Get the redirect URL for authentication
         const redirectUrl = await this.handleAuthFailure(error);
-        console.log('redirectUrl', redirectUrl);
 
         // Handle the OAuth callback
         await this.oauthClient.handleCallback(redirectUrl);
-        console.log('handleCallback done');
 
         // Retry the request once - we should be auth'd now
         return await this.oauthClient.fetch(url, init);

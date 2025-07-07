@@ -121,7 +121,6 @@ export class OAuthGlobalClient {
 
   getAuthorizationServer = async (resourceServerUrl: string): Promise<oauth.AuthorizationServer> => {
     resourceServerUrl = this.normalizeResourceServerUrl(resourceServerUrl);
-    console.log(`Fetching authorization server configuration for resource server ${resourceServerUrl}`);
     
     try {
       const resourceUrl = new URL(resourceServerUrl);
@@ -130,8 +129,6 @@ export class OAuthGlobalClient {
         [oauth.customFetch]: this.sideChannelFetch,
         [oauth.allowInsecureRequests]: this.allowInsecureRequests
       });
-
-      console.log(`PRM response status: ${prmResponse.status}`);
 
       const fallbackToRsAs = !this.strict && prmResponse.status === 404;
 
@@ -160,7 +157,6 @@ export class OAuthGlobalClient {
         throw new Error('No authorization_servers found in protected resource metadata');
       }
 
-      console.log(`Found authorization server URL: ${authServer}`);
       const authServerUrl = new URL(authServer);
       const res = await this.authorizationServerFromUrl(authServerUrl);
       return res;
@@ -173,7 +169,6 @@ export class OAuthGlobalClient {
   }
 
   protected authorizationServerFromUrl = async (authServerUrl: URL): Promise<oauth.AuthorizationServer> => {
-    console.log('entering authorizationServerFromUrl');
     try {
       // Explicitly throw for a tricky edge case to trigger tests
       if (authServerUrl.toString().includes('/.well-known/oauth-protected-resource')) {
@@ -187,7 +182,6 @@ export class OAuthGlobalClient {
         [oauth.allowInsecureRequests]: this.allowInsecureRequests
       });
       const authorizationServer = await oauth.processDiscoveryResponse(authServerUrl, response);
-      console.log('authorizationServerFromUrl returning');
       return authorizationServer;
     } catch (error: any) {
       console.log(`Error fetching authorization server configuration: ${error}`);
@@ -227,7 +221,6 @@ export class OAuthGlobalClient {
     }
 
     const clientMetadata = await this.getRegistrationMetadata();
-    console.log(`Client metadata: ${JSON.stringify(clientMetadata)}`);
     
     let registeredClient: oauth.Client;
     try {
@@ -267,7 +260,6 @@ export class OAuthGlobalClient {
     let credentials = await this.globalDb.getClientCredentials(authorizationServer.issuer);
     // If no credentials found, register a new client
     if (!credentials) {
-      console.log(`No client credentials found for ${authorizationServer.issuer}, attempting dynamic client registration`);
       credentials = await this.registerClient(authorizationServer);
     }
     return credentials;
