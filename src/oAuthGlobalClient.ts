@@ -131,6 +131,8 @@ export class OAuthGlobalClient {
         [oauth.allowInsecureRequests]: this.allowInsecureRequests
       });
 
+      console.log(`PRM response status: ${prmResponse.status}`);
+
       const fallbackToRsAs = !this.strict && prmResponse.status === 404;
 
       let authServer: string | undefined = undefined;

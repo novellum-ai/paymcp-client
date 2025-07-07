@@ -1,3 +1,6 @@
+import * as nodeCrypto from 'crypto';
+import type { FetchLike } from '../types';
+
 // Platform abstraction layer
 export interface PlatformCrypto {
   digest: (data: Uint8Array) => Promise<Uint8Array>;
@@ -35,6 +38,37 @@ export const isNode = typeof process !== 'undefined' && process.versions?.node;
 if (getIsReactNative()) {
   require('react-native-url-polyfill/auto');
 }
+
+// React Native safe fetch that prevents body consumption issues
+export const createReactNativeSafeFetch = (originalFetch: FetchLike): FetchLike => {
+  return async (url, init) => {
+    const response = await originalFetch(url, init);
+    
+    // For non-2xx responses or responses we know won't have JSON bodies, return as-is
+    if (!response.ok || response.status === 204) {
+      return response;
+    }
+    
+    // Pre-read the body to avoid consumption issues
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        const bodyText = await response.text();
+        // Create a new Response with the pre-read body
+        return new Response(bodyText, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: response.headers
+        });
+      } catch (error) {
+        // If reading fails, return original response
+        return response;
+      }
+    }
+    
+    return response;
+  };
+};
 
 // Platform factory functions
 function createReactNativeCrypto(): PlatformCrypto {

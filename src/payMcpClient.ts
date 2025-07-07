@@ -1,6 +1,7 @@
 import { BigNumber } from 'bignumber.js';
 import { OAuthAuthenticationRequiredError, OAuthClient } from './oAuth';
 import type { FetchLike, OAuthDb, PaymentMaker } from './types';
+import { getIsReactNative, createReactNativeSafeFetch } from './platform/index';
 
 export interface PayMcpClientConfig {
   userId: string;
@@ -24,6 +25,10 @@ export class PayMcpClient {
     sideChannelFetch = fetchFn,
     strict = true
   }: PayMcpClientConfig) {
+    // Use React Native safe fetch if in React Native environment
+    const safeFetchFn = getIsReactNative() ? createReactNativeSafeFetch(fetchFn) : fetchFn;
+    const safeSideChannelFetch = getIsReactNative() ? createReactNativeSafeFetch(sideChannelFetch) : sideChannelFetch;
+    
     // PayMcpClient should never actually use the callback url - instead of redirecting the user to 
     // an authorization url which redirects back to the callback url, PayMcpClient posts the payment
     // directly to the authorization server, then does the token exchange itself
@@ -32,12 +37,12 @@ export class PayMcpClient {
       db,
       callbackUrl: 'http://localhost:3000/unused-dummy-paymcp-callback',
       isPublic: false,
-      fetchFn,
-      sideChannelFetch,
+      fetchFn: safeFetchFn,
+      sideChannelFetch: safeSideChannelFetch,
       strict
     });
     this.paymentMakers = new Map(Object.entries(paymentMakers));
-    this.sideChannelFetch = sideChannelFetch;
+    this.sideChannelFetch = safeSideChannelFetch;
   }
 
   protected handleAuthFailure = async (oauthError: OAuthAuthenticationRequiredError): Promise<string> => {
