@@ -1,6 +1,6 @@
 {
   "name": "@longrun/paymcp-client",
-  "version": "0.0.45",
+  "version": "0.0.46",
   "description": "PayMcp Client",
   "license": "MIT",
   "types": "./dist/src/index.d.ts",
