@@ -107,7 +107,9 @@ function createNodeSQLite(): PlatformSQLite {
   // Use a function that will be called only when needed
   const getBetterSqlite3 = () => {
     try {
-      return require('better-sqlite3');
+      // Use eval to prevent bundlers from statically analyzing this require
+      // This ensures better-sqlite3 is only loaded at runtime in Node.js
+      return eval('require')('better-sqlite3');
     } catch (error) {
       throw new Error('better-sqlite3 not available. Please install it: npm install better-sqlite3');
     }
