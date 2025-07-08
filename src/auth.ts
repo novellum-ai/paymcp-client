@@ -36,6 +36,7 @@ function getChargeForOperation(op: string, opPrices: {[key:string]: number}): nu
   return 0;
 }
 
+// TODO: Delete paymcp-client auth.ts - it's superceeded by the new server.ts middleware in paymcp()
 // opPrices is experimental: The names of tools that will be charged for if PayMcp is used. 
 // If not provided, all tools will be charged at the amount specified in the authorizationServerUrl's amount field
 // If any are provided, all unlisted tools will be charged at 0
