@@ -99,7 +99,7 @@ export class OAuthClient extends OAuthGlobalClient {
       console.log('Received 401 Unauthorized status');
 
       let resourceUrl = this.extractResourceUrl(response);
-      const calledUrl = OAuthClient.trimToPath(url);
+      const calledUrl = OAuthClient.trimToPath(url instanceof URL ? url.toString() : url);
       // If the response indicates an expired token, try to refresh it
       if (response.headers.get('www-authenticate')?.includes('error="invalid_grant"')) {
         console.log(`Response includes invalid_grant error, attempting to refresh token for ${resourceUrl}`);
@@ -351,12 +351,13 @@ export class OAuthClient extends OAuthGlobalClient {
     return at;
   }
 
-  protected _doFetch = async (url: string, init?: RequestInit): Promise<Response> => {
-    console.log(`Making ${init?.method || 'GET'} request to ${url}`);
+  protected _doFetch: FetchLike = async (url, init) => {
+    const stringUrl = url instanceof URL ? url.toString() : url;
+    console.log(`Making ${init?.method || 'GET'} request to ${stringUrl}`);
     
-    const tokenData = await this.getAccessToken(url);
+    const tokenData = await this.getAccessToken(stringUrl);
     if (!tokenData) {
-      console.log(`No access token found for resource server ${url}. Passing no authorization header.`);
+      console.log(`No access token found for resource server ${stringUrl}. Passing no authorization header.`);
     }
 
     if (tokenData) {

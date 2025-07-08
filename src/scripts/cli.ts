@@ -1,7 +1,7 @@
 import { PayMcpClient, SolanaPaymentMaker, SqliteOAuthDb } from '../index';
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import 'dotenv/config';
-import { CustomHTTPTransport } from '../customHttpTransport';
+import {StreamableHTTPClientTransport} from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
 function validateEnv() {
   const requiredVars = ['SOLANA_ENDPOINT', 'SOLANA_PRIVATE_KEY'];
@@ -64,7 +64,7 @@ async function main() {
       capabilities: {}
     });
 
-    const transport = new CustomHTTPTransport(client.fetch, new URL(url));
+    const transport = new StreamableHTTPClientTransport(new URL(url), {fetch: client.fetch});
     await mcpClient.connect(transport);
 
     const res = await mcpClient.callTool({

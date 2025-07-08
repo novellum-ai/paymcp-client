@@ -22,7 +22,7 @@
     "cli:fetch": "tsx src/scripts/cli-fetch.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.1",
+    "@modelcontextprotocol/sdk": "^1.15.0",
     "@solana/pay": "^0.2.5",
     "@solana/web3.js": "^1.98.1",
     "@types/express": "^5.0.0",
