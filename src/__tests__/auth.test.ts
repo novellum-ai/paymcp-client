@@ -11,8 +11,8 @@ describe('requireOAuthAuthUser', () => {
     const { req, res } = httpMocks.createMocks();
     const f = fetchMock.createInstance();
     mockAuthorizationServer(f, 'https://paymcp.com');
-    const db = new SqliteOAuthDb(':memory:');
-    const client = new OAuthClient("bdj", db, 'https://paymcp.com/callback', false, f.fetchHandler);
+    const db = new SqliteOAuthDb({db: ':memory:'});
+    const client = new OAuthClient({userId: "bdj", db, callbackUrl: 'https://paymcp.com/callback', fetchFn: f.fetchHandler, isPublic: false});
 
     const fn = requireOAuthUser('https://paymcp.com', client);
     const user = await fn(req, res);
@@ -29,7 +29,8 @@ describe('requireOAuthAuthUser', () => {
     const res = httpMocks.createResponse();
     const f = fetchMock.createInstance();
     mockAuthorizationServer(f, 'https://paymcp.com');
-    const client = new OAuthClient("bdj", new SqliteOAuthDb(':memory:'), 'https://paymcp.com/callback', false, f.fetchHandler);
+    const db = new SqliteOAuthDb({db: ':memory:'});
+    const client = new OAuthClient({userId: "bdj", db, callbackUrl: 'https://paymcp.com/callback', fetchFn: f.fetchHandler, isPublic: false});
 
     const fn = requireOAuthUser('https://paymcp.com', client);
     const user = await fn(req, res);
@@ -47,7 +48,8 @@ describe('requireOAuthAuthUser', () => {
     const res = httpMocks.createResponse();
     const f = fetchMock.createInstance();
     mockAuthorizationServer(f, 'https://paymcp.com');
-    const client = new OAuthClient("bdj", new SqliteOAuthDb(':memory:'), 'https://paymcp.com/callback', false, f.fetchHandler);
+    const db = new SqliteOAuthDb({db: ':memory:'});
+    const client = new OAuthClient({userId: "bdj", db, callbackUrl: 'https://paymcp.com/callback', fetchFn: f.fetchHandler, isPublic: false});
 
     const fn = requireOAuthUser('https://paymcp.com', client);
     const user = await fn(req, res);
@@ -67,7 +69,8 @@ describe('requireOAuthAuthUser', () => {
     const res = httpMocks.createResponse();
     const f = fetchMock.createInstance();
     mockAuthorizationServer(f, 'https://paymcp.com');
-    const client = new OAuthClient("bdj", new SqliteOAuthDb(':memory:'), 'https://paymcp.com/callback', false, f.fetchHandler);
+    const db = new SqliteOAuthDb({db: ':memory:'});
+    const client = new OAuthClient({userId: "bdj", db, callbackUrl: 'https://paymcp.com/callback', fetchFn: f.fetchHandler, isPublic: false});
 
     const fn = requireOAuthUser('https://paymcp.com', client);
     const user = await fn(req, res);
@@ -82,7 +85,8 @@ describe('requireOAuthAuthUser', () => {
     const res = httpMocks.createResponse();
     const f = fetchMock.createInstance();
     mockAuthorizationServer(f, 'https://paymcp.com', 'payMcp=1');
-    const client = new OAuthClient("bdj", new SqliteOAuthDb(':memory:'), 'https://paymcp.com/callback', false, f.fetchHandler);
+    const db = new SqliteOAuthDb({db: ':memory:'});
+    const client = new OAuthClient({userId: "bdj", db, callbackUrl: 'https://paymcp.com/callback', fetchFn: f.fetchHandler, isPublic: false});
 
     const fn = requireOAuthUser('https://paymcp.com?payMcp=1', client);
     const user = await fn(req, res);
@@ -98,7 +102,8 @@ describe('requireOAuthAuthUser', () => {
     const res = httpMocks.createResponse();
     const f = fetchMock.createInstance();
     mockAuthorizationServer(f, 'https://paymcp.com');
-    const client = new OAuthClient("bdj", new SqliteOAuthDb(':memory:'), 'https://paymcp.com/callback', false, f.fetchHandler);
+    const db = new SqliteOAuthDb({db: ':memory:'});
+    const client = new OAuthClient({userId: "bdj", db, callbackUrl: 'https://paymcp.com/callback', fetchFn: f.fetchHandler, isPublic: false});
 
     const fn = requireOAuthUser('https://paymcp.com', client);
     const user = await fn(req, res);
@@ -114,7 +119,8 @@ describe('requireOAuthAuthUser', () => {
     mockResourceServer(f, 'https://example.com', '/mcp');
     mockAuthorizationServer(f, 'https://paymcp.com')
       .modifyRoute('https://paymcp.com/introspect', {method: 'post', response: {body: {active: false}}});
-    const client = new OAuthClient("bdj", new SqliteOAuthDb(':memory:'), 'https://paymcp.com/callback', false, f.fetchHandler);
+    const db = new SqliteOAuthDb({db: ':memory:'});
+    const client = new OAuthClient({userId: "bdj", db, callbackUrl: 'https://paymcp.com/callback', fetchFn: f.fetchHandler, isPublic: false});
 
     const fn = requireOAuthUser('https://paymcp.com', client);
     const user = await fn(req, res);
@@ -129,7 +135,8 @@ describe('requireOAuthAuthUser', () => {
     mockResourceServer(f, 'https://example.com', '/mcp');
     mockAuthorizationServer(f, 'https://paymcp.com')
       .modifyRoute('https://paymcp.com/introspect', {method: 'post', response: {body: {active: true, sub: 'test-user'}}});
-    const client = new OAuthClient("bdj", new SqliteOAuthDb(':memory:'), 'https://paymcp.com/callback', false, f.fetchHandler);
+    const db = new SqliteOAuthDb({db: ':memory:'});
+    const client = new OAuthClient({userId: "bdj", db, callbackUrl: 'https://paymcp.com/callback', fetchFn: f.fetchHandler, isPublic: false});
 
     const fn = requireOAuthUser('https://paymcp.com', client);
     const user = await fn(req, res);
@@ -143,14 +150,14 @@ describe('requireOAuthAuthUser', () => {
     const f = fetchMock.createInstance();
     mockResourceServer(f, 'https://example.com', '/mcp');
     mockAuthorizationServer(f, 'https://paymcp.com');
-    const db = new SqliteOAuthDb(':memory:');
+    const db = new SqliteOAuthDb({db: ':memory:'});
     const creds = {
       clientId: 'testClientId',
       clientSecret: 'testClientSecret',
       redirectUri: 'https://paymcp.com/callback'
     };
     db.saveClientCredentials('https://paymcp.com', creds);
-    const client = new OAuthClient("bdj", db, 'https://paymcp.com/callback', false, f.fetchHandler);
+    const client = new OAuthClient({userId: "bdj", db, callbackUrl: 'https://paymcp.com/callback', fetchFn: f.fetchHandler, isPublic: false});
 
     const encodedCreds = Buffer.from(`${encodeURIComponent(creds.clientId)}:${encodeURIComponent(creds.clientSecret)}`).toString('base64');
     const fn = requireOAuthUser('https://paymcp.com', client);
@@ -168,8 +175,8 @@ describe('requireOAuthAuthUser', () => {
     const f = fetchMock.createInstance();
     mockResourceServer(f, 'https://example.com', '/mcp');
     mockAuthorizationServer(f, 'https://paymcp.com');
-    const db = new SqliteOAuthDb(':memory:');
-    const client = new OAuthClient("bdj", db, 'https://paymcp.com/callback', false, f.fetchHandler);
+    const db = new SqliteOAuthDb({db: ':memory:'});
+    const client = new OAuthClient({userId: "bdj", db, callbackUrl: 'https://paymcp.com/callback', fetchFn: f.fetchHandler, isPublic: false});
 
     const fn = requireOAuthUser('https://paymcp.com', client);
     const user = await fn(req, res);
@@ -190,14 +197,14 @@ describe('requireOAuthAuthUser', () => {
         active: true,
         sub: 'testUser'
       });
-    const db = new SqliteOAuthDb(':memory:');
+    const db = new SqliteOAuthDb({db: ':memory:'});
     const creds = {
       clientId: 'oldClientId',
       clientSecret: 'oldClientSecret',
       redirectUri: 'https://paymcp.com/mcp/callback'
     };
     db.saveClientCredentials('https://paymcp.com', creds);
-    const client = new OAuthClient("bdj", db, 'https://example.com/mcp/callback', false, f.fetchHandler);
+    const client = new OAuthClient({userId: "bdj", db, callbackUrl: 'https://paymcp.com/callback', fetchFn: f.fetchHandler, isPublic: false});
 
     const fn = requireOAuthUser('https://paymcp.com', client);
     const user = await fn(req, res);
@@ -245,7 +252,8 @@ describe('requireOAuthAuthUser', () => {
     mockResourceServer(f, 'https://example.com', '/mcp');
     mockAuthorizationServer(f, 'https://paymcp.com')
       .modifyRoute('https://paymcp.com/introspect', {method: 'post', response: {body: {active: true, sub: 'test-user'}}});
-    const client = new OAuthClient("bdj", new SqliteOAuthDb(':memory:'), 'https://paymcp.com/callback', false, f.fetchHandler);
+    const db = new SqliteOAuthDb({db: ':memory:'});
+    const client = new OAuthClient({userId: "bdj", db, callbackUrl: 'https://paymcp.com/callback', fetchFn: f.fetchHandler, isPublic: false});
 
     const opPrices = { 'tools/call': 0.01 };
     const fn = requireOAuthUser('https://paymcp.com', client, opPrices);
@@ -280,7 +288,8 @@ describe('requireOAuthAuthUser', () => {
     mockResourceServer(f, 'https://example.com', '/mcp');
     mockAuthorizationServer(f, 'https://paymcp.com')
       .modifyRoute('https://paymcp.com/introspect', {method: 'post', response: {body: {active: true, sub: 'test-user'}}});
-    const client = new OAuthClient("bdj", new SqliteOAuthDb(':memory:'), 'https://paymcp.com/callback', false, f.fetchHandler);
+    const db = new SqliteOAuthDb({db: ':memory:'});
+    const client = new OAuthClient({userId: "bdj", db, callbackUrl: 'https://paymcp.com/callback', fetchFn: f.fetchHandler, isPublic: false});
 
     // 'tools/call:my' should not match 'tools/call:my_tool', only 'tools/call' should
     const opPrices = { 
@@ -319,7 +328,8 @@ describe('requireOAuthAuthUser', () => {
     mockResourceServer(f, 'https://example.com', '/mcp');
     mockAuthorizationServer(f, 'https://paymcp.com')
       .modifyRoute('https://paymcp.com/introspect', {method: 'post', response: {body: {active: true, sub: 'test-user'}}});
-    const client = new OAuthClient("bdj", new SqliteOAuthDb(':memory:'), 'https://paymcp.com/callback', false, f.fetchHandler);
+    const db = new SqliteOAuthDb({db: ':memory:'});
+    const client = new OAuthClient({userId: "bdj", db, callbackUrl: 'https://paymcp.com/callback', fetchFn: f.fetchHandler, isPublic: false});
 
     // Multiple keys, but one is exact
     const opPrices = { 
@@ -359,7 +369,8 @@ describe('requireOAuthAuthUser', () => {
     mockResourceServer(f, 'https://example.com', '/mcp');
     mockAuthorizationServer(f, 'https://paymcp.com')
       .modifyRoute('https://paymcp.com/introspect', {method: 'post', response: {body: {active: true, sub: 'test-user'}}});
-    const client = new OAuthClient("bdj", new SqliteOAuthDb(':memory:'), 'https://paymcp.com/callback', false, f.fetchHandler);
+    const db = new SqliteOAuthDb({db: ':memory:'});
+    const client = new OAuthClient({userId: "bdj", db, callbackUrl: 'https://paymcp.com/callback', fetchFn: f.fetchHandler, isPublic: false});
 
     // 'resources/read' should NOT match 'resources/read:my_resource' 
     // (only 'tools/call' gets special prefix matching)
@@ -398,7 +409,8 @@ describe('requireOAuthAuthUser', () => {
     mockResourceServer(f, 'https://example.com', '/mcp');
     mockAuthorizationServer(f, 'https://paymcp.com')
       .modifyRoute('https://paymcp.com/introspect', {method: 'post', response: {body: {active: true, sub: 'test-user'}}});
-    const client = new OAuthClient("bdj", new SqliteOAuthDb(':memory:'), 'https://paymcp.com/callback', false, f.fetchHandler);
+    const db = new SqliteOAuthDb({db: ':memory:'});
+    const client = new OAuthClient({userId: "bdj", db, callbackUrl: 'https://paymcp.com/callback', fetchFn: f.fetchHandler, isPublic: false});
 
     const opPrices = { 'tools/call': 0.01 };
     const fn = requireOAuthUser('https://paymcp.com', client, opPrices);

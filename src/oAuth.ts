@@ -1,37 +1,77 @@
 import * as oauth from 'oauth4webapi';
-import { URL } from 'url';
-import { FetchLike, ClientCredentials, PKCEValues, AccessToken, OAuthDb} from './types';
+
 import { OAuthGlobalClient } from './oAuthGlobalClient.js';
-import crypto from 'crypto';
+import { crypto } from './platform/index.js';
+import { AccessToken, ClientCredentials, FetchLike, OAuthDb, PKCEValues } from './types.js';
 
 export class OAuthAuthenticationRequiredError extends Error {
-  public readonly idempotencyKey: string;
   constructor(
     public readonly url: string,
     public readonly resourceServerUrl: string,
-    token?: string
+    public readonly idempotencyKey: string
   ) {
     super(`OAuth authentication required. Resource server url: ${resourceServerUrl}`);
     this.name = 'OAuthAuthenticationRequiredError';
-    this.idempotencyKey = OAuthAuthenticationRequiredError.getIdempotencyKey(url, resourceServerUrl, token);
+    this.idempotencyKey = idempotencyKey;
   }
 
-  static getIdempotencyKey(url: string, resourceServerUrl: string, token?: string): string {
+  static async create(url: string, resourceServerUrl: string, token?: string): Promise<OAuthAuthenticationRequiredError> {
     const baseUrl = OAuthClient.trimToPath(url);
     const source = `${baseUrl}|${resourceServerUrl}|${token}`;
-    const idempotencyKey = crypto.createHash('sha256').update(source).digest('hex');
-    return idempotencyKey;
+    const hash = await crypto.digest(new TextEncoder().encode(source));
+    const idempotencyKey = crypto.toHex(hash);
+    return new OAuthAuthenticationRequiredError(url, resourceServerUrl, idempotencyKey);
   }
+}
+
+const CHUNK_SIZE = 0x8000
+function encodeBase64Url(input: Uint8Array | ArrayBuffer) {
+  if (input instanceof ArrayBuffer) {
+    input = new Uint8Array(input)
+  }
+
+  const arr = []
+  for (let i = 0; i < input.byteLength; i += CHUNK_SIZE) {
+    // @ts-expect-error
+    arr.push(String.fromCharCode.apply(null, input.subarray(i, i + CHUNK_SIZE)))
+  }
+  return btoa(arr.join('')).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
+}
+
+export interface OAuthClientConfig {
+  userId: string;
+  db: OAuthDb;
+  callbackUrl: string;
+  isPublic: boolean;
+  fetchFn?: FetchLike;
+  sideChannelFetch?: FetchLike;
+  strict?: boolean;
 }
 
 export class OAuthClient extends OAuthGlobalClient {
   protected db: OAuthDb;
   protected userId: string;
+  protected fetchFn: FetchLike;
 
-  constructor(userId: string, db: OAuthDb, callbackUrl: string, isPublic: boolean, fetchFn: FetchLike = fetch, strict: boolean = true) {
-    super(db, callbackUrl, isPublic, fetchFn, strict);
+  constructor({
+    userId,
+    db,
+    callbackUrl,
+    isPublic,
+    fetchFn = fetch,
+    sideChannelFetch = fetchFn,
+    strict = true
+  }: OAuthClientConfig) {
+    super({
+      globalDb: db,
+      callbackUrl,
+      isPublic,
+      sideChannelFetch,
+      strict
+    });
     this.db = db;
     this.userId = userId;
+    this.fetchFn = fetchFn;
   }
 
   protected extractResourceUrl = (response: Response): string | null => {
@@ -39,16 +79,17 @@ export class OAuthClient extends OAuthGlobalClient {
       return null;
     }
     const header = response.headers.get('www-authenticate') || '';
-    let wwwAuthenticate = header || '';
     const match = header.match(/^Bearer resource_metadata="([^"]+)"$/);
     if (match) {
-      wwwAuthenticate = match[1];
+      return this.normalizeResourceServerUrl(match[1]);
     }
-    if (!URL.canParse(wwwAuthenticate)) {
-      console.log(`Invalid resource metadata header: ${header}`);
-      return null;
+    // handle 'www-authenticate: https://mymcp.com/mcp'
+    // This is NOT a valid www-authenticate header, and also doesn't conform with the updated 2025-06-18 version of
+    // the MCP spec. However, it is what we were originally using for proxying requests, so we still support it.
+    if (header.match(/^https?:\/\//)) {
+      return this.normalizeResourceServerUrl(header);
     }
-    return this.normalizeResourceServerUrl(wwwAuthenticate);
+    return null;
   }
 
   fetch: FetchLike = async (url, init) => {
@@ -82,7 +123,7 @@ export class OAuthClient extends OAuthGlobalClient {
         }
         const token = await this.getAccessToken(calledUrl);
         console.log(`Throwing OAuthAuthenticationRequiredError for ${calledUrl}, resource: ${resourceUrl}`);
-        throw new OAuthAuthenticationRequiredError(calledUrl, resourceUrl, token?.accessToken);
+        throw await OAuthAuthenticationRequiredError.create(calledUrl, resourceUrl, token?.accessToken);
       }
     }
   
@@ -94,7 +135,6 @@ export class OAuthClient extends OAuthGlobalClient {
     const authorizationServer = await this.getAuthorizationServer(resourceUrl);
     const credentials = await this.getClientCredentials(authorizationServer);
     const pkceValues = await this.generatePKCE(url, resourceUrl);
-
     const authorizationUrl = new URL(authorizationServer.authorization_endpoint || '');
     authorizationUrl.searchParams.set('client_id', credentials.clientId);
     authorizationUrl.searchParams.set('redirect_uri', credentials.redirectUri);
@@ -174,25 +214,27 @@ export class OAuthClient extends OAuthGlobalClient {
     state: string;
   }> => {
     resourceUrl = this.normalizeResourceServerUrl(resourceUrl);
+
     // Generate a random code verifier
     const codeVerifier = oauth.generateRandomCodeVerifier();
-    
     // Calculate the code challenge
-    const codeChallenge = await oauth.calculatePKCECodeChallenge(codeVerifier);
-    
+    // Use our platform-agnostic crypto implementation
+    let codeChallenge: string | undefined;
+    codeChallenge = encodeBase64Url(await crypto.digest(
+      new TextEncoder().encode(codeVerifier)
+    ));
     // Generate a random state
     const state = oauth.generateRandomState();
-    
+
     // Save the PKCE values in the database
     await this.db.savePKCEValues(this.userId, state, {
       url,
       codeVerifier,
-      codeChallenge,
+      codeChallenge: codeChallenge!,
       resourceUrl
     });
     
-    console.log(`Generated PKCE values with state: ${state}`);
-    return { codeVerifier, codeChallenge, state };
+    return { codeVerifier, codeChallenge: codeChallenge!, state };
   }
 
   protected makeTokenRequestAndClient = async (
@@ -203,16 +245,19 @@ export class OAuthClient extends OAuthGlobalClient {
   ): Promise<[Response, oauth.Client]> => {
     const [client, clientAuth] = this.makeOAuthClientAndAuth(credentials);
 
-    const response = await oauth.authorizationCodeGrantRequest(
+    const options: oauth.TokenEndpointRequestOptions = {
+      [oauth.customFetch]: this.sideChannelFetch,
+      [oauth.allowInsecureRequests]: this.allowInsecureRequests
+    };
+    let response: Response | undefined;
+    response = await oauth.authorizationCodeGrantRequest(
       authorizationServer,
       client,
       clientAuth,
       authResponse,
       credentials.redirectUri,
-      codeVerifier, {
-        [oauth.customFetch]: this.fetchFn,
-        [oauth.allowInsecureRequests]: this.allowInsecureRequests
-      }
+      codeVerifier, 
+      options
     );
     return [response, client];
   }
@@ -222,22 +267,17 @@ export class OAuthClient extends OAuthGlobalClient {
     pkceValues: PKCEValues,
     authorizationServer: oauth.AuthorizationServer
   ): Promise<string> => {
-    console.log(`Exchanging code for tokens`);
-    
     const { codeVerifier, url, resourceUrl } = pkceValues;
     
     // Get the client credentials
     let credentials = await this.getClientCredentials(authorizationServer);
-    
     let [response, client] = await this.makeTokenRequestAndClient(authorizationServer, credentials, codeVerifier, authResponse);
-
     if(response.status === 403 || response.status === 401) {
       console.log(`Bad response status exchanging code for token: ${response.statusText}. Could be due to bad client credentials - trying to re-register`);
       credentials = await this.registerClient(authorizationServer);
       [response, client] = await this.makeTokenRequestAndClient(authorizationServer, credentials, codeVerifier, authResponse);
     }
-    
-    // Process the token response
+
     const result = await oauth.processAuthorizationCodeResponse(
       authorizationServer,
       client,
@@ -266,7 +306,6 @@ export class OAuthClient extends OAuthGlobalClient {
     // TODO: re-evaluate if we should recurse up to parent paths to find tokens
     // IIRC this is mainly to support SSE transport's separate /mcp and /mcp/message paths
     while (!tokenData && parentPath){
-      console.log(`No access token found for ${url}, trying parent ${parentPath}`);
       tokenData = await this.db.getAccessToken(this.userId, parentPath);
       parentPath = OAuthClient.getParentPath(parentPath);
     }
@@ -294,7 +333,7 @@ export class OAuthClient extends OAuthGlobalClient {
       clientAuth,
       token.refreshToken,
       {
-        [oauth.customFetch]: this.fetchFn,
+        [oauth.customFetch]: this.sideChannelFetch,
         [oauth.allowInsecureRequests]: this.allowInsecureRequests
       }
     );
@@ -316,7 +355,6 @@ export class OAuthClient extends OAuthGlobalClient {
     console.log(`Making ${init?.method || 'GET'} request to ${url}`);
     
     const tokenData = await this.getAccessToken(url);
-    
     if (!tokenData) {
       console.log(`No access token found for resource server ${url}. Passing no authorization header.`);
     }
@@ -327,9 +365,9 @@ export class OAuthClient extends OAuthGlobalClient {
       headers.set('Authorization', `Bearer ${tokenData.accessToken}`);
       init.headers = headers;
     }
-    
     // Make the request with the access token
     const response = await this.fetchFn(url, init);
+    console.log(`Response status: ${response.status} ${response.statusText}`);
     return response;
   }
 }

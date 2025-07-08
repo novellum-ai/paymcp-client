@@ -80,8 +80,6 @@ export function requireOAuthUser(authorizationServerUrl: string, oauthClient: OA
         const charge = getChargeForOperation(op, opPrices);
         additionalParameters = { charge };
       }
-      const devInfo = process.env.NODE_ENV === 'development' ? `, token: ${token}`: '';
-      console.log('[auth] Introspecting token for op:', op, 'with additional parameters:', additionalParameters, devInfo);
       const introspectionResult = await oauthClient.introspectToken(authorizationServerUrl, token, additionalParameters);
       
       if (!introspectionResult.active) {

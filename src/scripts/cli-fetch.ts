@@ -44,14 +44,18 @@ async function main() {
   console.log('--------------------------------');
   
   // Create a SQLite database instance
-  const db = new SqliteOAuthDb(':memory:');
+  const db = new SqliteOAuthDb({db: ':memory:'});
   
   try {
     validateEnv();
     
     // Create a new OAuth client
     const solana = new SolanaPaymentMaker(process.env.SOLANA_ENDPOINT!, process.env.SOLANA_PRIVATE_KEY!);
-    const client = new PayMcpClient("local", db, true, {"solana": solana});
+    const client = new PayMcpClient({
+      userId: "local",
+      db,
+      paymentMakers: {"solana": solana}
+    });
 
     // Make a request to a protected resource
     // This will automatically handle the OAuth flow if needed
@@ -75,7 +79,7 @@ async function main() {
       }
     );
     
-    console.log('Response:', data);
+    console.log(`Response status: ${data.status} ${data.statusText}`);
     console.log('Body:', await data.text());
   } catch (error) {
     if (error instanceof Error) {

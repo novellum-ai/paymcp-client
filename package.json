@@ -1,10 +1,10 @@
 {
   "name": "@longrun/paymcp-client",
-  "version": "0.0.39",
+  "version": "0.0.48",
   "description": "PayMcp Client",
   "license": "MIT",
-  "types": "./dist/index.d.ts",
-  "main": "./dist/index.js",
+  "types": "./dist/src/index.d.ts",
+  "main": "./dist/src/index.js",
   "files": [
     "dist"
   ],
@@ -14,8 +14,10 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "npm run test:node && npm run test:expo",
     "test:watch": "vitest",
+    "test:node": "vitest run",
+    "test:expo": "jest --config jest.expo.config.js",
     "cli": "tsx src/scripts/cli.ts",
     "cli:fetch": "tsx src/scripts/cli-fetch.ts"
   },
@@ -24,20 +26,31 @@
     "@solana/pay": "^0.2.5",
     "@solana/web3.js": "^1.98.1",
     "@types/express": "^5.0.0",
-    "better-sqlite3": "^11.10.0",
     "bignumber.js": "^9.3.0",
     "bs58": "^6.0.0",
     "dotenv": "^16.5.0",
+    "expo-crypto": "^14.1.4",
+    "expo-sqlite": "^15.2.10",
     "express": "^5.0.0",
     "node-mocks-http": "^1.17.2",
     "oauth4webapi": "^3.5.0",
+    "react-native-url-polyfill": "^2.0.0",
     "tweetnacl": "^1.0.3",
     "tweetnacl-util": "^0.15.1"
+  },
+  "peerDependencies": {
+    "expo-crypto": ">=14.0.0",
+    "expo-sqlite": ">=15.0.0"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^12.2.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.13.0",
+    "better-sqlite3": "^12.2.0",
     "fetch-mock": "^12.5.2",
+    "jest-expo": "^53.0.9",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
     "vitest": "^3.0.9"
