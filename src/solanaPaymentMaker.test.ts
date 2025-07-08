@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SolanaPaymentMaker } from '../solanaPaymentMaker';
+import { SolanaPaymentMaker } from './solanaPaymentMaker';
 import { Keypair } from "@solana/web3.js";
 import bs58 from "bs58";
 import nacl from "tweetnacl";

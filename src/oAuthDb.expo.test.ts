@@ -2,7 +2,7 @@
 // Only include tests relevant to cross-platform or Expo/React Native logic
 
 import { describe, it, expect } from '@jest/globals';
-import { SqliteOAuthDb } from '../oAuthDb';
+import { SqliteOAuthDb } from './oAuthDb';
 
 describe('SqliteOAuthDb (Expo)', () => {
   it('can be imported and instantiated without error', () => {

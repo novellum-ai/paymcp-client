@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { paymcp } from '../server.js';
+import { paymcp } from './index.js';
 import httpMocks from 'node-mocks-http';
-import { mockAuthorizationServer, mockResourceServer } from './testHelpers.js';
+import { mockAuthorizationServer, mockResourceServer } from '../testHelpers.js';
 import fetchMock from 'fetch-mock';
 import { ConsoleLogger, LogLevel } from '../logger.js';
+import { OAuthResourceClient } from '../oAuthResource.js';
 import { BigNumber } from 'bignumber.js';
 import { EventEmitter } from 'events';
 
@@ -65,6 +66,47 @@ describe('paymcp', () => {
     const calls = consoleSpy.debug.mock.calls;
     expect(calls[0][0]).toBe('[paymcp] Request started - POST /mcp/message');
     expect(calls[1][0]).toBe('[paymcp] Request finished - POST /mcp/message');
+  });
+
+  it('should call token introspection when MCP tool call request comes in with Authorization header', async () => {
+    // Create a mock OAuthResourceClient
+    const mockOAuthClient = {
+      introspectToken: vi.fn().mockResolvedValue({
+        active: true,
+        sub: 'test-user',
+        scope: 'tools:read',
+        aud: 'https://example.com'
+      })
+    } as unknown as OAuthResourceClient;
+
+    const { req, res } = httpMocks.createMocks(
+      {
+        method: 'POST',
+        path: '/mcp/message',
+        headers: {
+          authorization: 'Bearer test-access-token'
+        },
+        body: {
+          method: 'tools/call:testTool',
+          params: { name: 'test' }
+        }
+      }
+    );
+
+    const middleware = paymcp({
+      price: new BigNumber(0.01),
+      destination: 'test-destination',
+      oAuthResourceClient: mockOAuthClient
+    });
+    const next = vi.fn();
+    middleware(req, res, next);
+
+    expect(mockOAuthClient.introspectToken).toHaveBeenCalledWith(
+      'https://auth.paymcp.com',
+      'test-access-token',
+      undefined
+    );
+    expect(mockOAuthClient.introspectToken).toHaveBeenCalledTimes(1);
   });
 
 });

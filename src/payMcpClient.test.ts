@@ -1,10 +1,10 @@
-import { SqliteOAuthDb } from '../oAuthDb';
-import { OAuthAuthenticationRequiredError } from '../oAuth';
+import { SqliteOAuthDb } from './oAuthDb';
+import { OAuthAuthenticationRequiredError } from './oAuth';
 import { describe, it, expect, vi } from 'vitest';
 import fetchMock from 'fetch-mock';
 import { mockResourceServer, mockAuthorizationServer } from './testHelpers';
-import { PayMcpClient } from '../payMcpClient';
-import { OAuthDb, FetchLike, PaymentMaker } from '../types';
+import { PayMcpClient } from './payMcpClient';
+import { OAuthDb, FetchLike, PaymentMaker } from './types';
 
 function payMcpClient(fetchFn: FetchLike, solanaPaymentMaker?: PaymentMaker, db?: OAuthDb, isPublic: boolean = false, strict: boolean = true) {
   solanaPaymentMaker = solanaPaymentMaker ?? {

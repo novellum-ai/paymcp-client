@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { OAuthResourceClient } from "./oAuthResource.js";
 
 function getMcpOperation(req: Request): string | null {
-  // TODO: Determine if we're accessing an MCP endpoint
   const isMessage = req.method.toLowerCase() === 'post';
 
   if (!isMessage) {
