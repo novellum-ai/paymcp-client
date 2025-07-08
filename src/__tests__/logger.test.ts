@@ -37,10 +37,10 @@ describe('ConsoleLogger', () => {
     logger.warn('warn message');
     logger.error('error message');
     
-    expect(consoleSpy.debug).toHaveBeenCalledWith('[payMcp] debug message');
-    expect(consoleSpy.info).toHaveBeenCalledWith('[payMcp] info message');
-    expect(consoleSpy.warn).toHaveBeenCalledWith('[payMcp] warn message');
-    expect(consoleSpy.error).toHaveBeenCalledWith('[payMcp] error message');
+    expect(consoleSpy.debug).toHaveBeenCalledWith('[paymcp] debug message');
+    expect(consoleSpy.info).toHaveBeenCalledWith('[paymcp] info message');
+    expect(consoleSpy.warn).toHaveBeenCalledWith('[paymcp] warn message');
+    expect(consoleSpy.error).toHaveBeenCalledWith('[paymcp] error message');
   });
 
   it('should log expected lines at level info', () => {
@@ -53,9 +53,9 @@ describe('ConsoleLogger', () => {
     logger.error('error message');
     
     expect(consoleSpy.debug).not.toHaveBeenCalled();
-    expect(consoleSpy.info).toHaveBeenCalledWith('[payMcp] info message');
-    expect(consoleSpy.warn).toHaveBeenCalledWith('[payMcp] warn message');
-    expect(consoleSpy.error).toHaveBeenCalledWith('[payMcp] error message');
+    expect(consoleSpy.info).toHaveBeenCalledWith('[paymcp] info message');
+    expect(consoleSpy.warn).toHaveBeenCalledWith('[paymcp] warn message');
+    expect(consoleSpy.error).toHaveBeenCalledWith('[paymcp] error message');
   });
 
   it('should log expected lines at level warn', () => {
@@ -69,8 +69,8 @@ describe('ConsoleLogger', () => {
     
     expect(consoleSpy.debug).not.toHaveBeenCalled();
     expect(consoleSpy.info).not.toHaveBeenCalled();
-    expect(consoleSpy.warn).toHaveBeenCalledWith('[payMcp] warn message');
-    expect(consoleSpy.error).toHaveBeenCalledWith('[payMcp] error message');
+    expect(consoleSpy.warn).toHaveBeenCalledWith('[paymcp] warn message');
+    expect(consoleSpy.error).toHaveBeenCalledWith('[paymcp] error message');
   });
 
   it('should log expected lines at level error', () => {
@@ -85,7 +85,7 @@ describe('ConsoleLogger', () => {
     expect(consoleSpy.debug).not.toHaveBeenCalled();
     expect(consoleSpy.info).not.toHaveBeenCalled();
     expect(consoleSpy.warn).not.toHaveBeenCalled();
-    expect(consoleSpy.error).toHaveBeenCalledWith('[payMcp] error message');
+    expect(consoleSpy.error).toHaveBeenCalledWith('[paymcp] error message');
   });
 
   it('should respect level changes', () => {
@@ -98,6 +98,6 @@ describe('ConsoleLogger', () => {
     logger.level = LogLevel.INFO;
     
     logger.info('another message');
-    expect(consoleSpy.info).toHaveBeenCalledWith('[payMcp] another message');
+    expect(consoleSpy.info).toHaveBeenCalledWith('[paymcp] another message');
   });
 });

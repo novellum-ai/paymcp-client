@@ -1,9 +1,12 @@
+import { assertNever } from './utils.js';
+
 export enum LogLevel {
   DEBUG = 0,
   INFO = 1,
   WARN = 2,
   ERROR = 3
 }
+
 export type Logger = {
   debug: (message: string) => void;
   info: (message: string) => void;
@@ -15,7 +18,7 @@ export class ConsoleLogger implements Logger {
   private readonly prefix: string;
   private _level: LogLevel;
 
-  constructor({prefix = '[payMcp]', level = LogLevel.INFO}: Partial<{prefix: string, level: LogLevel}> = {}) {
+  constructor({prefix = '[paymcp]', level = LogLevel.INFO}: Partial<{prefix: string, level: LogLevel}> = {}) {
     this.prefix = prefix;
     this._level = level;
   }
@@ -31,17 +34,17 @@ export class ConsoleLogger implements Logger {
   private log(level: LogLevel, message: string) {
     if (level >= this._level) {
       const consoleMethod = this.getConsoleMethod(level);
-      console[consoleMethod](`${this.prefix} ${message}`);
+      consoleMethod(`${this.prefix} ${message}`);
     }
   }
 
-  private getConsoleMethod(level: LogLevel): 'debug' | 'info' | 'warn' | 'error' {
+  private getConsoleMethod(level: LogLevel): (message: string) => void {
     switch (level) {
-      case LogLevel.DEBUG: return 'debug';
-      case LogLevel.INFO: return 'info';
-      case LogLevel.WARN: return 'warn';
-      case LogLevel.ERROR: return 'error';
-      default: return 'info';
+      case LogLevel.DEBUG: return console.debug.bind(console);
+      case LogLevel.INFO: return console.info.bind(console);
+      case LogLevel.WARN: return console.warn.bind(console);
+      case LogLevel.ERROR: return console.error.bind(console);
+      default: return assertNever(level, `Unknown log level: ${level}`);
     }
   }
 

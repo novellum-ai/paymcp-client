@@ -1,6 +1,6 @@
 import * as oauth from 'oauth4webapi';
 
-import { OAuthGlobalClient } from './oAuthGlobalClient.js';
+import { OAuthResourceClient } from './oAuthResource.js';
 import { crypto } from './platform/index.js';
 import { AccessToken, ClientCredentials, FetchLike, OAuthDb, PKCEValues } from './types.js';
 
@@ -49,7 +49,7 @@ export interface OAuthClientConfig {
   allowInsecureRequests?: boolean;
 }
 
-export class OAuthClient extends OAuthGlobalClient {
+export class OAuthClient extends OAuthResourceClient {
   protected db: OAuthDb;
   protected userId: string;
   protected fetchFn: FetchLike;
@@ -65,7 +65,7 @@ export class OAuthClient extends OAuthGlobalClient {
     allowInsecureRequests = process.env.NODE_ENV === 'development'
   }: OAuthClientConfig) {
     super({
-      globalDb: db,
+      db: db,
       callbackUrl,
       isPublic,
       sideChannelFetch,

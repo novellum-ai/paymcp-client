@@ -1,8 +1,8 @@
 import * as oauth from 'oauth4webapi';
-import { ClientCredentials, FetchLike, OAuthGlobalDb, TokenData } from './types';
+import { ClientCredentials, FetchLike, OAuthResourceDb, TokenData } from './types';
 
-export interface OAuthGlobalClientConfig {
-  globalDb: OAuthGlobalDb;
+export interface OAuthResourceClientConfig {
+  db: OAuthResourceDb;
   callbackUrl?: string;
   isPublic?: boolean;
   sideChannelFetch?: FetchLike;
@@ -10,8 +10,8 @@ export interface OAuthGlobalClientConfig {
   allowInsecureRequests?: boolean;
 }
 
-export class OAuthGlobalClient {
-  protected globalDb: OAuthGlobalDb;
+export class OAuthResourceClient {
+  protected db: OAuthResourceDb;
   protected allowInsecureRequests: boolean;
   protected callbackUrl: string;
   protected sideChannelFetch: FetchLike;
@@ -21,16 +21,16 @@ export class OAuthGlobalClient {
   protected isPublic: boolean;
 
   constructor({
-    globalDb,
+    db,
     callbackUrl = 'http://localhost:3000/unused-dummy-global-callback',
     isPublic = false,
     sideChannelFetch = fetch,
     strict = true,
     allowInsecureRequests = process.env.NODE_ENV === 'development'
-  }: OAuthGlobalClientConfig) {
+  }: OAuthResourceClientConfig) {
     // Default values above are appropriate for a global client used directly. Subclasses should override these,
     // because things like the callbackUrl will actually be important for them
-    this.globalDb = globalDb;
+    this.db = db;
     this.callbackUrl = callbackUrl;
     this.isPublic = isPublic;
     this.sideChannelFetch = sideChannelFetch;
@@ -254,13 +254,13 @@ export class OAuthGlobalClient {
     };
     
     // Save the credentials in the database
-    await this.globalDb.saveClientCredentials(authorizationServer.issuer, credentials);
+    await this.db.saveClientCredentials(authorizationServer.issuer, credentials);
     
     return credentials;
   }
 
   protected getClientCredentials = async (authorizationServer: oauth.AuthorizationServer): Promise<ClientCredentials> => {
-    let credentials = await this.globalDb.getClientCredentials(authorizationServer.issuer);
+    let credentials = await this.db.getClientCredentials(authorizationServer.issuer);
     // If no credentials found, register a new client
     if (!credentials) {
       credentials = await this.registerClient(authorizationServer);

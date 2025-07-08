@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { OAuthGlobalClient } from "./oAuthGlobalClient.js";
+import { OAuthResourceClient } from "./oAuthResource.js";
 
 function getMcpOperation(req: Request): string | null {
   // TODO: Determine if we're accessing an MCP endpoint
@@ -43,7 +43,7 @@ function getChargeForOperation(op: string, opPrices: {[key:string]: number}): nu
 //   The client will fetch the PRM document from this URL to determine the token introspection server URL,
 //   so if this service could receive requests for multiple resource servers, they implicitly all need
 //   to use the same authorization server
-export function requireOAuthUser(authorizationServerUrl: string, oauthClient: OAuthGlobalClient, opPrices?: {[key:string]: number}): (req: Request, res: Response) => Promise<string | undefined> {
+export function requireOAuthUser(authorizationServerUrl: string, oauthClient: OAuthResourceClient, opPrices?: {[key:string]: number}): (req: Request, res: Response) => Promise<string | undefined> {
   return async (req: Request, res: Response): Promise<string | undefined> => {
     const protocol = req.protocol;
     const protectedResourceMetadataUrl = `${protocol}://${req.host}/.well-known/oauth-protected-resource${req.path}`;
