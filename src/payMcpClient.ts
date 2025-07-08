@@ -11,6 +11,7 @@ export interface PayMcpClientConfig {
   sideChannelFetch?: FetchLike;
   strict?: boolean;
   useJWTBasedAuth?: boolean;
+  allowInsecureRequests?: boolean;
 }
 
 export class PayMcpClient {
@@ -27,6 +28,7 @@ export class PayMcpClient {
     sideChannelFetch = fetchFn,
     strict = true,
     useJWTBasedAuth = false
+    allowInsecureRequests = process.env.NODE_ENV === 'development'
   }: PayMcpClientConfig) {
     // Use React Native safe fetch if in React Native environment
     const safeFetchFn = getIsReactNative() ? createReactNativeSafeFetch(fetchFn) : fetchFn;
@@ -42,7 +44,8 @@ export class PayMcpClient {
       isPublic: false,
       fetchFn: safeFetchFn,
       sideChannelFetch: safeSideChannelFetch,
-      strict
+      strict,
+      allowInsecureRequests
     });
     this.paymentMakers = new Map(Object.entries(paymentMakers));
     this.sideChannelFetch = safeSideChannelFetch;

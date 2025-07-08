@@ -7,11 +7,12 @@ export interface OAuthGlobalClientConfig {
   isPublic?: boolean;
   sideChannelFetch?: FetchLike;
   strict?: boolean;
+  allowInsecureRequests?: boolean;
 }
 
 export class OAuthGlobalClient {
   protected globalDb: OAuthGlobalDb;
-  protected allowInsecureRequests = process.env.NODE_ENV === 'development';
+  protected allowInsecureRequests: boolean;
   protected callbackUrl: string;
   protected sideChannelFetch: FetchLike;
   protected strict: boolean;
@@ -24,7 +25,8 @@ export class OAuthGlobalClient {
     callbackUrl = 'http://localhost:3000/unused-dummy-global-callback',
     isPublic = false,
     sideChannelFetch = fetch,
-    strict = true
+    strict = true,
+    allowInsecureRequests = process.env.NODE_ENV === 'development'
   }: OAuthGlobalClientConfig) {
     // Default values above are appropriate for a global client used directly. Subclasses should override these,
     // because things like the callbackUrl will actually be important for them
@@ -33,6 +35,7 @@ export class OAuthGlobalClient {
     this.isPublic = isPublic;
     this.sideChannelFetch = sideChannelFetch;
     this.strict = strict;
+    this.allowInsecureRequests = allowInsecureRequests;
   }
 
   static trimToPath = (url: string): string => {
@@ -79,7 +82,7 @@ export class OAuthGlobalClient {
       {
         additionalParameters,
         [oauth.customFetch]: this.sideChannelFetch,
-        [oauth.allowInsecureRequests]: process.env.NODE_ENV === 'development'
+        [oauth.allowInsecureRequests]: this.allowInsecureRequests
       }
     );
 
@@ -99,7 +102,7 @@ export class OAuthGlobalClient {
         { 
           additionalParameters, 
           [oauth.customFetch]: this.sideChannelFetch, 
-          [oauth.allowInsecureRequests]: process.env.NODE_ENV === 'development'
+          [oauth.allowInsecureRequests]: this.allowInsecureRequests
         }
       );
     }
