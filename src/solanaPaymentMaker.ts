@@ -5,6 +5,7 @@ import nacl from "tweetnacl";
 import naclUtil from "tweetnacl-util";
 import bs58 from "bs58";
 import BigNumber from "bignumber.js";
+import { generateJWT } from './jwt.js';
 
 // this is a global public key for USDC on the solana mainnet
 const USDC_MINT = new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
@@ -26,25 +27,10 @@ export class SolanaPaymentMaker implements PaymentMaker {
     this.source = Keypair.fromSecretKey(bs58.decode(sourceSecretKey));
   }
 
-  generateJWT = async(paymentIds?: string[]): Promise<string> => {
-    // 1. Prepare JWT header and payload
-    const header = { alg: 'EdDSA', typ: 'JWT' };
-    const payload: JWTPayload = {
-      sub: this.source.publicKey.toBase58(),
-      iss: 'paymcp.com',
-      aud: 'https://api.paymcp.com',
-      iat: Math.floor(Date.now() / 1000),
-    };
-    if (paymentIds && paymentIds.length > 0) payload.paymentIds = paymentIds;
-    // 2. Encode header and payload
-    const enc = (obj: any) => Buffer.from(JSON.stringify(obj)).toString('base64url');
-    const signingInput = `${enc(header)}.${enc(payload)}`;
-    // 3. Sign with wallet
-    const messageBytes = new TextEncoder().encode(signingInput);
-    const signature = nacl.sign.detached(messageBytes, this.source.secretKey);
+  encryptMessageWithSource = (messageBytes: Uint8Array) => nacl.sign.detached(messageBytes, this.source.secretKey)
 
-    // 4. Assemble JWT
-    return `${signingInput}.${Buffer.from(signature).toString('base64url')}`;
+  generateJWT = async(paymentIds?: string[]): Promise<string> => {
+    return generateJWT(this.source.publicKey.toBase58(), this.encryptMessageWithSource, paymentIds);
   }
 
   makePayment = async (amount: BigNumber, currency: string, receiver: string): Promise<string> => {
