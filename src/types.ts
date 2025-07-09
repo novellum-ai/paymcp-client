@@ -1,8 +1,18 @@
 import type { BigNumber } from 'bignumber.js';
 
+
+export type JWTPayload = {
+  sub: string;
+  iss: string;
+  aud: string;
+  iat: number;
+  paymentIds?: string[];
+}
+
 export interface PaymentMaker {
   makePayment: (amount: BigNumber, currency: string, receiver: string, resourceName?: string) => Promise<string>;
   signBySource: (requestId: string, message: string) => Promise<string>;
+  generateJWT: (paymentIds?: string[]) => Promise<string>;
 }
 
 export type ClientCredentials = {
