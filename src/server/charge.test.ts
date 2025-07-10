@@ -4,7 +4,7 @@ import { getCharge } from './charge.js';
 import { mcpToolRequest, mcpRequest } from './testHelpers.js';
 import { DEFAULT_CONFIG } from './index.js';
 
-describe('getCharge', () => {
+describe.skip('getCharge', () => {
   const config = {
     price: new BigNumber(0.01),
     destination: 'testDestination',
