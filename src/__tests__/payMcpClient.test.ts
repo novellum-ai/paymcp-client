@@ -9,7 +9,8 @@ import { OAuthDb, FetchLike, PaymentMaker } from '../types';
 function payMcpClient(fetchFn: FetchLike, solanaPaymentMaker?: PaymentMaker, db?: OAuthDb, isPublic: boolean = false, strict: boolean = true) {
   solanaPaymentMaker = solanaPaymentMaker ?? {
     makePayment: vi.fn().mockResolvedValue('testPaymentId'),
-    signBySource: vi.fn().mockResolvedValue('testSignature')
+    signBySource: vi.fn().mockResolvedValue('testSignature'),
+    generateJWT: vi.fn().mockResolvedValue('testJWT')
   };
   return new PayMcpClient({
     userId: "bdj",
@@ -35,7 +36,8 @@ describe('payMcpClient.fetch', () => {
     mockAuthorizationServer(f, 'https://paymcp.com', '?payMcp=1&network=solana&destination=testDestination&currency=USDC');
     const paymentMaker = {
       makePayment: vi.fn().mockResolvedValue('testPaymentId'),
-      signBySource: vi.fn().mockResolvedValue('testSignature')
+      signBySource: vi.fn().mockResolvedValue('testSignature'),
+      generateJWT: vi.fn().mockResolvedValue('testJWT')
     };
     const client = payMcpClient(f.fetchHandler, paymentMaker);
 
@@ -58,7 +60,8 @@ describe('payMcpClient.fetch', () => {
       });
     const paymentMaker = {
       makePayment: vi.fn().mockResolvedValue('testPaymentId'),
-      signBySource: vi.fn().mockResolvedValue('testSignature')
+      signBySource: vi.fn().mockResolvedValue('testSignature'),
+      generateJWT: vi.fn().mockResolvedValue('testJWT')
     };
     const client = payMcpClient(f.fetchHandler, paymentMaker);
 
