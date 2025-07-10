@@ -7,7 +7,7 @@ import { checkToken } from "./token.js";
 import { sendOAuthChallenge } from "./oAuthChallenge.js";
 import { setUser } from "./user.js";
 import { getRefunds, processRefunds } from "./refund.js";
-import { parseMcpMessages } from "./http.js";
+import { parseMcpRequests } from "./http.js";
 import { Request, Response, NextFunction } from "express";
 import { withContext, getContext } from "./context.js";
 
@@ -34,8 +34,8 @@ export function paymcp(args: Pick<PayMcpConfig, RequiredFields> & Partial<PayMcp
       const context = getContext();
       context.logger.debug(`Request started - ${req.method} ${req.path}`);
 
-      const messages = await parseMcpMessages(config, req, req.path, req.body);
-      const charges = messages.map(msg => getCharge(config, msg)).filter(c => c !== null);
+      const mcpRequests = await parseMcpRequests(config, req, req.path, req.body);
+      const charges = mcpRequests.map(mcpr => getCharge(config, mcpr)).filter(c => c !== null);
       const tokenCheck = checkToken(config, req, charges);
       const user = setUser(req, tokenCheck.token);
       // No charges mean no auth required. Any charges (even 0s) means auth is required

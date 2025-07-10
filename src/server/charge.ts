@@ -1,16 +1,20 @@
-import { BigNumber, config } from "bignumber.js";
+import { BigNumber } from "bignumber.js";
 import { Charge } from "./types.js";
 import { PayMcpConfig } from "./types.js";
-import { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
+import { JSONRPCRequest } from "@modelcontextprotocol/sdk/types.js";
 
-export function getCharge(config: PayMcpConfig, msg: JSONRPCMessage): Charge | null {
+export function getCharge(config: PayMcpConfig, mcpRequest: JSONRPCRequest): Charge | null {
+  if (mcpRequest.method !== 'tools/call') {
+    return null;
+  }
+
   if (config.price instanceof BigNumber) {
-    return getStaticCharge(config, msg, config.price);
+    return getStaticCharge(config, mcpRequest, config.price);
   }
   return null;
 }
 
-function getStaticCharge(config: PayMcpConfig, msg: JSONRPCMessage, price: BigNumber): Charge {
+function getStaticCharge(config: PayMcpConfig, mcpRequest: JSONRPCRequest, price: BigNumber): Charge | null {
   return {
     amount: price,
     currency: config.currency,

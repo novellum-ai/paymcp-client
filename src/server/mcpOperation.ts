@@ -1,19 +1,10 @@
 import { IncomingMessage } from "node:http";
 import { McpOperation, PayMcpConfig } from "./types.js";
-import { parseMcpMessages } from "./http.js";
+import { parseMcpRequests } from "./http.js";
 import { JSONRPCMessage, JSONRPCRequest, isJSONRPCRequest } from "@modelcontextprotocol/sdk/types.js";
 
 export async function getMcpOperations(config: PayMcpConfig, req: IncomingMessage, path: string, parsedMcpMessages?: JSONRPCMessage[]): Promise<McpOperation[]> {
-  // Useful reference for dealing with low-level http requests:
-  // https://github.com/modelcontextprotocol/typescript-sdk/blob/c6ac083b1b37b222b5bfba5563822daa5d03372e/src/server/streamableHttp.ts#L375
-  if (!req.method) {
-    return [];
-  }
-  const isPost = req.method.toLowerCase() === 'post';
-  if (!isPost) {
-    return [];
-  }
-  parsedMcpMessages = parsedMcpMessages ?? await parseMcpMessages(config, req, path);
+  parsedMcpMessages = parsedMcpMessages ?? await parseMcpRequests(config, req, path);
   if (parsedMcpMessages.length === 0) {
     return [];
   }

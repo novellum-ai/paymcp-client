@@ -1,7 +1,7 @@
 import { IncomingMessage } from "node:http";
 import getRawBody from "raw-body";
 import contentType from "content-type";
-import { JSONRPCMessage, JSONRPCMessageSchema } from "@modelcontextprotocol/sdk/types.js";
+import { JSONRPCMessage, JSONRPCMessageSchema, JSONRPCRequest, isJSONRPCRequest } from "@modelcontextprotocol/sdk/types.js";
 import { ZodError } from "zod";
 import { getContext } from "./context";
 import { PayMcpConfig } from "./types.js";
@@ -12,8 +12,16 @@ import { PayMcpConfig } from "./types.js";
 // Using the same value as MCP SDK
 const MAXIMUM_MESSAGE_SIZE = "4mb";
 
-export async function parseMcpMessages(config: PayMcpConfig, req: IncomingMessage, path: string, parsedBody?: unknown): Promise<JSONRPCMessage[]> {
+export async function parseMcpRequests(config: PayMcpConfig, req: IncomingMessage, path: string, parsedBody?: unknown): Promise<JSONRPCRequest[]> {
   const context = getContext();
+
+  if (!req.method) {
+    return [];
+  }
+  const isPost = req.method.toLowerCase() === 'post';
+  if (!isPost) {
+    return [];
+  }
 
   // The middleware has to be mounted at the root to serve the protected resource metadata,
   // but the actual MCP server it's controlling is specified by the mountPath.
@@ -26,7 +34,6 @@ export async function parseMcpMessages(config: PayMcpConfig, req: IncomingMessag
   }
 
   parsedBody = parsedBody ?? await parseBody(req);
-
   let messages: JSONRPCMessage[];
 
   try {
@@ -47,7 +54,12 @@ export async function parseMcpMessages(config: PayMcpConfig, req: IncomingMessag
     return [];
   }
 
-  return messages;
+  const requests = messages.filter(msg => isJSONRPCRequest(msg));
+  if (requests.length !== messages.length) {
+    context.logger.debug(`Dropped ${messages.length - requests.length} MCP messages that were not MCP requests`);
+  }
+
+  return requests;
 }
 
 export async function parseBody(req: IncomingMessage): Promise<unknown> {
