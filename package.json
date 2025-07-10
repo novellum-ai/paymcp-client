@@ -28,6 +28,7 @@
     "@types/express": "^5.0.0",
     "bignumber.js": "^9.3.0",
     "bs58": "^6.0.0",
+    "content-type": "^1.0.5",
     "dotenv": "^16.5.0",
     "expo-crypto": ">=14.0.0",
     "expo-sqlite": ">=15.0.0",
@@ -48,6 +49,7 @@
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
+    "@types/content-type": "^1.1.9",
     "@types/node": "^22.13.0",
     "better-sqlite3": "^12.2.0",
     "fetch-mock": "^12.5.2",

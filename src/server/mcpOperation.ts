@@ -1,24 +1,40 @@
-import { Request } from "express";
+import { IncomingMessage } from "node:http";
 import { McpOperation } from "./types.js";
+import { parseMcpMessages } from "./http.js";
+import { JSONRPCMessage, JSONRPCRequest, isJSONRPCRequest } from "@modelcontextprotocol/sdk/types.js";
 
-export function getMcpOperation(req: Request, mountPath: string): McpOperation | null {
-  if (!req.path.startsWith(mountPath)) {
+export async function getMcpOperations(req: IncomingMessage, parsedMcpMessages?: JSONRPCMessage[]): Promise<McpOperation[]> {
+  // Useful reference for dealing with low-level http requests:
+  // https://github.com/modelcontextprotocol/typescript-sdk/blob/c6ac083b1b37b222b5bfba5563822daa5d03372e/src/server/streamableHttp.ts#L375
+  if (!req.method) {
+    return [];
+  }
+  const isPost = req.method.toLowerCase() === 'post';
+  if (!isPost) {
+    return [];
+  }
+  parsedMcpMessages = parsedMcpMessages ?? await parseMcpMessages(req);
+  if (parsedMcpMessages.length === 0) {
+    return [];
+  }
+
+  const operations = parsedMcpMessages.map(msg => mcpOperation(msg));
+  return operations.filter(op => op !== null);
+}
+
+function mcpOperation(msg: JSONRPCMessage): McpOperation | null {
+  // Try to get the operation from the jsonRpc message
+  if(!isJSONRPCRequest(msg)) {
     return null;
   }
-  const isMessage = req.method.toLowerCase() === 'post';
-
-  if (!isMessage) {
-    return null;
-  } else {
-    // Get the operation from the jsonRpc message
-    let op = req.body.method;
-    const toolName = req.body.params?.name;
-    if (toolName) {
-      op = `${op}:${toolName}`
-    }
-    if (!op) {
-      return null;
-    }
-    return op;
+  const mcpRequest = msg as JSONRPCRequest;
+  let op = mcpRequest.method;
+  const toolName = mcpRequest.params?.name;
+  if (toolName) {
+    op = `${op}:${toolName}`
   }
+  if (!op) {
+    return null;
+  }
+  return op;
 }

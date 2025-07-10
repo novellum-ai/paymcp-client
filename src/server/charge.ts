@@ -1,7 +1,8 @@
-import { Request } from "express";
 import { BigNumber } from "bignumber.js";
-import { PayMcpConfig, McpOperation } from "./types.js";
+import { Charge } from "./types.js";
+import { PayMcpConfig } from "./types.js";
+import { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
 
-export function getCharge(req: Request, mcpOperation: McpOperation | null, price: PayMcpConfig["price"]): BigNumber | undefined {
+export function getCharge(msg: JSONRPCMessage, price: PayMcpConfig["price"]): Charge | undefined {
   return undefined;
 }

@@ -29,6 +29,8 @@ describe('paymcp', () => {
         method: 'POST',
         path: '/mcp/message',
         body: {
+          jsonrpc: '2.0',
+          id: 1,
           method: 'tools/call:testTool',
           params: { name: 'test' }
         }
@@ -46,7 +48,7 @@ describe('paymcp', () => {
     const next = vi.fn();
 
     // Call the middleware
-    middleware(req, res, next);
+    middleware(req as any, res, next);
 
     // 1. Assert we logged the start line immediately
     expect(consoleSpy.debug).toHaveBeenCalledWith('[paymcp] Request started - POST /mcp/message');
@@ -87,6 +89,8 @@ describe('paymcp', () => {
           authorization: 'Bearer test-access-token'
         },
         body: {
+          jsonrpc: '2.0',
+          id: 1,
           method: 'tools/call:testTool',
           params: { name: 'test' }
         }
@@ -99,7 +103,7 @@ describe('paymcp', () => {
       oAuthResourceClient: mockOAuthClient
     });
     const next = vi.fn();
-    middleware(req, res, next);
+    middleware(req as any, res as any, next);
 
     expect(mockOAuthClient.introspectToken).toHaveBeenCalledWith(
       'https://auth.paymcp.com',

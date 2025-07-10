@@ -1,8 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import { BigNumber } from "bignumber.js";
-import { PayMcpConfig } from "./types.js";
-import { TokenData } from "../types.js";
+import { Charge, PayMcpConfig, TokenCheck, TokenProblem } from "./types.js";
 
-export function processToken(req: Request, charge: BigNumber, config: PayMcpConfig): TokenData | null {
-  return null;
+export function checkToken(req: Request, charges: Charge[], config: PayMcpConfig): TokenCheck {
+  return {
+    passes: false,
+    problem: TokenProblem.INVALID_TOKEN,
+    token: null
+  };
 }

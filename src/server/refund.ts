@@ -1,12 +1,12 @@
 import { Response } from "express";
 import { BigNumber } from "bignumber.js";
-import { PayMcpConfig } from "./types.js";
+import { Charge, PayMcpConfig } from "./types.js";
 
-export function getRefund(res: Response, refundErrors: PayMcpConfig["refundErrors"], charge: BigNumber): BigNumber | null {
+export function getRefunds(res: Response, refundErrors: PayMcpConfig["refundErrors"], charges: Charge[]): Charge[] {
   // TODO: Implement refunds
-  return null;
+  return [];
 }
 
-export function processRefund(user: string, refund: BigNumber | null, config: PayMcpConfig): void {
+export function processRefunds(user: string, refunds: Charge[], config: PayMcpConfig): void {
   // TODO: Implement refunds
 }
