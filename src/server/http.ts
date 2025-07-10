@@ -27,7 +27,8 @@ export async function parseMcpMessages(req: IncomingMessage, parsedBody?: unknow
   } catch (error) {
     // If Zod validation fails, log the error and return empty array
     if (error instanceof ZodError) {
-      context.logger.warn(`Invalid JSON-RPC message format: ${error.message}`);
+      context.logger.warn(`Invalid JSON-RPC message format`);
+      context.logger.debug(error.message);
     } else {
       context.logger.error(`Unexpected error parsing JSON-RPC messages: ${error}`);
     }

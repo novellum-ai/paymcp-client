@@ -26,8 +26,8 @@ describe('http', () => {
       ]);
       const msgs = await parseMcpMessages(req);
       expect(msgs.length).toEqual(2);
-      expect(msgs[0].params.name).toEqual('testTool');
-      expect(msgs[1].params.name).toEqual('testTool2');
+      expect((msgs[0] as any).params.name).toEqual('testTool');
+      expect((msgs[1] as any).params.name).toEqual('testTool2');
     });
 
     it('should return an empty array for a post with a non-MCP body', async () => {

@@ -24,7 +24,7 @@ export const DEFAULT_CONFIG: Required<Omit<PayMcpConfig, 'price' | 'destination'
   oAuthResourceClient: new OAuthResourceClient({db: new SqliteOAuthDb()})
 };
 
-export function paymcp(args: PayMcpConfig): (req: Request, res: Response, next: NextFunction) => void {
+export function paymcp(args: PayMcpConfig): (req: Request, res: Response, next: NextFunction) => Promise<void> {
   const config = Object.freeze({ ...DEFAULT_CONFIG, ...args });
 
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -35,15 +35,12 @@ export function paymcp(args: PayMcpConfig): (req: Request, res: Response, next: 
 
       const messages = await parseMcpMessages(req, req.body);
       const charges = messages.map(msg => getCharge(msg, config.price)).filter(c => c !== undefined);
-      // No charges mean no auth required
-      if (charges.length === 0) { next(); return; }
-
       const tokenCheck = checkToken(req, charges, config);
-      if(!tokenCheck.passes) {
-        sendOAuthChallenge(res, tokenCheck);
-        return;
-      }
       const user = setUser(req, tokenCheck.token);
+      // No charges mean no auth required. Any charges (even 0s) means auth is required
+      if (charges.length > 0 && !tokenCheck.passes) { 
+        sendOAuthChallenge(res, tokenCheck);
+      }
 
       // Listen for when the response is finished
       res.on('finish', () => {

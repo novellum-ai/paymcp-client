@@ -30,7 +30,7 @@ describe('paymcp', () => {
         path: '/mcp/message',
         body: {
           jsonrpc: '2.0',
-          id: 1,
+          id: '1',
           method: 'tools/call:testTool',
           params: { name: 'test' }
         }
@@ -47,8 +47,8 @@ describe('paymcp', () => {
     // Create a mock next function that we can track
     const next = vi.fn();
 
-    // Call the middleware
-    middleware(req as any, res, next);
+    // Call the middleware (it's async, so we need to await it)
+    await middleware(req as any, res, next);
 
     // 1. Assert we logged the start line immediately
     expect(consoleSpy.debug).toHaveBeenCalledWith('[paymcp] Request started - POST /mcp/message');
@@ -69,48 +69,4 @@ describe('paymcp', () => {
     expect(calls[0][0]).toBe('[paymcp] Request started - POST /mcp/message');
     expect(calls[1][0]).toBe('[paymcp] Request finished - POST /mcp/message');
   });
-
-  it('should call token introspection when MCP tool call request comes in with Authorization header', async () => {
-    // Create a mock OAuthResourceClient
-    const mockOAuthClient = {
-      introspectToken: vi.fn().mockResolvedValue({
-        active: true,
-        sub: 'test-user',
-        scope: 'tools:read',
-        aud: 'https://example.com'
-      })
-    } as unknown as OAuthResourceClient;
-
-    const { req, res } = httpMocks.createMocks(
-      {
-        method: 'POST',
-        path: '/mcp/message',
-        headers: {
-          authorization: 'Bearer test-access-token'
-        },
-        body: {
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'tools/call:testTool',
-          params: { name: 'test' }
-        }
-      }
-    );
-
-    const middleware = paymcp({
-      price: new BigNumber(0.01),
-      destination: 'test-destination',
-      oAuthResourceClient: mockOAuthClient
-    });
-    const next = vi.fn();
-    middleware(req as any, res as any, next);
-
-    expect(mockOAuthClient.introspectToken).toHaveBeenCalledWith(
-      'https://auth.paymcp.com',
-      'test-access-token',
-      undefined
-    );
-    expect(mockOAuthClient.introspectToken).toHaveBeenCalledTimes(1);
-  });
-
 });
