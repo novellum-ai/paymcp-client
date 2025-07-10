@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
 import { OAuthResourceClient } from "./oAuthResource.js";
 
-function getMcpOperation(req: Request): string | null {
+function getOp(req: Request): string {
   const isMessage = req.method.toLowerCase() === 'post';
 
   if (!isMessage) {
-    return null;
+    return 'NON_MCP';
   } else {
     // Get the operation from the jsonRpc message
     let op = req.body.method;
@@ -14,7 +14,7 @@ function getMcpOperation(req: Request): string | null {
       op = `${op}:${toolName}`
     }
     if (!op) {
-      return null;
+      throw new Error('No operation found in request');
     }
     return op;
   }
@@ -67,10 +67,7 @@ export function requireOAuthUser(authorizationServerUrl: string, oauthClient: OA
     try {
       // Perform token introspection
       let additionalParameters = {};
-      const op = getMcpOperation(req);
-      if (op === null) {
-        return undefined;
-      }
+      const op = getOp(req);
       // If they've specified any prices, we pass charge for everything
       // Anything they didn't specify is 0
       // TODO: Revisit the implicit 0 pricing of unspecified operations
