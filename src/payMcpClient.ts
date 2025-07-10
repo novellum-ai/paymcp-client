@@ -27,7 +27,7 @@ export class PayMcpClient {
     fetchFn = fetch,
     sideChannelFetch = fetchFn,
     strict = true,
-    useJWTBasedAuth = false
+    useJWTBasedAuth = false,
     allowInsecureRequests = process.env.NODE_ENV === 'development'
   }: PayMcpClientConfig) {
     // Use React Native safe fetch if in React Native environment
