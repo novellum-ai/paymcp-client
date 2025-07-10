@@ -2,7 +2,6 @@ import { ConsoleLogger } from "../logger.js";
 import { OAuthResourceClient } from "../oAuthResource.js";
 import { SqliteOAuthDb } from "../oAuthDb.js";
 import { PayMcpConfig } from "./types.js";
-import { getMcpOperations } from "./mcpOperation.js";
 import { getCharge } from "./charge.js";
 import { checkToken } from "./token.js";
 import { sendOAuthChallenge } from "./oAuthChallenge.js";
@@ -12,7 +11,9 @@ import { parseMcpMessages } from "./http.js";
 import { Request, Response, NextFunction } from "express";
 import { withContext, getContext } from "./context.js";
 
-export const DEFAULT_CONFIG: Required<Omit<PayMcpConfig, 'price' | 'destination'>> = {
+type RequiredFields = 'price' | 'destination';
+
+export const DEFAULT_CONFIG: Omit<PayMcpConfig, RequiredFields> = {
   mountPath: '/',
   currency: 'USDC' as const,
   network: 'solana' as const,
@@ -24,7 +25,7 @@ export const DEFAULT_CONFIG: Required<Omit<PayMcpConfig, 'price' | 'destination'
   oAuthResourceClient: new OAuthResourceClient({db: new SqliteOAuthDb()})
 };
 
-export function paymcp(args: PayMcpConfig): (req: Request, res: Response, next: NextFunction) => Promise<void> {
+export function paymcp(args: Pick<PayMcpConfig, RequiredFields> & Partial<PayMcpConfig>): (req: Request, res: Response, next: NextFunction) => Promise<void> {
   const config = Object.freeze({ ...DEFAULT_CONFIG, ...args });
 
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -33,9 +34,9 @@ export function paymcp(args: PayMcpConfig): (req: Request, res: Response, next: 
       const context = getContext();
       context.logger.debug(`Request started - ${req.method} ${req.path}`);
 
-      const messages = await parseMcpMessages(req, req.body);
-      const charges = messages.map(msg => getCharge(msg, config.price)).filter(c => c !== undefined);
-      const tokenCheck = checkToken(req, charges, config);
+      const messages = await parseMcpMessages(config, req, req.path, req.body);
+      const charges = messages.map(msg => getCharge(config, msg)).filter(c => c !== null);
+      const tokenCheck = checkToken(config, req, charges);
       const user = setUser(req, tokenCheck.token);
       // No charges mean no auth required. Any charges (even 0s) means auth is required
       if (charges.length > 0 && !tokenCheck.passes) { 
@@ -44,8 +45,8 @@ export function paymcp(args: PayMcpConfig): (req: Request, res: Response, next: 
 
       // Listen for when the response is finished
       res.on('finish', () => {
-        const refunds = getRefunds(res, config.refundErrors, charges);
-        processRefunds(user, refunds, config);
+        const refunds = getRefunds(config, res, charges);
+        processRefunds(config, user, refunds);
         
         context.logger.debug(`Request finished - ${req.method} ${req.path}`);
       });

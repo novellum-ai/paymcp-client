@@ -37,6 +37,7 @@ describe('paymcp', () => {
       },
       { eventEmitter: EventEmitter }
     );
+    const next = vi.fn();
 
     const middleware = paymcp({
       price: new BigNumber(0.01),
@@ -44,29 +45,89 @@ describe('paymcp', () => {
       logger: new ConsoleLogger({level: LogLevel.DEBUG})
     });
 
-    // Create a mock next function that we can track
-    const next = vi.fn();
-
-    // Call the middleware (it's async, so we need to await it)
     await middleware(req as any, res, next);
 
-    // 1. Assert we logged the start line immediately
     expect(consoleSpy.debug).toHaveBeenCalledWith('[paymcp] Request started - POST /mcp/message');
     expect(next).toHaveBeenCalled();
-
-    // 2. Assert the finish line has NOT been called yet (response hasn't finished)
     expect(consoleSpy.debug).toHaveBeenCalledTimes(1);
 
-    // 3. Simulate the response finishing by calling end() which triggers the 'finish' event
+    // Simulate the response finishing by calling end() which triggers the 'finish' event
     res.end();
 
-    // 4. Now assert we logged the finish line when the response was finished
     expect(consoleSpy.debug).toHaveBeenCalledWith('[paymcp] Request finished - POST /mcp/message');
-
-    // Verify the order and count of calls
     expect(consoleSpy.debug).toHaveBeenCalledTimes(2);
     const calls = consoleSpy.debug.mock.calls;
     expect(calls[0][0]).toBe('[paymcp] Request started - POST /mcp/message');
     expect(calls[1][0]).toBe('[paymcp] Request finished - POST /mcp/message');
+  });
+
+  it.skip('should run successfully charge a tool that requires it', async () => {
+    const { req, res } = httpMocks.createMocks(
+      {
+        method: 'POST',
+        path: '/mcp/message',
+        body: {
+          jsonrpc: '2.0',
+          id: '1',
+          method: 'tools/call:testTool',
+          params: { name: 'test' }
+        }
+      },
+      { eventEmitter: EventEmitter }
+    );
+    const next = vi.fn();
+
+    const middleware = paymcp({
+      price: new BigNumber(0.01),
+      destination: 'test-destination',
+      logger: new ConsoleLogger({level: LogLevel.DEBUG})
+    });
+    
+    await middleware(req as any, res, next);
+    
+    expect(next).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      some: 'success'
+    });
+  });
+
+  it.skip('should return an OAuth challenge if payment required', async () => {
+    const { req, res } = httpMocks.createMocks(
+      {
+        method: 'POST',
+        path: '/mcp/message',
+        body: {
+          jsonrpc: '2.0',
+          id: '1',
+          method: 'tools/call:testTool',
+          params: { name: 'test' }
+        }
+      },
+      { eventEmitter: EventEmitter }
+    );
+    const next = vi.fn();
+
+    const middleware = paymcp({
+      price: new BigNumber(0.01),
+      destination: 'test-destination',
+      logger: new ConsoleLogger({level: LogLevel.DEBUG})
+    });
+
+    await middleware(req as any, res, next);
+
+    expect(next).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({
+      some: 'failure'
+    });
+  });
+
+  it.skip('serves PRM endpoint', async () => {
+    expect.fail('Not implemented');
+  });
+
+  it.skip('throws an error if not mounted at root', async () => {
+    expect.fail('Not implemented');
   });
 });

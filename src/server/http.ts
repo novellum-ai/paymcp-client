@@ -4,6 +4,7 @@ import contentType from "content-type";
 import { JSONRPCMessage, JSONRPCMessageSchema } from "@modelcontextprotocol/sdk/types.js";
 import { ZodError } from "zod";
 import { getContext } from "./context";
+import { PayMcpConfig } from "./types.js";
 
 // Useful reference for dealing with low-level http requests:
 // https://github.com/modelcontextprotocol/typescript-sdk/blob/c6ac083b1b37b222b5bfba5563822daa5d03372e/src/server/streamableHttp.ts#L375
@@ -11,8 +12,19 @@ import { getContext } from "./context";
 // Using the same value as MCP SDK
 const MAXIMUM_MESSAGE_SIZE = "4mb";
 
-export async function parseMcpMessages(req: IncomingMessage, parsedBody?: unknown): Promise<JSONRPCMessage[]> {
+export async function parseMcpMessages(config: PayMcpConfig, req: IncomingMessage, path: string, parsedBody?: unknown): Promise<JSONRPCMessage[]> {
   const context = getContext();
+
+  // The middleware has to be mounted at the root to serve the protected resource metadata,
+  // but the actual MCP server it's controlling is specified by the mountPath.
+  if (!path) {
+    path = '/';
+  }
+  const mountPath = config.mountPath ?? '/';
+  if (!path.startsWith(mountPath)) {
+    return [];
+  }
+
   parsedBody = parsedBody ?? await parseBody(req);
 
   let messages: JSONRPCMessage[];
