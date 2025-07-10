@@ -1,11 +1,7 @@
 import type { BigNumber } from 'bignumber.js';
 
 
-export type JWTPayload = {
-  sub: string;
-  iss: string;
-  aud: string;
-  iat: number;
+export type CustomJWTPayload = {
   paymentIds?: string[];
 }
 

@@ -1,26 +1,30 @@
-import type { JWTPayload } from "./types";
+import type { CustomJWTPayload } from "./types";
+import { SignJWT } from 'jose';
 
 const ISSUER = 'paymcp.com';
 const AUDIENCE = 'https://api.paymcp.com';
 
-const encodeObject = (obj: any) => Buffer.from(JSON.stringify(obj)).toString('base64url');
+/**
+ * Generate a JWT using the jose library and EdDSA (Ed25519) private key.
+ * @param walletId - The subject (public key, wallet address, etc.)
+ * @param privateKey - Ed25519 private key as a CryptoKey or JWK (object)
+ * @param paymentIds - Optional array of payment IDs to include in the payload
+ * @returns JWT string
+ */
+export const generateJWT = async (
+  walletId: string,
+  privateKey: CryptoKey | Uint8Array,
+  paymentIds?: string[]
+): Promise<string> => {
+  const payload: CustomJWTPayload = {
+  };
+  if (paymentIds && paymentIds.length > 0) payload.paymentIds = paymentIds;
 
-export const generateJWT = async(walletId: string, encryptionFunc: (message: Uint8Array) => Uint8Array, paymentIds?: string[]): Promise<string> => {
-    // 1. Prepare JWT header and payload
-    const header = { alg: 'EdDSA', typ: 'JWT' };
-    
-    const payload: JWTPayload = {
-      sub: walletId,
-      iss: ISSUER,
-      aud: AUDIENCE,
-      iat: Math.floor(Date.now() / 1000),
-    };
-    if (paymentIds && paymentIds.length > 0) payload.paymentIds = paymentIds;
-
-    const signingInput = `${encodeObject(header)}.${encodeObject(payload)}`;
-    const messageBytes = new TextEncoder().encode(signingInput);
-    const signature = encryptionFunc(messageBytes);
-
-    // 4. Assemble JWT
-    return `${signingInput}.${Buffer.from(signature).toString('base64url')}`;
-  }
+  return await new SignJWT(payload)
+    .setProtectedHeader({ alg: 'EdDSA', typ: 'JWT' })
+    .setIssuedAt()
+    .setIssuer(ISSUER)
+    .setAudience(AUDIENCE)
+    .setSubject(walletId)
+    .sign(privateKey);
+};
