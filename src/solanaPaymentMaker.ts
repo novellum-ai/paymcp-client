@@ -5,6 +5,8 @@ import nacl from "tweetnacl";
 import naclUtil from "tweetnacl-util";
 import bs58 from "bs58";
 import BigNumber from "bignumber.js";
+import { generateJWT } from './jwt.js';
+import { importJWK } from 'jose';
 
 // this is a global public key for USDC on the solana mainnet
 const USDC_MINT = new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
@@ -24,6 +26,20 @@ export class SolanaPaymentMaker implements PaymentMaker {
     }
     this.connection = new Connection(solanaEndpoint, { commitment: 'confirmed' });
     this.source = Keypair.fromSecretKey(bs58.decode(sourceSecretKey));
+  }
+  
+  generateJWT = async(paymentIds?: string[]): Promise<string> => {
+    // Solana/Web3.js secretKey is 64 bytes: 
+    // first 32 bytes are the private scalar, last 32 are the public key.
+    // JWK expects only the 32-byte private scalar for 'd'
+    const jwk = {
+      kty: 'OKP',
+      crv: 'Ed25519',
+      d: Buffer.from(this.source.secretKey.slice(0, 32)).toString('base64url'),
+      x: Buffer.from(this.source.publicKey.toBytes()).toString('base64url'),
+    };
+    const privateKey = await importJWK(jwk, 'EdDSA');
+    return generateJWT(this.source.publicKey.toBase58(), privateKey, paymentIds);
   }
 
   makePayment = async (amount: BigNumber, currency: string, receiver: string): Promise<string> => {

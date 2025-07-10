@@ -1,0 +1,30 @@
+import type { CustomJWTPayload } from "./types";
+import { SignJWT } from 'jose';
+
+const ISSUER = 'paymcp.com';
+const AUDIENCE = 'https://api.paymcp.com';
+
+/**
+ * Generate a JWT using the jose library and EdDSA (Ed25519) private key.
+ * @param walletId - The subject (public key, wallet address, etc.)
+ * @param privateKey - Ed25519 private key as a CryptoKey or JWK (object)
+ * @param paymentIds - Optional array of payment IDs to include in the payload
+ * @returns JWT string
+ */
+export const generateJWT = async (
+  walletId: string,
+  privateKey: CryptoKey | Uint8Array,
+  paymentIds?: string[]
+): Promise<string> => {
+  const payload: CustomJWTPayload = {
+  };
+  if (paymentIds && paymentIds.length > 0) payload.paymentIds = paymentIds;
+
+  return await new SignJWT(payload)
+    .setProtectedHeader({ alg: 'EdDSA', typ: 'JWT' })
+    .setIssuedAt()
+    .setIssuer(ISSUER)
+    .setAudience(AUDIENCE)
+    .setSubject(walletId)
+    .sign(privateKey);
+};
