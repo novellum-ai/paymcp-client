@@ -2,7 +2,7 @@
 // Only include tests relevant to cross-platform or Expo/React Native logic
 
 import { describe, it, expect } from '@jest/globals';
-import { getIsReactNative, crypto, sqlite } from './index.js';
+import { getIsReactNative, crypto, sqlite } from './index';
 
 describe('Platform Abstraction (Expo)', () => {
   it('should detect platform correctly', () => {
