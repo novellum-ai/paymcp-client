@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { withContext, getContext } from './context.js';
 import { PayMcpContext } from './types.js';
-import { BigNumber } from 'bignumber.js';
 
 describe('AsyncLocalStorage Context', () => {
   it('should make config available within the context', () => {
