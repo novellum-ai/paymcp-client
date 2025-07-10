@@ -31,13 +31,13 @@ export type AccessToken = {
   resourceUrl: string
 };
 
-export interface OAuthGlobalDb {
+export interface OAuthResourceDb {
   getClientCredentials(serverUrl: string): Promise<ClientCredentials | null>;
   saveClientCredentials(serverUrl: string, credentials: ClientCredentials): Promise<void>;
   close(): Promise<void>;
 }
 
-export interface OAuthDb extends OAuthGlobalDb {
+export interface OAuthDb extends OAuthResourceDb {
   getPKCEValues(userId: string, state: string): Promise<PKCEValues | null>;
   savePKCEValues(userId: string, state: string, values: PKCEValues): Promise<void>;
   getAccessToken(userId: string, url: string): Promise<AccessToken | null>;

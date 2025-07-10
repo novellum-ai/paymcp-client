@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateJWT } from '../jwt';
+import { generateJWT } from './jwt';
 import { importJWK, jwtVerify } from 'jose';
 import { Keypair } from '@solana/web3.js';
 

@@ -1,4 +1,4 @@
-import { OAuthAuthenticationRequiredError } from '../oAuth.js';
+import { OAuthAuthenticationRequiredError } from './oAuth.js';
 import { describe, it, expect } from 'vitest';
 
 describe('OAuthAuthenticationRequiredError', () => {

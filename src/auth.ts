@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
-import { OAuthGlobalClient } from "./oAuthGlobalClient.js";
+import { OAuthResourceClient } from "./oAuthResource.js";
 
 function getOp(req: Request): string {
   const isMessage = req.method.toLowerCase() === 'post';
+
   if (!isMessage) {
     return 'NON_MCP';
   } else {
@@ -34,6 +35,7 @@ function getChargeForOperation(op: string, opPrices: {[key:string]: number}): nu
   return 0;
 }
 
+// TODO: Delete paymcp-client auth.ts - it's superceeded by the new server.ts middleware in paymcp()
 // opPrices is experimental: The names of tools that will be charged for if PayMcp is used. 
 // If not provided, all tools will be charged at the amount specified in the authorizationServerUrl's amount field
 // If any are provided, all unlisted tools will be charged at 0
@@ -41,7 +43,7 @@ function getChargeForOperation(op: string, opPrices: {[key:string]: number}): nu
 //   The client will fetch the PRM document from this URL to determine the token introspection server URL,
 //   so if this service could receive requests for multiple resource servers, they implicitly all need
 //   to use the same authorization server
-export function requireOAuthUser(authorizationServerUrl: string, oauthClient: OAuthGlobalClient, opPrices?: {[key:string]: number}): (req: Request, res: Response) => Promise<string | undefined> {
+export function requireOAuthUser(authorizationServerUrl: string, oauthClient: OAuthResourceClient, opPrices?: {[key:string]: number}): (req: Request, res: Response) => Promise<string | undefined> {
   return async (req: Request, res: Response): Promise<string | undefined> => {
     const protocol = req.protocol;
     const protectedResourceMetadataUrl = `${protocol}://${req.host}/.well-known/oauth-protected-resource${req.path}`;

@@ -2,7 +2,7 @@
 // Only include tests relevant to cross-platform or Expo/React Native logic
 
 import { describe, it, expect } from '@jest/globals';
-import { crypto } from '../platform';
+import { crypto } from './platform';
 
 describe('Platform Crypto (Expo)', () => {
   it('should generate consistent hashes', async () => {
