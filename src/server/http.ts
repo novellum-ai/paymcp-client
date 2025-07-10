@@ -1,9 +1,10 @@
 import { IncomingMessage } from "node:http";
 import getRawBody from "raw-body";
 import contentType from "content-type";
-import { JSONRPCMessage, JSONRPCMessageSchema } from "@modelcontextprotocol/sdk/types.js";
+import { JSONRPCMessage, JSONRPCMessageSchema, JSONRPCRequest, isJSONRPCRequest } from "@modelcontextprotocol/sdk/types.js";
 import { ZodError } from "zod";
 import { getContext } from "./context";
+import { PayMcpConfig } from "./types.js";
 
 // Useful reference for dealing with low-level http requests:
 // https://github.com/modelcontextprotocol/typescript-sdk/blob/c6ac083b1b37b222b5bfba5563822daa5d03372e/src/server/streamableHttp.ts#L375
@@ -11,10 +12,28 @@ import { getContext } from "./context";
 // Using the same value as MCP SDK
 const MAXIMUM_MESSAGE_SIZE = "4mb";
 
-export async function parseMcpMessages(req: IncomingMessage, parsedBody?: unknown): Promise<JSONRPCMessage[]> {
+export async function parseMcpRequests(config: PayMcpConfig, req: IncomingMessage, path: string, parsedBody?: unknown): Promise<JSONRPCRequest[]> {
   const context = getContext();
-  parsedBody = parsedBody ?? await parseBody(req);
 
+  if (!req.method) {
+    return [];
+  }
+  const isPost = req.method.toLowerCase() === 'post';
+  if (!isPost) {
+    return [];
+  }
+
+  // The middleware has to be mounted at the root to serve the protected resource metadata,
+  // but the actual MCP server it's controlling is specified by the mountPath.
+  if (!path) {
+    path = '/';
+  }
+  const mountPath = config.mountPath ?? '/';
+  if (!path.startsWith(mountPath)) {
+    return [];
+  }
+
+  parsedBody = parsedBody ?? await parseBody(req);
   let messages: JSONRPCMessage[];
 
   try {
@@ -27,14 +46,20 @@ export async function parseMcpMessages(req: IncomingMessage, parsedBody?: unknow
   } catch (error) {
     // If Zod validation fails, log the error and return empty array
     if (error instanceof ZodError) {
-      context.logger.warn(`Invalid JSON-RPC message format: ${error.message}`);
+      context.logger.warn(`Invalid JSON-RPC message format`);
+      context.logger.debug(error.message);
     } else {
       context.logger.error(`Unexpected error parsing JSON-RPC messages: ${error}`);
     }
     return [];
   }
 
-  return messages;
+  const requests = messages.filter(msg => isJSONRPCRequest(msg));
+  if (requests.length !== messages.length) {
+    context.logger.debug(`Dropped ${messages.length - requests.length} MCP messages that were not MCP requests`);
+  }
+
+  return requests;
 }
 
 export async function parseBody(req: IncomingMessage): Promise<unknown> {

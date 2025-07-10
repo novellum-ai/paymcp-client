@@ -14,28 +14,23 @@ export type RefundErrors = boolean | 'nonMcpOnly';
 export type PayMcpConfig = {
   price: BigNumber | Record<McpOperationPattern, BigNumber> | ((req: Request, op: McpOperation, params: any) => Promise<BigNumber>);
   destination: string;
-  // TODO: Can we auto-detect mountPath? ie can we look at all incoming requests and identify MCP ones?
-  mountPath?: string;
-  currency?: Currency;
-  network?: Network;
-  server?: string;
-  payeeName?: string | null;
-  allowHttp?: boolean;
-  refundErrors?: RefundErrors;
-  logger?: Logger;
-  oAuthResourceClient?: OAuthResourceClient;
+  mountPath: string;
+  currency: Currency;
+  network: Network;
+  server: string;
+  payeeName: string | null;
+  allowHttp: boolean;
+  refundErrors: RefundErrors;
+  logger: Logger;
+  oAuthResourceClient: OAuthResourceClient;
 }
 
 export type PayMcpContext = {
   logger: Logger;
 }
 
-export type Charge = {
+export type Charge = Required<Pick<PayMcpConfig, 'currency' | 'network' | 'destination'>> & {
   amount: BigNumber;
-  currency: Currency;
-  network: Network;
-  destination: string;
-  operation: McpOperation;
 }
 
 export enum TokenProblem {
