@@ -43,6 +43,10 @@ describe('generateJWT', () => {
     const publicKey = await importJWK(publicJwk, 'EdDSA');
     const { payload: verifiedPayload } = await jwtVerify(jwt, publicKey);
     expect(verifiedPayload.sub).toBe(walletId);
+    const now = Math.floor(Date.now() / 1000);
+    expect(payload.exp).toBeDefined();
+    expect(payload.exp).toBeGreaterThanOrEqual(now + 119); // allow 1s clock drift
+    expect(payload.exp).toBeLessThanOrEqual(now + 121); // allow 1s clock drift
   });
 
   it('should include paymentIds if provided', async () => {

@@ -26,5 +26,6 @@ export const generateJWT = async (
     .setIssuer(ISSUER)
     .setAudience(AUDIENCE)
     .setSubject(walletId)
+    .setExpirationTime('2m')
     .sign(privateKey);
 };
