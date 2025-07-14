@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { OAuthResourceClient } from "./oAuthResource.js";
+import { OpPriceMap, OpPrices } from "./types.js";
 
 function getOp(req: Request): string {
   const isMessage = req.method.toLowerCase() === 'post';
@@ -20,17 +21,17 @@ function getOp(req: Request): string {
   }
 }
 
-function getChargeForOperation(op: string, opPrices: {[key:string]: number}): number {
+function getChargeForOperation(op: string, opPrices: OpPriceMap): number {
   // Check for exact match first
   if (opPrices[op] !== undefined) {
     return opPrices[op];
   }
-  
+
   // Special case: 'tools/call' matches any 'tools/call:*' operation
   if (op.startsWith('tools/call:') && opPrices['tools/call'] !== undefined) {
     return opPrices['tools/call'];
   }
-  
+
   // No matches, default to 0
   return 0;
 }
@@ -43,7 +44,7 @@ function getChargeForOperation(op: string, opPrices: {[key:string]: number}): nu
 //   The client will fetch the PRM document from this URL to determine the token introspection server URL,
 //   so if this service could receive requests for multiple resource servers, they implicitly all need
 //   to use the same authorization server
-export function requireOAuthUser(authorizationServerUrl: string, oauthClient: OAuthResourceClient, opPrices?: {[key:string]: number}): (req: Request, res: Response) => Promise<string | undefined> {
+export function requireOAuthUser(authorizationServerUrl: string, oauthClient: OAuthResourceClient, opPrices?: OpPrices): (req: Request, res: Response) => Promise<string | undefined> {
   return async (req: Request, res: Response): Promise<string | undefined> => {
     const protocol = req.protocol;
     const protectedResourceMetadataUrl = `${protocol}://${req.host}/.well-known/oauth-protected-resource${req.path}`;
@@ -63,11 +64,12 @@ export function requireOAuthUser(authorizationServerUrl: string, oauthClient: OA
     }
 
     const token = authHeader.substring(7);
-    
+
     try {
       // Perform token introspection
       let additionalParameters = {};
       const op = getOp(req);
+      console.log('[auth] op', op, opPrices);
       // If they've specified any prices, we pass charge for everything
       // Anything they didn't specify is 0
       // TODO: Revisit the implicit 0 pricing of unspecified operations
@@ -78,19 +80,19 @@ export function requireOAuthUser(authorizationServerUrl: string, oauthClient: OA
         // has to be reflected in /.well-known/oauth-protected-resource, (which is annoying but possible),
         // AS WELL as in the AS's /.well-known/oauth-authorization-server, (which would require the AS to 
         // make a decision for all clients about whether they have to send an amount parameter or not).
-        
-        const charge = getChargeForOperation(op, opPrices);
+        const opPriceMap = typeof opPrices === 'function' ? opPrices(req) : opPrices;
+        const charge = getChargeForOperation(op, opPriceMap);
         additionalParameters = { charge };
       }
       const introspectionResult = await oauthClient.introspectToken(authorizationServerUrl, token, additionalParameters);
-      
+
       if (!introspectionResult.active) {
         console.log('[auth] Token is not active');
         res.set('WWW-Authenticate', `Bearer resource_metadata="${protectedResourceMetadataUrl}"`);
         res.status(401).json({ error: 'invalid_token', error_description: 'Token is not active' });
         return undefined;
       }
-      
+
       // Return the subject (user ID) from the introspection response
       return introspectionResult.sub;
     } catch (error) {
