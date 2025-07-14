@@ -54,6 +54,9 @@ describe('paymcp', () => {
     // Simulate the response finishing by calling end() which triggers the 'finish' event
     res.end();
 
+    // Wait for the async finish event handler to complete
+    await new Promise(resolve => setTimeout(resolve, 0));
+
     expect(consoleSpy.debug).toHaveBeenCalledWith('[paymcp] Request finished - POST /mcp/message');
     expect(consoleSpy.debug).toHaveBeenCalledTimes(2);
     const calls = consoleSpy.debug.mock.calls;
