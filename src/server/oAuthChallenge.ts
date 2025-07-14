@@ -1,5 +1,5 @@
-import { Response } from "express";
+import { ServerResponse } from "http";
 import { TokenCheck } from "./types";
 
-export function sendOAuthChallenge(res: Response, tokenCheck: TokenCheck): void {
+export function sendOAuthChallenge(res: ServerResponse, tokenCheck: TokenCheck): void {
 }

@@ -1,8 +1,7 @@
-import { Response } from "express";
-import { BigNumber } from "bignumber.js";
+import { ServerResponse } from "http";
 import { Charge, PayMcpConfig } from "./types.js";
 
-export async function getRefunds(config: PayMcpConfig, res: Response, charges: Charge[]): Promise<Charge[]> {
+export async function getRefunds(config: PayMcpConfig, res: ServerResponse, charges: Charge[]): Promise<Charge[]> {
   // TODO: Implement refunds
   return [];
 }
