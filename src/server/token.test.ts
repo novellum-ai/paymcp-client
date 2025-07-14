@@ -51,7 +51,7 @@ describe('checkToken', () => {
     );
 
     const middleware = paymcp({
-      price: new BigNumber(0.01),
+      toolPrice: new BigNumber(0.01),
       destination: 'test-destination',
       oAuthResourceClient: mockOAuthClient
     });

@@ -2,11 +2,11 @@ import { Response } from "express";
 import { BigNumber } from "bignumber.js";
 import { Charge, PayMcpConfig } from "./types.js";
 
-export function getRefunds(config: PayMcpConfig, res: Response, charges: Charge[]): Charge[] {
+export async function getRefunds(config: PayMcpConfig, res: Response, charges: Charge[]): Promise<Charge[]> {
   // TODO: Implement refunds
   return [];
 }
 
-export function processRefunds(config: PayMcpConfig, user: string, refunds: Charge[]): void {
+export async function processRefunds(config: PayMcpConfig, user: string, refunds: Charge[]): Promise<void> {
   // TODO: Implement refunds
 }

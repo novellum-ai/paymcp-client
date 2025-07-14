@@ -8,7 +8,7 @@ import { BigNumber } from 'bignumber.js';
 describe('http', () => {
   describe('parseMcpMessages', () => {
     const config = {
-      price: new BigNumber(0.01),
+      toolPrice: new BigNumber(0.01),
       destination: 'testDestination',
       ...DEFAULT_CONFIG
     };

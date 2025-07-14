@@ -9,11 +9,11 @@ export async function getMcpOperations(config: PayMcpConfig, req: IncomingMessag
     return [];
   }
 
-  const operations = parsedMcpMessages.map(msg => mcpOperation(msg));
+  const operations = parsedMcpMessages.map(msg => getMcpOperation(msg));
   return operations.filter(op => op !== null);
 }
 
-function mcpOperation(msg: JSONRPCMessage): McpOperation | null {
+export function getMcpOperation(msg: JSONRPCMessage): McpOperation | null {
   // Try to get the operation from the jsonRpc message
   if(!isJSONRPCRequest(msg)) {
     return null;
@@ -27,5 +27,5 @@ function mcpOperation(msg: JSONRPCMessage): McpOperation | null {
   if (!op) {
     return null;
   }
-  return op;
+  return op as McpOperation;
 }

@@ -40,7 +40,7 @@ describe('paymcp', () => {
     const next = vi.fn();
 
     const middleware = paymcp({
-      price: new BigNumber(0.01),
+      toolPrice: new BigNumber(0.01),
       destination: 'test-destination',
       logger: new ConsoleLogger({level: LogLevel.DEBUG})
     });
@@ -78,7 +78,7 @@ describe('paymcp', () => {
     const next = vi.fn();
 
     const middleware = paymcp({
-      price: new BigNumber(0.01),
+      toolPrice: new BigNumber(0.01),
       destination: 'test-destination',
       logger: new ConsoleLogger({level: LogLevel.DEBUG})
     });
@@ -109,7 +109,7 @@ describe('paymcp', () => {
     const next = vi.fn();
 
     const middleware = paymcp({
-      price: new BigNumber(0.01),
+      toolPrice: new BigNumber(0.01),
       destination: 'test-destination',
       logger: new ConsoleLogger({level: LogLevel.DEBUG})
     });

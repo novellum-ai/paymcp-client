@@ -6,7 +6,7 @@ import { BigNumber } from 'bignumber.js';
 
 describe('getMcpOperations', () => {
   const config = {
-    price: new BigNumber(0.01),
+    toolPrice: BigNumber(0.01),
     destination: 'testDestination',
     ...DEFAULT_CONFIG
   };

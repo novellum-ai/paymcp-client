@@ -1,18 +1,34 @@
-import { Request, Response, NextFunction } from "express";
 import { BigNumber } from "bignumber.js";
 import { Logger } from "../logger";
 import { OAuthResourceClient } from "../oAuthResource";
 import { TokenData } from "../types";
-import { Enum } from "@solana/web3.js/lib";
+import { IncomingMessage } from "http";
 
-export type McpOperation = string;
-export type McpOperationPattern = McpOperation | '*' | 'tools/call:*';
+// https://github.com/modelcontextprotocol/typescript-sdk/blob/c6ac083b1b37b222b5bfba5563822daa5d03372e/src/types.ts
+// ctrl+f "method: z.literal(""
+export type McpMethod = 'notifications/cancelled' | 'initialize' | 'ping' | 'notifications/progress' | 
+  'resources/list' | 'resources/templates/list' | 'resources/read' | 'notifications/resources/list_changed' | 
+  'resources/subscribe' | 'resources/unsubscribe' | 'notifications/resources/updated' | 
+  'prompts/list' | 'prompts/get' | 'notifications/prompts/list_changed' | 'tools/list' | 
+  'tools/call' | 'notifications/tools/list_changed' | 'logging/setLevel' | 'notifications/message' |
+  'sampling/createMessage' | 'elicitation/create' | 'completion/complete' | 'roots/list' | 
+  'notifications/roots/list_changed';
+
+export type McpName = string;
+export type McpNamePattern = McpName | '*';
+export type McpOperation = `${McpMethod}` | `${McpMethod}:${McpName}`;
+export type McpOperationPattern = McpOperation | '*' | `${McpMethod}:*`;
 export type Currency = 'USDC';
 export type Network = 'solana';
 export type RefundErrors = boolean | 'nonMcpOnly';
 
+export type Price = BigNumber | { [K in McpOperationPattern]?: BigNumber } | ((req: IncomingMessage, op: McpOperation, params: any) => Promise<BigNumber>);
+export type ToolPrice = BigNumber | { [K in McpNamePattern]?: BigNumber } | ((req: IncomingMessage, toolName: McpName, params: any) => Promise<BigNumber>);
+
 export type PayMcpConfig = {
-  price: BigNumber | Record<McpOperationPattern, BigNumber> | ((req: Request, op: McpOperation, params: any) => Promise<BigNumber>);
+  // Intended for future expansion, to generalize prices to operations than tool calls
+  //price: Price
+  toolPrice: ToolPrice;
   destination: string;
   mountPath: string;
   currency: Currency;

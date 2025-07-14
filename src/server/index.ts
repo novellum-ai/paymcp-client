@@ -11,7 +11,7 @@ import { parseMcpRequests } from "./http.js";
 import { Request, Response, NextFunction } from "express";
 import { withContext, getContext } from "./context.js";
 
-type RequiredFields = 'price' | 'destination';
+type RequiredFields = 'toolPrice' | 'destination';
 
 export const DEFAULT_CONFIG: Omit<PayMcpConfig, RequiredFields> = {
   mountPath: '/',
@@ -22,7 +22,7 @@ export const DEFAULT_CONFIG: Omit<PayMcpConfig, RequiredFields> = {
   allowHttp: process.env.NODE_ENV === 'development',
   refundErrors: true,
   logger: new ConsoleLogger(),
-  oAuthResourceClient: new OAuthResourceClient({db: new SqliteOAuthDb()})
+  oAuthResourceClient: new OAuthResourceClient({db: new SqliteOAuthDb()}),
 };
 
 export function paymcp(args: Pick<PayMcpConfig, RequiredFields> & Partial<PayMcpConfig>): (req: Request, res: Response, next: NextFunction) => Promise<void> {
@@ -35,8 +35,8 @@ export function paymcp(args: Pick<PayMcpConfig, RequiredFields> & Partial<PayMcp
       context.logger.debug(`Request started - ${req.method} ${req.path}`);
 
       const mcpRequests = await parseMcpRequests(config, req, req.path, req.body);
-      const charges = mcpRequests.map(mcpr => getCharge(config, mcpr)).filter(c => c !== null);
-      const tokenCheck = checkToken(config, req, charges);
+      const charges = await Promise.all(mcpRequests.map(mcpr => getCharge(config, req, mcpr)));
+      const tokenCheck = await checkToken(config, req, charges);
       const user = setUser(req, tokenCheck.token);
       // No charges mean no auth required. Any charges (even 0s) means auth is required
       if (charges.length > 0 && !tokenCheck.passes) { 
@@ -44,9 +44,9 @@ export function paymcp(args: Pick<PayMcpConfig, RequiredFields> & Partial<PayMcp
       }
 
       // Listen for when the response is finished
-      res.on('finish', () => {
-        const refunds = getRefunds(config, res, charges);
-        processRefunds(config, user, refunds);
+      res.on('finish', async () => {
+        const refunds = await getRefunds(config, res, charges);
+        await processRefunds(config, user, refunds);
         
         context.logger.debug(`Request finished - ${req.method} ${req.path}`);
       });
