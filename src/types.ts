@@ -3,7 +3,7 @@ import type { Request } from 'express';
 
 export type OpPriceMap = { [key: string]: number };
 
-export type OpPrices = OpPriceMap | ((req: Request) => OpPriceMap);
+export type OpPrices = OpPriceMap | (({request}: {request: Request}) => OpPriceMap);
 
 export type CustomJWTPayload = {
   paymentIds?: string[];

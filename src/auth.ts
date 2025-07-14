@@ -80,7 +80,7 @@ export function requireOAuthUser(authorizationServerUrl: string, oauthClient: OA
         // has to be reflected in /.well-known/oauth-protected-resource, (which is annoying but possible),
         // AS WELL as in the AS's /.well-known/oauth-authorization-server, (which would require the AS to 
         // make a decision for all clients about whether they have to send an amount parameter or not).
-        const opPriceMap = typeof opPrices === 'function' ? opPrices(req) : opPrices;
+        const opPriceMap = typeof opPrices === 'function' ? opPrices({request: req}) : opPrices;
         const charge = getChargeForOperation(op, opPriceMap);
         additionalParameters = { charge };
       }
