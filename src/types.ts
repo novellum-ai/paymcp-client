@@ -1,5 +1,9 @@
 import type { BigNumber } from 'bignumber.js';
+import type { Request } from 'express';
 
+export type OpPriceMap = { [key: string]: number };
+
+export type OpPrices = OpPriceMap | (({request}: {request: Request}) => OpPriceMap);
 
 export type CustomJWTPayload = {
   paymentIds?: string[];
