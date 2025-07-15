@@ -3,17 +3,17 @@ import { McpOperation, PayMcpConfig } from "./types.js";
 import { parseMcpRequests } from "./http.js";
 import { JSONRPCMessage, JSONRPCRequest, isJSONRPCRequest } from "@modelcontextprotocol/sdk/types.js";
 
-export async function getMcpOperations(config: PayMcpConfig, req: IncomingMessage, path: string, parsedMcpMessages?: JSONRPCMessage[]): Promise<McpOperation[]> {
-  parsedMcpMessages = parsedMcpMessages ?? await parseMcpRequests(config, req, path);
+export async function getMcpOperations(config: PayMcpConfig, req: IncomingMessage, parsedMcpMessages?: JSONRPCMessage[]): Promise<McpOperation[]> {
+  parsedMcpMessages = parsedMcpMessages ?? await parseMcpRequests(config, req);
   if (parsedMcpMessages.length === 0) {
     return [];
   }
 
-  const operations = parsedMcpMessages.map(msg => mcpOperation(msg));
+  const operations = parsedMcpMessages.map(msg => getMcpOperation(msg));
   return operations.filter(op => op !== null);
 }
 
-function mcpOperation(msg: JSONRPCMessage): McpOperation | null {
+export function getMcpOperation(msg: JSONRPCMessage): McpOperation | null {
   // Try to get the operation from the jsonRpc message
   if(!isJSONRPCRequest(msg)) {
     return null;
@@ -27,5 +27,5 @@ function mcpOperation(msg: JSONRPCMessage): McpOperation | null {
   if (!op) {
     return null;
   }
-  return op;
+  return op as McpOperation;
 }

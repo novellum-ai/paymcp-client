@@ -1,98 +1,135 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { BigNumber } from 'bignumber.js';
 import { getCharge } from './charge.js';
-import { mcpToolRequest, mcpRequest } from './testHelpers.js';
-import { DEFAULT_CONFIG } from './index.js';
+import * as TH from './testHelpers.js'
+import { parseMcpRequests } from './http.js';
+import { IncomingMessage } from 'http';
+import { withContext } from './context.js';
 
-describe.skip('getCharge', () => {
-  const config = {
-    price: new BigNumber(0.01),
-    destination: 'testDestination',
-    ...DEFAULT_CONFIG
-  };
-  const staticChargeFields = {
-    destination: config.destination,
-    network: config.network,
-    currency: config.currency,
-  };
-  const oneCent = {
-    amount: new BigNumber(0.01),
-    ...staticChargeFields
-  };
-
-  it('should return the price for a tool call with a static price', () => {
-    const msg = mcpToolRequest({toolName: 'testTool'});
-    const charge = getCharge(config, msg);
-    expect(charge).toEqual(oneCent);
+describe('getCharge', () => {
+  it('should return the price for a tool call with a static price', async () => {
+    const cfg = TH.config({toolPrice: BigNumber(0.01)});
+    const req = TH.incomingMessage({
+      body: TH.mcpToolRequest({toolName: 'testTool'})
+    });
+    const msg = (await parseMcpRequests(cfg, req))[0];
+    const charge = await getCharge(cfg, req, msg);
+    expect(charge).toEqual(TH.oneCentCharge);
   });
 
-  it('should return null for a non-tool call message with a static price', () => {
-    const msg = mcpRequest({method: 'resources/list'});
-    const charge = getCharge(config, msg);
-    expect(charge).toBeNull();
+  it('should return 0 for a non-tool call message with a static price', async () => {
+    const cfg = TH.config({toolPrice: BigNumber(0.01)});
+    const req = TH.incomingMessage({
+      body: TH.mcpRequest({method: 'resources/list'})
+    });
+    const msg = (await parseMcpRequests(cfg, req))[0];
+    const charge = await getCharge(cfg, req, msg);
+    expect(charge).toEqual(TH.zeroCharge);
   });
 
-  it('should return the price for a tool call with a price in a price map', () => {
-    expect.fail('Not implemented');
+  it('should return the price for a tool call with a price in a price map', async () => {
+    const cfg = TH.config({toolPrice: {'testTool': BigNumber(0.01)}});
+    const req = TH.incomingMessage({
+      body: TH.mcpToolRequest({toolName: 'testTool'})
+    });
+    const msg = (await parseMcpRequests(cfg, req))[0];
+    const charge = await getCharge(cfg, req, msg);
+    expect(charge).toEqual(TH.oneCentCharge)
   });
 
-  it('should return XX for a tool call with a price NOT in a price map', () => {
-    expect.fail('Not implemented');
+  it('should return 0 for a tool call with a price NOT in a price map', async () => {
+    const cfg = TH.config({toolPrice: {'testTool': BigNumber(0.01)}});
+    const req = TH.incomingMessage({
+      body: TH.mcpToolRequest({toolName: 'anotherTool'})
+    });
+    const msg = (await parseMcpRequests(cfg, req))[0];
+    const charge = await getCharge(cfg, req, msg);
+    expect(charge).toEqual(TH.zeroCharge);
   });
 
-  it('should return the price for a NON-tool call with a price in a price map', () => {
-    expect.fail('Not implemented');
+  it('should return 0 for a NON-tool call with a price NOT in a price map', async () => {
+    const cfg = TH.config({toolPrice: {'testTool': BigNumber(0.01)}});
+    const req = TH.incomingMessage({
+      body: TH.mcpRequest({method: 'resources/list'})
+    });
+    const msg = (await parseMcpRequests(cfg, req))[0];
+    const charge = await getCharge(cfg, req, msg);
+    expect(charge).toEqual(TH.zeroCharge);
   });
 
-  it('should return XX for a NON-tool call with a price NOT in a price map', () => {
-    expect.fail('Not implemented');
+  it('should return the price for a tool call with a matching wildcard price in a price map', async () => {
+    const cfg = TH.config({toolPrice: {'*': BigNumber(0.01)}});
+    const req = TH.incomingMessage({
+      body: TH.mcpToolRequest({toolName: 'testTool'})
+    });
+    const msg = (await parseMcpRequests(cfg, req))[0];
+    const charge = await getCharge(cfg, req, msg);
+    expect(charge).toEqual(TH.oneCentCharge);
   });
 
-  it('should return the price for a tool call with a matching wildcard price in a price map', () => {
-    expect.fail('Not implemented');
+  it('should override a matching wildcard price with a specific match', async () => {
+    const cfg = TH.config({toolPrice: {'*': BigNumber(0.02), 'testTool': BigNumber(0.01)}});
+    const req = TH.incomingMessage({
+      body: TH.mcpToolRequest({toolName: 'testTool'})
+    });
+    const msg = (await parseMcpRequests(cfg, req))[0];
+    const charge = await getCharge(cfg, req, msg);
+    expect(charge).toEqual(TH.oneCentCharge);
   });
 
-  it('should return XX for a tool call with a NON-matching wildcard price in a price map', () => {
-    expect.fail('Not implemented');
+  it('should override a matching wildcard price with a specific match with value 0', async () => {
+    const cfg = TH.config({toolPrice: {'*': BigNumber(0.01), 'testTool': BigNumber(0)}});
+    const req = TH.incomingMessage({
+      body: TH.mcpToolRequest({toolName: 'testTool'})
+    });
+    const msg = (await parseMcpRequests(cfg, req))[0];
+    const charge = await getCharge(cfg, req, msg);
+    expect(charge).toEqual(TH.zeroCharge);
   });
 
-  it('should return the price for a tool call with a matching global wildcard price in a price map', () => {
-    expect.fail('Not implemented');
+  it('should not support substring wildcard matches and log a warning', async () => {
+    const cfg = TH.config({toolPrice: {'testTool': BigNumber(0.01), 'test*': BigNumber(0.02)}});
+    const req = TH.incomingMessage({
+      body: TH.mcpToolRequest({toolName: 'testTool'})
+    });
+    const msg = (await parseMcpRequests(cfg, req))[0];
+    const charge = await getCharge(cfg, req, msg);
+    expect(charge).toEqual(TH.oneCentCharge);
   });
 
-  it('should return the price for a NON-tool call with a matching global wildcard price in a price map', () => {
-    expect.fail('Not implemented');
+  it('should return the computed price for a price function', async () => {
+    const priceFn = vi.fn().mockResolvedValue(BigNumber(0.01)) as unknown as (req: IncomingMessage, toolName: string, args: any) => Promise<BigNumber>;
+    const cfg = TH.config({toolPrice: priceFn});
+    const req = TH.incomingMessage({
+      body: TH.mcpToolRequest({toolName: 'testTool'})
+    });
+    const msg = (await parseMcpRequests(cfg, req))[0];
+    const charge = await getCharge(cfg, req, msg);
+    expect(charge).toEqual(TH.oneCentCharge);
+    expect(priceFn).toHaveBeenCalled();
   });
 
-  it('should override a matching wildcard price with a specific match', () => {
-    expect.fail('Not implemented');
+  it('should return 0 and log a warning if the tool call does not have a .name parameter', async () => {
+    const cfg = TH.config({toolPrice: BigNumber(0.01)});
+    // This is invalid - tools/call requires a .name parameter
+    const req = TH.incomingMessage({
+      body: TH.mcpRequest({method: 'tools/call', params: {}})
+    });
+    const msg = (await parseMcpRequests(cfg, req))[0];
+    const charge = await getCharge(cfg, req, msg);
+    expect(charge).toEqual(TH.zeroCharge);
   });
 
-  it('should override a matching global wildcard price with a specific match', () => {
-    expect.fail('Not implemented');
-
-  });
-  it('should override a matching global wildcard price with a wildcard match', () => {
-    expect.fail('Not implemented');
-  });
-
-  it('should override a matching wildcard price with a specific match with value null', () => {
-    expect.fail('Not implemented');
-  });
-
-  it('should override a matching global wildcard price with a specific match with value null', () => {
-    expect.fail('Not implemented');
-  });
-
-  it('should override a matching global wildcard price with a wildcard match with value null', () => {
-    expect.fail('Not implemented');
-  });
-
-  it('should not allow substring wildcard matches', () => {
-    expect.fail('Not implemented');
-  });
-
-  it('should return the computed price for a price function', () => {
-    expect.fail('Not implemented');
+  it('should return 0 and log an error on a negative charge value', async () => {
+    const cfg = TH.config({toolPrice: BigNumber(-0.01)});
+    const req = TH.incomingMessage({
+      body: TH.mcpToolRequest({toolName: 'testTool'})
+    });
+    const msg = (await parseMcpRequests(cfg, req))[0];
+    await withContext(cfg, async () => {
+      const charge = await getCharge(cfg, req, msg);
+      expect(charge).toEqual(TH.zeroCharge);
+    });
+    expect(cfg.logger.error).toHaveBeenCalledWith('Charge amount must be non-negative, but received -0.01. Returning 0 instead.');
   });
 });
