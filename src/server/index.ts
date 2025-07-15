@@ -23,10 +23,13 @@ export const DEFAULT_CONFIG: Required<OptionalPayMcpConfig> = {
   network: 'solana' as const,
   server: 'https://auth.paymcp.com' as const,
   payeeName: null,
-  allowHttp: process.env.NODE_ENV === 'development',
-  refundErrors: true,
+  //allowHttp: process.env.NODE_ENV === 'development',
+  //refundErrors: true,
   logger: new ConsoleLogger(),
-  oAuthClient: new OAuthResourceClient({db: new SqliteOAuthDb({db: ':memory:'})}),
+  oAuthClient: new OAuthResourceClient({
+    db: new SqliteOAuthDb({db: ':memory:'}),
+    allowInsecureRequests: process.env.NODE_ENV === 'development'
+  }),
 };
 
 export function paymcp(args: RequiredPayMcpConfig & Partial<OptionalPayMcpConfig>): (req: Request, res: Response, next: NextFunction) => Promise<void> {

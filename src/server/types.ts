@@ -37,8 +37,8 @@ export type PayMcpConfig = {
   network: Network;
   server: AuthorizationServerUrl;
   payeeName: string | null;
-  allowHttp: boolean;
-  refundErrors: RefundErrors;
+  //allowHttp: boolean;
+  //refundErrors: RefundErrors;
   logger: Logger;
   oAuthClient: OAuthResourceClient;
 }
