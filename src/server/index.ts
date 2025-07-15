@@ -10,7 +10,7 @@ import { getRefunds, processRefunds } from "./refund.js";
 import { parseMcpRequests } from "./http.js";
 import { Request, Response, NextFunction } from "express";
 import { withContext, payMcpContext } from "./context.js";
-import { getProtectedResourceMetadata, sendProtectedResourceMetadata } from "./protectedResourceMetadata.js";
+import { getProtectedResourceMetadata as getPRMResponse, sendProtectedResourceMetadata } from "./protectedResourceMetadata.js";
 export { payMcpUser };
 
 type RequiredPayMcpConfigFields = 'toolPrice' | 'destination';
@@ -38,9 +38,8 @@ export function paymcp(args: RequiredPayMcpConfig & Partial<OptionalPayMcpConfig
       return withContext({logger: config.logger}, async () => {
         const context = payMcpContext();
 
-        const prmMetadata = getProtectedResourceMetadata(config, req);
-        if (prmMetadata) {
-          sendProtectedResourceMetadata(res, prmMetadata);
+        const prmResponse = getPRMResponse(config, req);
+        if (sendProtectedResourceMetadata(res, prmResponse)) {
           return;
         }
 

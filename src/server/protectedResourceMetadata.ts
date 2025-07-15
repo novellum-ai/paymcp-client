@@ -1,10 +1,14 @@
 import { PayMcpConfig, ProtectedResourceMetadata } from "./types.js";
 import { IncomingMessage, ServerResponse } from "http";
 
-export function sendProtectedResourceMetadata(res: ServerResponse, metadata: ProtectedResourceMetadata) {
+export function sendProtectedResourceMetadata(res: ServerResponse, metadata: ProtectedResourceMetadata | null): boolean {
+  if (!metadata) {
+    return false;
+  }
   res.setHeader('Content-Type', 'application/json');
   res.writeHead(200);
   res.end(JSON.stringify(metadata));
+  return true;
 }
 
 export function getProtectedResourceMetadata(config: PayMcpConfig, req: IncomingMessage): ProtectedResourceMetadata | null {
