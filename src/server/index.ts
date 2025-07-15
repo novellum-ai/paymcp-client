@@ -11,10 +11,12 @@ import { parseMcpRequests } from "./http.js";
 import { Request, Response, NextFunction } from "express";
 import { withContext, payMcpContext } from "./context.js";
 import { getProtectedResourceMetadata, sendProtectedResourceMetadata } from "./protectedResourceMetadata.js";
+export { payMcpUser };
 
 type RequiredPayMcpConfigFields = 'toolPrice' | 'destination';
 export type RequiredPayMcpConfig = Pick<PayMcpConfig, RequiredPayMcpConfigFields>;
 export type OptionalPayMcpConfig = Omit<PayMcpConfig, RequiredPayMcpConfigFields>;
+
 
 export const DEFAULT_CONFIG: Required<OptionalPayMcpConfig> = {
   mountPath: '/',

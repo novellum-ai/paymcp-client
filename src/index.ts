@@ -11,3 +11,6 @@ export * from './oAuthResource.js';
 export * from './payMcpClient.js';
 export * from './solanaPaymentMaker.js';
 export * from './types.js';
+export * from './server/index.js';
+export * from './server/types.js';
+export * from './logger.js';
