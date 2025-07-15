@@ -17,7 +17,6 @@ type RequiredPayMcpConfigFields = 'toolPrice' | 'destination';
 export type RequiredPayMcpConfig = Pick<PayMcpConfig, RequiredPayMcpConfigFields>;
 export type OptionalPayMcpConfig = Omit<PayMcpConfig, RequiredPayMcpConfigFields>;
 
-
 export const DEFAULT_CONFIG: Required<OptionalPayMcpConfig> = {
   mountPath: '/',
   currency: 'USDC' as const,
