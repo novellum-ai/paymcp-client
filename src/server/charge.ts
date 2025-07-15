@@ -4,15 +4,20 @@ import { PayMcpConfig } from "./types.js";
 import { JSONRPCRequest } from "@modelcontextprotocol/sdk/types.js";
 import { getMcpOperation } from "./mcpOperation.js";
 import { IncomingMessage } from "http";
-import { getContext } from "./context.js";
+import { payMcpContext } from "./context.js";
 
 export async function getCharge(config: PayMcpConfig, req: IncomingMessage, mcpRequest: JSONRPCRequest): Promise<Charge> {
+  const context = payMcpContext();
   const amount = await toolPrice(config.toolPrice, req, mcpRequest);
+  if (amount.isNegative()) {
+    context.logger.error(`Charge amount must be non-negative, but received ${amount.toString()}. Returning 0 instead.`);
+    return charge(config, 0);
+  }
   return charge(config, amount);
 }
 
 async function toolPrice(toolPrice: ToolPrice, req: IncomingMessage, mcpRequest: JSONRPCRequest): Promise<BigNumber> {
-  const context = getContext();
+  const context = payMcpContext();
   if (mcpRequest.method !== 'tools/call') {
     return BigNumber(0);
   }
@@ -41,13 +46,13 @@ async function toolPrice(toolPrice: ToolPrice, req: IncomingMessage, mcpRequest:
     return priceFromMap(priceMap, mcpRequest);
   } else {
     const msg = `Invalid toolPrice: ${typeof toolPrice}`;
-    context.logger.warn(msg);
-    throw new Error(msg);
+    context.logger.error(msg);
+    return BigNumber(0);
   }
 }
 
 function priceFromMap(priceMap: { [K in McpOperationPattern]?: BigNumber }, mcpRequest: JSONRPCRequest): BigNumber {
-  const context = getContext();
+  const context = payMcpContext();
   const op = getMcpOperation(mcpRequest);
   if (!op) {
     context.logger.info(`MCP request did not have a valid operation - this is not a valid MCP request. Params: ${JSON.stringify(mcpRequest.params)}`);

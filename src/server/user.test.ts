@@ -1,33 +1,25 @@
 import { describe, it, expect } from 'vitest';
-import { withContext, payMcpContext } from './context.js';
+import { withUser, payMcpUser } from './user.js';
 import { PayMcpContext } from './types.js';
 
-describe('AsyncLocalStorage Context', () => {
+describe('withUser', () => {
   it('should make config available within the context', () => {
-    const testContext: Required<PayMcpContext> = {
-      logger: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
-    };
-
-    withContext(testContext, () => {
-      const context = payMcpContext();
-      expect(context).toBe(testContext);
+    withUser('test-user', () => {
+      const user = payMcpUser();
+      expect(user).toBe('test-user');
     });
   });
 
   it('should make config available in event callbacks', () => {
     return new Promise<void>((resolve) => {
-      const testContext: Required<PayMcpContext> = {
-        logger: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
-      };
-
-      withContext(testContext, () => {
+      withUser('test-user', () => {
         // Simulate setting up an event listener (like res.on('finish'))
         const eventEmitter = new EventTarget();
         
         eventEmitter.addEventListener('test', () => {
           // This callback should have access to the config
-          const context = payMcpContext();
-          expect(context).toBe(testContext);
+          const user = payMcpUser();
+          expect(user).toBe('test-user');
           resolve();
         });
 

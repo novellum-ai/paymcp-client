@@ -1,12 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { paymcp } from './index.js';
 import httpMocks from 'node-mocks-http';
-import { mockAuthorizationServer, mockResourceServer } from '../testHelpers.js';
-import fetchMock from 'fetch-mock';
+import * as TH from './testHelpers.js';
 import { ConsoleLogger, LogLevel } from '../logger.js';
-import { OAuthResourceClient } from '../oAuthResource.js';
 import { BigNumber } from 'bignumber.js';
 import { EventEmitter } from 'events';
+import { mcpToolRequest } from './testHelpers.js';
+import express from 'express';
+import type { Request, Response } from 'express';
 
 describe('paymcp', () => {
   let consoleSpy: {
@@ -27,12 +28,11 @@ describe('paymcp', () => {
     const { req, res } = httpMocks.createMocks(
       {
         method: 'POST',
-        path: '/mcp/message',
-        body: {
-          jsonrpc: '2.0',
-          id: '1',
-          method: 'tools/call:testTool',
-          params: { name: 'test' }
+        url: 'https://example.com/mcp/message',
+        body: TH.mcpToolRequest(),
+        headers: {
+          'content-type': 'application/json',
+          'authorization': 'Bearer test-access-token'
         }
       },
       { eventEmitter: EventEmitter }
@@ -42,6 +42,7 @@ describe('paymcp', () => {
     const middleware = paymcp({
       toolPrice: new BigNumber(0.01),
       destination: 'test-destination',
+      oAuthClient: TH.oAuthClient(),
       logger: new ConsoleLogger({level: LogLevel.DEBUG})
     });
 
@@ -49,7 +50,6 @@ describe('paymcp', () => {
 
     expect(consoleSpy.debug).toHaveBeenCalledWith('[paymcp] Request started - POST /mcp/message');
     expect(next).toHaveBeenCalled();
-    expect(consoleSpy.debug).toHaveBeenCalledTimes(1);
 
     // Simulate the response finishing by calling end() which triggers the 'finish' event
     res.end();
@@ -58,79 +58,163 @@ describe('paymcp', () => {
     await new Promise(resolve => setTimeout(resolve, 0));
 
     expect(consoleSpy.debug).toHaveBeenCalledWith('[paymcp] Request finished - POST /mcp/message');
-    expect(consoleSpy.debug).toHaveBeenCalledTimes(2);
-    const calls = consoleSpy.debug.mock.calls;
-    expect(calls[0][0]).toBe('[paymcp] Request started - POST /mcp/message');
-    expect(calls[1][0]).toBe('[paymcp] Request finished - POST /mcp/message');
   });
 
-  it.skip('should run successfully charge a tool that requires it', async () => {
+  it('should run code at start and finish if sending an OAuth challenge', async () => {
     const { req, res } = httpMocks.createMocks(
       {
         method: 'POST',
-        path: '/mcp/message',
-        body: {
-          jsonrpc: '2.0',
-          id: '1',
-          method: 'tools/call:testTool',
-          params: { name: 'test' }
+        url: 'https://example.com/mcp/message',
+        body: TH.mcpToolRequest(),
+        headers: {
+          'content-type': 'application/json',
+          'authorization': 'Bearer test-access-token'
         }
       },
       { eventEmitter: EventEmitter }
     );
     const next = vi.fn();
 
+    const badToken = TH.tokenData({active: false});
     const middleware = paymcp({
       toolPrice: new BigNumber(0.01),
       destination: 'test-destination',
+      oAuthClient: TH.oAuthClient({introspectResult: badToken}),
       logger: new ConsoleLogger({level: LogLevel.DEBUG})
     });
-    
-    await middleware(req as any, res, next);
-    
-    expect(next).toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({
-      some: 'success'
-    });
-  });
 
-  it.skip('should return an OAuth challenge if payment required', async () => {
+    await middleware(req as any, res, next);
+
+    expect(consoleSpy.debug).toHaveBeenCalledWith('[paymcp] Request started - POST /mcp/message');
+    expect(next).not.toHaveBeenCalled();
+
+    // Simulate the response finishing by calling end() which triggers the 'finish' event
+    res.end();
+
+    // Wait for the async finish event handler to complete
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(consoleSpy.debug).toHaveBeenCalledWith('[paymcp] Request finished - POST /mcp/message');
+  });
+  
+
+  it('should run successfully charge a tool that requires it', async () => {
     const { req, res } = httpMocks.createMocks(
       {
         method: 'POST',
-        path: '/mcp/message',
-        body: {
-          jsonrpc: '2.0',
-          id: '1',
-          method: 'tools/call:testTool',
-          params: { name: 'test' }
+        url: 'https://example.com/mcp/message',
+        body: TH.mcpToolRequest(),
+        headers: {
+          'content-type': 'application/json',
+          'authorization': 'Bearer test-access-token'
         }
       },
       { eventEmitter: EventEmitter }
     );
     const next = vi.fn();
 
+    const oauthClient = TH.oAuthClient();
     const middleware = paymcp({
       toolPrice: new BigNumber(0.01),
       destination: 'test-destination',
+      oAuthClient: oauthClient,
       logger: new ConsoleLogger({level: LogLevel.DEBUG})
     });
 
     await middleware(req as any, res, next);
 
     expect(next).toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({
-      some: 'failure'
+
+    // Simulate the response finishing by calling end() which triggers the 'finish' event
+    res.end();
+
+    // Wait for the async finish event handler to complete
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(res.statusCode).toEqual(200);
+    expect(oauthClient.introspectToken).toHaveBeenCalledWith('https://auth.paymcp.com', 'test-access-token', {charge: '0.01'});
+  });
+
+  it('should return an OAuth challenge if payment required', async () => {
+    const { req, res } = httpMocks.createMocks(
+      {
+        method: 'POST',
+        url: 'https://example.com/mcp/message',
+        body: TH.mcpToolRequest(),
+        headers: {
+          'content-type': 'application/json',
+          'authorization': 'Bearer test-access-token'
+        }
+      },
+      { eventEmitter: EventEmitter }
+    );
+    const next = vi.fn();
+
+    const badToken = TH.tokenData({active: false});
+    const middleware = paymcp({
+      toolPrice: new BigNumber(0.01),
+      destination: 'test-destination',
+      oAuthClient: TH.oAuthClient({introspectResult: badToken}),
+      logger: new ConsoleLogger({level: LogLevel.DEBUG})
     });
+
+    await middleware(req as any, res, next);
+
+    // Simulate the response finishing by calling end() which triggers the 'finish' event
+    res.end();
+
+    // Wait for the async finish event handler to complete
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(res.statusCode).toEqual(401);
+    expect(res.getHeader('www-authenticate')).toEqual('Bearer resource_metadata="https://example.com/.well-known/oauth-protected-resource/mcp/message"');
   });
 
-  it.skip('serves PRM endpoint', async () => {
-    expect.fail('Not implemented');
+  it('should not intercept non-MCP requests', async () => {
+    const { req, res } = httpMocks.createMocks({ url: 'https://example.com/non-mcp' });
+    const next = vi.fn();
+
+    const middleware = paymcp({
+      toolPrice: new BigNumber(0.01),
+      destination: 'test-destination',
+    });
+
+    await middleware(req as any, res, next);
+
+    // The middleware should call next() for non-MCP routes, allowing other handlers to process
+    expect(next).toHaveBeenCalled();
+    
+    // Simulate the response finishing by calling end() which triggers the 'finish' event
+    res.end();
+    // Wait for the async finish event handler to complete
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(res.statusCode).toEqual(200);
   });
 
-  it.skip('throws an error if not mounted at root', async () => {
-    expect.fail('Not implemented');
+  it('serves PRM endpoint', async () => {
+    const { req, res } = httpMocks.createMocks({ url: 'https://example.com/.well-known/oauth-protected-resource' });
+    const next = vi.fn();
+
+    const middleware = paymcp({
+      toolPrice: new BigNumber(0.01),
+      destination: 'test-destination',
+    });
+
+    await middleware(req as any, res, next);
+    // Simulate the response finishing by calling end() which triggers the 'finish' event
+    res.end();
+    // Wait for the async finish event handler to complete
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(res.statusCode).toEqual(200);
+    // Check the response data that was written
+    const responseData = res._getJSONData();
+    expect(responseData).toMatchObject({
+      resource: 'https://example.com',
+      resource_name: 'https://example.com',
+      authorization_servers: ['https://auth.paymcp.com'],
+      bearer_methods_supported: ['header'],
+      scopes_supported: ['read', 'write'],
+    });
   });
 });

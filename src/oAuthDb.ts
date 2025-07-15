@@ -14,7 +14,7 @@ export class SqliteOAuthDb implements OAuthDb {
   private decrypt: (data: string) => string;
 
   static getDefaultDbPath(): string {
-    return 'db/oauthClient.db';
+    return 'oauthClient.db';
   }
 
   constructor({

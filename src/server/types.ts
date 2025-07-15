@@ -25,6 +25,8 @@ export type RefundErrors = boolean | 'nonMcpOnly';
 export type Price = BigNumber | { [K in McpOperationPattern]?: BigNumber } | ((req: IncomingMessage, op: McpOperation, params: any) => Promise<BigNumber>);
 export type ToolPrice = BigNumber | { [K in McpNamePattern]?: BigNumber } | ((req: IncomingMessage, toolName: McpName, params: any) => Promise<BigNumber>);
 
+export type AuthorizationServerUrl = `http://${string}` | `https://${string}`;
+
 export type PayMcpConfig = {
   // Intended for future expansion, to generalize prices to operations than tool calls
   //price: Price
@@ -33,12 +35,12 @@ export type PayMcpConfig = {
   mountPath: string;
   currency: Currency;
   network: Network;
-  server: string;
+  server: AuthorizationServerUrl;
   payeeName: string | null;
   allowHttp: boolean;
   refundErrors: RefundErrors;
   logger: Logger;
-  oAuthResourceClient: OAuthResourceClient;
+  oAuthClient: OAuthResourceClient;
 }
 
 export type PayMcpContext = {
@@ -50,20 +52,32 @@ export type Charge = Required<Pick<PayMcpConfig, 'currency' | 'network' | 'desti
 }
 
 export enum TokenProblem {
-  NO_TOKEN = 'no-token',
-  INVALID_TOKEN = 'invalid-token',
-  EXPIRED_TOKEN = 'expired-token',
-  INVALID_SCOPE = 'invalid-scope',
-  INVALID_AUDIENCE = 'invalid-audience'
+  NO_TOKEN = 'NO-TOKEN',
+  NON_BEARER_AUTH_HEADER = 'NON-BEARER-AUTH-HEADER',
+  INVALID_TOKEN = 'INVALID-TOKEN',
+  INVALID_AUDIENCE = 'INVALID-AUDIENCE',
+  NON_SUFFICIENT_FUNDS = 'NON-SUFFICIENT-FUNDS',
+  INTROSPECT_ERROR = 'INTROSPECT-ERROR',
 }
 
-type TokenCheckPass = {
+export type TokenCheckPass = {
   passes: true;
   token: TokenData;
 }
-type TokenCheckFail = {
+
+export type TokenCheckFail = {
   passes: false;
   problem: TokenProblem;
   token: TokenData | null;
+  resourceMetadataUrl: string | null;
 }
+
 export type TokenCheck = TokenCheckPass | TokenCheckFail;
+
+export type ProtectedResourceMetadata = {
+  resource: string;
+  resource_name: string;
+  authorization_servers: string[];
+  bearer_methods_supported: string[];
+  scopes_supported: string[];
+}

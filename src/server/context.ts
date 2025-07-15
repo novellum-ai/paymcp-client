@@ -18,13 +18,16 @@ function isTestEnvironment(): boolean {
 }
 
 // Helper function to get the current request's config
-export function getContext(): Required<PayMcpContext> {
+export function payMcpContext(): Required<PayMcpContext> {
   const config = contextStorage.getStore();
   if (!config) {
     // If we're in a test environment, return a default context instead of throwing
     if (isTestEnvironment()) {
       return defaultTestContext;
     }
+    // We generally logger.error instead of throwing, since this is middleware and we don't want
+    // to break the server.
+    //   However, if we can't get the context, we _also_ can't get the logger....
     throw new Error('getContext() called outside of a paymcp request context');
   }
   return config;

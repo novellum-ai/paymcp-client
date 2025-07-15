@@ -6,6 +6,6 @@ export async function getRefunds(config: PayMcpConfig, res: ServerResponse, char
   return [];
 }
 
-export async function processRefunds(config: PayMcpConfig, user: string, refunds: Charge[]): Promise<void> {
+export async function processRefunds(config: PayMcpConfig, user: string | null, refunds: Charge[]): Promise<void> {
   // TODO: Implement refunds
 }
