@@ -11,15 +11,28 @@ export function sendProtectedResourceMetadata(res: ServerResponse, metadata: Pro
   return true;
 }
 
-export function getProtectedResourceMetadata(config: PayMcpConfig, req: IncomingMessage): ProtectedResourceMetadata | null {
+function getPath(req: IncomingMessage): string {
+  const url = new URL(req.url || '');
+  const fullPath = url.pathname.replace(/^\/$/, '');
+  return fullPath;
+}
+
+export function getResource(req: IncomingMessage): string {
   const url = new URL(req.url || '');
   const protocol = url.protocol;
   const host = url.host;
-  const fullPath = url.pathname.replace(/^\/$/, '');
 
-  if (isProtectedResourceMetadataRequest(config, fullPath)) {
-    const resourcePath = fullPath.replace('/.well-known/oauth-protected-resource', '').replace(/\/$/, '');
-    const resource = `${protocol}//${host}${resourcePath}`;
+  const fullPath = getPath(req);
+  // If this is a PRM path, conver the it into the path for the resource this is the metadata for
+  const resourcePath = fullPath.replace('/.well-known/oauth-protected-resource', '').replace(/\/$/, '');
+
+  const resource = `${protocol}//${host}${resourcePath}`;
+  return resource;
+}
+
+export function getProtectedResourceMetadata(config: PayMcpConfig, req: IncomingMessage): ProtectedResourceMetadata | null {
+  if (isProtectedResourceMetadataRequest(config, req)) {
+    const resource = getResource(req);
     return {
       resource,
       resource_name: config.payeeName || resource,
@@ -31,7 +44,8 @@ export function getProtectedResourceMetadata(config: PayMcpConfig, req: Incoming
   return null;
 }
 
-function isProtectedResourceMetadataRequest(config: PayMcpConfig, path: string): boolean {
+function isProtectedResourceMetadataRequest(config: PayMcpConfig, req: IncomingMessage): boolean {
+  const path = getPath(req);
   if (!path.startsWith('/.well-known/oauth-protected-resource')) {
     return false;
   }

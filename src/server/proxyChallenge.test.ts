@@ -16,31 +16,4 @@ describe('proxyChallenge', () => {
     expect.fail('Not implemented');
   });
 
-  
-
-  it('should allow async implementation processes to set an OAuth challenge', async () => {
-    // This might be something that Turtle itself is unaware of - ie there's a sharedDB
-    // so that Temporal doesn't have to have a reference to Turtle
-    expect.fail('Not implemented');
-  });
-
-  it('should confirm a set OAuth challenge is still active with the resource\'s auth server', async () =>{
-    // should be part of paymcp() middleware
-    expect.fail('Not implemented');
-  });
-
-  it('should clear the existing OAuth challenge if the auth server says it is not longer active', async () => {
-    // should be part of paymcp() middleware
-    expect.fail('Not implemented');
-  });
-
-  it('should responsd with a 401 if the auth server says the challenge is still active', async() => {
-    // should be part of paymcp() middleware
-    expect.fail();
-  });
-
-  it('should call the async resume function when the OAuth challenge is cleared', async () => {
-    // should be part of paymcp() middleware
-    expect.fail('Not implemented');
-  });
 });

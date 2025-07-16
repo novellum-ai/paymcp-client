@@ -30,17 +30,21 @@ describe('continueWithUserContext', () => {
   });
 
   it('should write the incoming token to the oauth DB with url = \'\'', async () => {
-    // Should be part of paymcp() middleware - in user.ts probably
-    expect.fail('Not implemented');
+    const tokenCheck = TH.tokenCheck();
+    const cfg = TH.config();
+    await continueWithUserContext(cfg, tokenCheck, () => {});
+    const fromDb = await cfg.oAuthDb.getAccessToken(tokenCheck.data!.sub!, '');
+    expect(fromDb).toMatchObject({
+      accessToken: tokenCheck.token!,
+      resourceUrl: ''
+    });
   });
 
-  it('should write the executionId to the oAuth DB when it writes the token', async () => {
-    // should be part of paymcp() middleware
-    // executionId might be the userId - not 100% sure, though
-    expect.fail('Not implemented');
-  });
-
-  it('should not throw an error if the token is null', () => {
-    expect.fail('Not implemented');
+  it('should not throw an error if the token is null', async () => {
+    const tokenCheck = TH.tokenCheck({token: null});
+    const cfg = TH.config();
+    await continueWithUserContext(cfg, tokenCheck, () => {});
+    const fromDb = await cfg.oAuthDb.getAccessToken(tokenCheck.data!.sub!, '');
+    expect(fromDb).toBeNull();
   });
 }); 

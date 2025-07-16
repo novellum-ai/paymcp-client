@@ -8,6 +8,7 @@ import { DEFAULT_CONFIG } from './index.js';
 import { TokenData } from '../types.js';
 import { Logger } from '../logger.js';
 import { BigNumber } from 'bignumber.js';
+import { SqliteOAuthDb } from '../oAuthDb.js';
 
 export const DESTINATION = 'testDestination';
 
@@ -44,7 +45,10 @@ export function config({
   destination = DESTINATION, 
   ...rest}: Partial<PayMcpConfig> = {}): PayMcpConfig {
 
-  return { ...DEFAULT_CONFIG, toolPrice, destination, logger: logger(), ...rest };
+  // DEFAULT_CONFIG by default creates a single in-memory DB at load time,
+  // which means it'd be shared across tests. So we create a new one for each test.
+  const oAuthDb = new SqliteOAuthDb({db: ':memory:'});
+  return {...DEFAULT_CONFIG, oAuthDb, toolPrice, destination, logger: logger(), ...rest };
 }
 
 export function mcpRequest({method = 'tools/call', params = {}, id = 'call-1'}: {
@@ -131,7 +135,7 @@ export function tokenCheck({
   resourceMetadataUrl = 'https://example.com/.well-known/oauth-protected-resource'
 } : {
   data?: TokenData,
-  token?: string,
+  token?: string | null,
   passes?: boolean,
   problem?: TokenProblem,
   resourceMetadataUrl?: string
