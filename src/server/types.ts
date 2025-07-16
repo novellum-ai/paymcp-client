@@ -1,8 +1,8 @@
 import { BigNumber } from "bignumber.js";
-import { Logger } from "../logger";
-import { OAuthResourceClient } from "../oAuthResource";
-import { TokenData } from "../types";
+import { Logger } from "../logger.js";
+import { OAuthDb, TokenData } from "../types.js";
 import { IncomingMessage } from "http";
+import { OAuthResourceClient } from "../oAuthResource.js";
 
 // https://github.com/modelcontextprotocol/typescript-sdk/blob/c6ac083b1b37b222b5bfba5563822daa5d03372e/src/types.ts
 // ctrl+f "method: z.literal(""
@@ -36,15 +36,13 @@ export type PayMcpConfig = {
   currency: Currency;
   network: Network;
   server: AuthorizationServerUrl;
-  payeeName: string | null;
-  //allowHttp: boolean;
+  payeeName: string;
+  allowHttp: boolean;
   //refundErrors: RefundErrors;
   logger: Logger;
-  oAuthClient: OAuthResourceClient;
-}
-
-export type PayMcpContext = {
-  logger: Logger;
+  oAuthDb: OAuthDb;
+  // If not provided, the oAuthClient will be created by the paymcp() middleware
+  oAuthClient: OAuthResourceClient | null;
 }
 
 export type Charge = Required<Pick<PayMcpConfig, 'currency' | 'network' | 'destination'>> & {
@@ -62,13 +60,15 @@ export enum TokenProblem {
 
 export type TokenCheckPass = {
   passes: true;
-  token: TokenData;
+  token: string;
+  data: TokenData;
 }
 
 export type TokenCheckFail = {
   passes: false;
   problem: TokenProblem;
-  token: TokenData | null;
+  token: string | null;
+  data: TokenData | null;
   resourceMetadataUrl: string | null;
 }
 

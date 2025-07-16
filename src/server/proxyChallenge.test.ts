@@ -16,16 +16,7 @@ describe('proxyChallenge', () => {
     expect.fail('Not implemented');
   });
 
-  it('should write the incoming token to the oauth DB with url = \'\'', async () => {
-    // Should be part of paymcp() middleware - in user.ts probably
-    expect.fail('Not implemented');
-  });
-
-  it('should write the executionId to the oAuth DB when it writes the token', async () => {
-    // should be part of paymcp() middleware
-    // executionId might be the userId - not 100% sure, though
-    expect.fail('Not implemented');
-  });
+  
 
   it('should allow async implementation processes to set an OAuth challenge', async () => {
     // This might be something that Turtle itself is unaware of - ie there's a sharedDB

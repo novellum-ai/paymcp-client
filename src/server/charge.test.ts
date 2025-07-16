@@ -4,7 +4,6 @@ import { getCharge } from './charge.js';
 import * as TH from './testHelpers.js'
 import { parseMcpRequests } from './http.js';
 import { IncomingMessage } from 'http';
-import { withContext } from './context.js';
 
 describe('getCharge', () => {
   it('should return the price for a tool call with a static price', async () => {
@@ -126,10 +125,8 @@ describe('getCharge', () => {
       body: TH.mcpToolRequest({toolName: 'testTool'})
     });
     const msg = (await parseMcpRequests(cfg, req))[0];
-    await withContext(cfg, async () => {
-      const charge = await getCharge(cfg, req, msg);
-      expect(charge).toEqual(TH.zeroCharge);
-    });
+    const charge = await getCharge(cfg, req, msg);
+    expect(charge).toEqual(TH.zeroCharge);
     expect(cfg.logger.error).toHaveBeenCalledWith('Charge amount must be non-negative, but received -0.01. Returning 0 instead.');
   });
 });

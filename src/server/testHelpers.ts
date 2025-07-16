@@ -124,28 +124,22 @@ export function tokenData({
 }
 
 export function tokenCheck({
-  token = tokenData(),
+  data = tokenData(),
+  token = 'test-token',
   passes = true,
   problem = TokenProblem.NO_TOKEN,
   resourceMetadataUrl = 'https://example.com/.well-known/oauth-protected-resource'
 } : {
-  token?: TokenData,
+  data?: TokenData,
+  token?: string,
   passes?: boolean,
   problem?: TokenProblem,
   resourceMetadataUrl?: string
 } = {}): TokenCheck {
   if (passes) {
-    return {
-      passes,
-      token,
-    } as TokenCheckPass;
+    return { passes, token, data, } as TokenCheckPass;
   } else {
-    return {
-      passes,
-      token,
-      problem,
-      resourceMetadataUrl
-    } as TokenCheckFail;
+    return { passes, token, data, problem, resourceMetadataUrl } as TokenCheckFail;
   }
 }
 

@@ -3,7 +3,6 @@ import getRawBody from "raw-body";
 import contentType from "content-type";
 import { JSONRPCMessage, JSONRPCMessageSchema, JSONRPCRequest, isJSONRPCRequest } from "@modelcontextprotocol/sdk/types.js";
 import { ZodError } from "zod";
-import { payMcpContext } from "./context";
 import { PayMcpConfig } from "./types.js";
 
 // Useful reference for dealing with low-level http requests:
@@ -13,8 +12,6 @@ import { PayMcpConfig } from "./types.js";
 const MAXIMUM_MESSAGE_SIZE = "4mb";
 
 export async function parseMcpRequests(config: PayMcpConfig, req: IncomingMessage, parsedBody?: any): Promise<JSONRPCRequest[]> {
-  const context = payMcpContext();
-
   if (!req.method) {
     return [];
   }
@@ -47,17 +44,17 @@ export async function parseMcpRequests(config: PayMcpConfig, req: IncomingMessag
   } catch (error) {
     // If Zod validation fails, log the error and return empty array
     if (error instanceof ZodError) {
-      context.logger.warn(`Invalid JSON-RPC message format`);
-      context.logger.debug(error.message);
+      config.logger.warn(`Invalid JSON-RPC message format`);
+      config.logger.debug(error.message);
     } else {
-      context.logger.error(`Unexpected error parsing JSON-RPC messages: ${error}`);
+      config.logger.error(`Unexpected error parsing JSON-RPC messages: ${error}`);
     }
     return [];
   }
 
   const requests = messages.filter(msg => isJSONRPCRequest(msg));
   if (requests.length !== messages.length) {
-    context.logger.debug(`Dropped ${messages.length - requests.length} MCP messages that were not MCP requests`);
+    config.logger.debug(`Dropped ${messages.length - requests.length} MCP messages that were not MCP requests`);
   }
 
   return requests;

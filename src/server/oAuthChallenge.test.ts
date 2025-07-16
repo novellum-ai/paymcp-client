@@ -8,7 +8,6 @@ describe('oAuthChallenge', () => {
   it('should return false if the token check passes', async () => {
     const check = TH.tokenCheck({
       passes: true,
-      token: TH.tokenData(),
       resourceMetadataUrl: 'https://example.com/.well-known/oauth-protected-resource'
     });
     const res = TH.serverResponse();

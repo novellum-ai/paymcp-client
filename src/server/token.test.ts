@@ -13,7 +13,8 @@ describe('checkToken', () => {
     const res = await checkToken(cfg, req, []);
     expect(res).toMatchObject({
       passes: true,
-      token: tokenData,
+      data: tokenData,
+      token: 'test-access-token',
     });
   });
 
@@ -25,7 +26,8 @@ describe('checkToken', () => {
     const res = await checkToken(cfg, req, []);
     expect(res).toMatchObject({
       passes: true,
-      token: tokenData,
+      data: tokenData,
+      token: 'test-access-token',
     });
     expect(oAuthClient.introspectToken).toHaveBeenCalledWith(
       'https://auth.paymcp.com',
@@ -91,7 +93,7 @@ describe('checkToken', () => {
     expect(res).toMatchObject({
       passes: true
     });
-    expect(res.token).toMatchObject(tokenData);
+    expect(res.data).toMatchObject(tokenData);
   });
 
   it('should pass charge parameter in introspection call when charge is passed', async () => {
