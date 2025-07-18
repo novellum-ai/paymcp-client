@@ -57,7 +57,7 @@ describe('paymcp', () => {
     // Wait for the async finish event handler to complete
     await new Promise(resolve => setTimeout(resolve, 0));
 
-    expect(consoleSpy.debug).toHaveBeenCalledWith('[paymcp] Request finished - POST /mcp/message');
+    expect(consoleSpy.debug).toHaveBeenCalledWith('[paymcp] Request finished for user test-user - POST /mcp/message');
   });
 
   it('should run code at start and finish if sending an OAuth challenge', async () => {
@@ -211,7 +211,7 @@ describe('paymcp', () => {
     const responseData = res._getJSONData();
     expect(responseData).toMatchObject({
       resource: 'https://example.com',
-      resource_name: 'https://example.com',
+      resource_name: 'A PayMcp Server',
       authorization_servers: ['https://auth.paymcp.com'],
       bearer_methods_supported: ['header'],
       scopes_supported: ['read', 'write'],

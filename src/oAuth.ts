@@ -47,6 +47,7 @@ export interface OAuthClientConfig {
   sideChannelFetch?: FetchLike;
   strict?: boolean;
   allowInsecureRequests?: boolean;
+  clientName?: string;
 }
 
 export class OAuthClient extends OAuthResourceClient {
@@ -58,11 +59,12 @@ export class OAuthClient extends OAuthResourceClient {
     userId,
     db,
     callbackUrl,
+    clientName = callbackUrl,
     isPublic,
     fetchFn = fetch,
     sideChannelFetch = fetchFn,
-    strict = true,
-    allowInsecureRequests = process.env.NODE_ENV === 'development'
+    strict = false,
+    allowInsecureRequests = process.env.NODE_ENV === 'development',
   }: OAuthClientConfig) {
     super({
       db: db,
@@ -70,7 +72,8 @@ export class OAuthClient extends OAuthResourceClient {
       isPublic,
       sideChannelFetch,
       strict,
-      allowInsecureRequests
+      allowInsecureRequests,
+      clientName
     });
     this.db = db;
     this.userId = userId;

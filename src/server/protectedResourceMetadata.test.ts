@@ -11,7 +11,7 @@ describe('getProtectedResourceMetadata', () => {
     const metadata = getProtectedResourceMetadata(config, req);
     expect(metadata).toMatchObject({
       resource: 'https://example.com',
-      resource_name: 'https://example.com',
+      resource_name: 'A PayMcp Server',
       authorization_servers: ['https://auth.paymcp.com'],
       bearer_methods_supported: ['header'],
       scopes_supported: ['read', 'write'],
@@ -41,7 +41,7 @@ describe('getProtectedResourceMetadata', () => {
     const metadata = getProtectedResourceMetadata(config, req);
     expect(metadata).toMatchObject({
       resource: 'http://example.com/mcp',
-      resource_name: 'http://example.com/mcp',
+      resource_name: 'A PayMcp Server',
       authorization_servers: ['https://auth.paymcp.com'],
       bearer_methods_supported: ['header'],
       scopes_supported: ['read', 'write'],
@@ -83,7 +83,7 @@ describe('getProtectedResourceMetadata', () => {
     const metadata = getProtectedResourceMetadata(config, req);
     expect(metadata).toMatchObject({
       resource: 'https://example.com',
-      resource_name: 'https://example.com',
+      resource_name: 'A PayMcp Server',
       authorization_servers: ['https://auth.paymcp.com'],
       bearer_methods_supported: ['header'],
       scopes_supported: ['read', 'write'],
@@ -98,7 +98,7 @@ describe('getProtectedResourceMetadata', () => {
     const metadata = getProtectedResourceMetadata(config, req);
     expect(metadata).toMatchObject({
       resource: 'https://example.com',
-      resource_name: 'https://example.com',
+      resource_name: 'A PayMcp Server',
       authorization_servers: ['https://auth.paymcp.com'],
       bearer_methods_supported: ['header'],
       scopes_supported: ['read', 'write'],
@@ -113,7 +113,7 @@ describe('getProtectedResourceMetadata', () => {
     const metadata = getProtectedResourceMetadata(config, req);
     expect(metadata).toMatchObject({
       resource: 'https://example.com/mcp',
-      resource_name: 'https://example.com/mcp',
+      resource_name: 'A PayMcp Server',
       authorization_servers: ['https://auth.paymcp.com'],
       bearer_methods_supported: ['header'],
       scopes_supported: ['read', 'write'],
@@ -128,7 +128,7 @@ describe('getProtectedResourceMetadata', () => {
     const metadata = getProtectedResourceMetadata(config, req);
     expect(metadata).toMatchObject({
       resource: 'https://example.com/mcp',
-      resource_name: 'https://example.com/mcp',
+      resource_name: 'A PayMcp Server',
       authorization_servers: ['https://auth.paymcp.com'],
       bearer_methods_supported: ['header'],
       scopes_supported: ['read', 'write'],
@@ -143,7 +143,7 @@ describe('getProtectedResourceMetadata', () => {
     const metadata = getProtectedResourceMetadata(config, req);
     expect(metadata).toMatchObject({
       resource: 'https://example.com/mcp',
-      resource_name: 'https://example.com/mcp',
+      resource_name: 'A PayMcp Server',
       authorization_servers: ['https://auth.paymcp.com'],
       bearer_methods_supported: ['header'],
       scopes_supported: ['read', 'write'],
@@ -158,7 +158,7 @@ describe('getProtectedResourceMetadata', () => {
     const metadata = getProtectedResourceMetadata(config, req);
     expect(metadata).toMatchObject({
       resource: 'https://example.com/mcp/message',
-      resource_name: 'https://example.com/mcp/message',
+      resource_name: 'A PayMcp Server',
       authorization_servers: ['https://auth.paymcp.com'],
       bearer_methods_supported: ['header'],
       scopes_supported: ['read', 'write'],

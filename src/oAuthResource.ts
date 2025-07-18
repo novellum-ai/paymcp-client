@@ -1,21 +1,27 @@
 import * as oauth from 'oauth4webapi';
-import { ClientCredentials, FetchLike, OAuthResourceDb, TokenData } from './types';
+import { ClientCredentials, FetchLike, OAuthResourceDb, OAuthDb, TokenData } from './types';
 
 export interface OAuthResourceClientConfig {
-  db: OAuthResourceDb;
+  db: OAuthDb;
   callbackUrl?: string;
   isPublic?: boolean;
   sideChannelFetch?: FetchLike;
   strict?: boolean;
   allowInsecureRequests?: boolean;
+  clientName?: string;
 }
 
 export class OAuthResourceClient {
+  // Deliberately using OAuthResourceDb (a subset of OAuthDb) here, because no
+  // internal functionality of this class should rely on OAuthDb methods.
+  // However, it's useful to use this class to pass around the DB for other clients,
+  // since it's part of the global server context
   protected db: OAuthResourceDb;
   protected allowInsecureRequests: boolean;
   protected callbackUrl: string;
   protected sideChannelFetch: FetchLike;
   protected strict: boolean;
+  protected clientName: string;
   // Whether this is a public client, which is incapable of keeping a client secret
   // safe, or a confidential client, which can.
   protected isPublic: boolean;
@@ -25,8 +31,9 @@ export class OAuthResourceClient {
     callbackUrl = 'http://localhost:3000/unused-dummy-global-callback',
     isPublic = false,
     sideChannelFetch = fetch,
-    strict = true,
-    allowInsecureRequests = process.env.NODE_ENV === 'development'
+    strict = false,
+    allowInsecureRequests = process.env.NODE_ENV === 'development',
+    clientName = 'Token Introspection Client'
   }: OAuthResourceClientConfig) {
     // Default values above are appropriate for a global client used directly. Subclasses should override these,
     // because things like the callbackUrl will actually be important for them
@@ -36,6 +43,7 @@ export class OAuthResourceClient {
     this.sideChannelFetch = sideChannelFetch;
     this.strict = strict;
     this.allowInsecureRequests = allowInsecureRequests;
+    this.clientName = clientName;
   }
 
   static trimToPath = (url: string): string => {
@@ -211,7 +219,7 @@ export class OAuthResourceClient {
       response_types: ['code'],
       grant_types: ['authorization_code', 'client_credentials'], 
       token_endpoint_auth_method: 'client_secret_basic',
-      client_name: `Token Introspection Client for ${this.callbackUrl}`,
+      client_name: this.clientName,
     }; 
     return clientMetadata;
   }

@@ -1,11 +1,9 @@
 import { BigNumber } from "bignumber.js";
 import { IncomingMessage } from "http";
 import { Charge, PayMcpConfig, TokenCheck, TokenProblem } from "./types.js";
-import { payMcpContext } from "./context.js";
+import { OAuthResourceClient } from "../oAuthResource.js";
 
 export async function checkToken(config: PayMcpConfig, req: IncomingMessage, charges: Charge[]): Promise<TokenCheck> {
-  const context = payMcpContext();
-
   const url = new URL(req.url || '');
   const protocol = url.protocol;
   const protectedResourceMetadataUrl = `${protocol}//${url.host}/.well-known/oauth-protected-resource${url.pathname}`;
@@ -18,10 +16,10 @@ export async function checkToken(config: PayMcpConfig, req: IncomingMessage, cha
   // Extract the Bearer token from the Authorization header
   const authHeader = req.headers.authorization;
   if (!authHeader) {
-    return {...failure, problem: TokenProblem.NO_TOKEN, token: null}
+    return {...failure, problem: TokenProblem.NO_TOKEN, data: null, token: null}
   }
   if (!authHeader.startsWith('Bearer ')) {
-    return {...failure, problem: TokenProblem.NON_BEARER_AUTH_HEADER, token: null}
+    return {...failure, problem: TokenProblem.NON_BEARER_AUTH_HEADER, data: null, token: null}
   }
 
   const token = authHeader.substring(7);
@@ -29,21 +27,35 @@ export async function checkToken(config: PayMcpConfig, req: IncomingMessage, cha
   const aggregatedCharge = aggregateCharge(config, charges);
 
   try {
+    const client = getResourceClient(config);
     let additionalParameters = {charge: aggregatedCharge.amount.toString()};
-    const introspectionResult = await config.oAuthClient.introspectToken(config.server, token, additionalParameters);
+    const introspectionResult = await client.introspectToken(config.server, token, additionalParameters);
     
     if (!introspectionResult.active) {
-      return {...failure, problem: TokenProblem.INVALID_TOKEN, token: null}
+      return {...failure, problem: TokenProblem.INVALID_TOKEN, data: null, token}
     }
 
     return {
       passes: true,
-      token: introspectionResult,
+      data: introspectionResult,
+      token,
     };
   } catch (error) {
-    context.logger.error(`Error during token introspection: ${error}`);
-    return {...failure, problem: TokenProblem.INTROSPECT_ERROR, token: null};
+    config.logger.error(`Error during token introspection: ${error}`);
+    return {...failure, problem: TokenProblem.INTROSPECT_ERROR, data: null, token};
   }
+}
+
+function getResourceClient(config: PayMcpConfig): OAuthResourceClient {
+  if (config.oAuthClient) {
+    return config.oAuthClient;
+  }
+
+  return new OAuthResourceClient({
+    db: config.oAuthDb,
+    allowInsecureRequests: config.allowHttp,
+    clientName: config.payeeName,
+  });
 }
 
 function aggregateCharge(config: PayMcpConfig, charges: Charge[]): Charge  {
