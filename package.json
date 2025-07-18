@@ -1,5 +1,5 @@
 {
-  "name": "@paymcp/sdk",
+  "name": "@longrun/paymcp-client",
   "version": "0.0.49",
   "description": "PayMcp SDK",
   "license": "MIT",
