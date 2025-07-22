@@ -1,7 +1,6 @@
 import { BigNumber } from "bignumber.js";
 import { IncomingMessage } from "http";
 import { Charge, PayMcpConfig, TokenCheck, TokenProblem } from "./types.js";
-import { OAuthResourceClient } from "../oAuthResource.js";
 
 export async function checkToken(config: PayMcpConfig, req: IncomingMessage, charges: Charge[]): Promise<TokenCheck> {
   const url = new URL(req.url || '');
@@ -24,12 +23,12 @@ export async function checkToken(config: PayMcpConfig, req: IncomingMessage, cha
 
   const token = authHeader.substring(7);
 
+  // Nope
   const aggregatedCharge = aggregateCharge(config, charges);
 
   try {
-    const client = getResourceClient(config);
     let additionalParameters = {charge: aggregatedCharge.amount.toString()};
-    const introspectionResult = await client.introspectToken(config.server, token, additionalParameters);
+    const introspectionResult = await config.oAuthClient.introspectToken(config.server, token, additionalParameters);
     
     if (!introspectionResult.active) {
       return {...failure, problem: TokenProblem.INVALID_TOKEN, data: null, token}
@@ -44,18 +43,6 @@ export async function checkToken(config: PayMcpConfig, req: IncomingMessage, cha
     config.logger.error(`Error during token introspection: ${error}`);
     return {...failure, problem: TokenProblem.INTROSPECT_ERROR, data: null, token};
   }
-}
-
-function getResourceClient(config: PayMcpConfig): OAuthResourceClient {
-  if (config.oAuthClient) {
-    return config.oAuthClient;
-  }
-
-  return new OAuthResourceClient({
-    db: config.oAuthDb,
-    allowInsecureRequests: config.allowHttp,
-    clientName: config.payeeName,
-  });
 }
 
 function aggregateCharge(config: PayMcpConfig, charges: Charge[]): Charge  {

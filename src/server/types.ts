@@ -1,7 +1,6 @@
 import { BigNumber } from "bignumber.js";
 import { Logger } from "../logger.js";
 import { OAuthDb, TokenData } from "../types.js";
-import { IncomingMessage } from "http";
 import { OAuthResourceClient } from "../oAuthResource.js";
 
 // https://github.com/modelcontextprotocol/typescript-sdk/blob/c6ac083b1b37b222b5bfba5563822daa5d03372e/src/types.ts
@@ -22,15 +21,34 @@ export type Currency = 'USDC';
 export type Network = 'solana';
 export type RefundErrors = boolean | 'nonMcpOnly';
 
-export type Price = BigNumber | { [K in McpOperationPattern]?: BigNumber } | ((req: IncomingMessage, op: McpOperation, params: any) => Promise<BigNumber>);
-export type ToolPrice = BigNumber | { [K in McpNamePattern]?: BigNumber } | ((req: IncomingMessage, toolName: McpName, params: any) => Promise<BigNumber>);
-
 export type AuthorizationServerUrl = `http://${string}` | `https://${string}`;
 
+export type RequirePaymentConfig = {
+  price: BigNumber;
+  getExistingPaymentId?: () => Promise<string | null>;
+}
+
+export type RequirePaymentResponse = {
+  success: boolean;
+  requiredPaymentId: string | null;
+}
+
+export type Charge = Required<Pick<PayMcpConfig, 'currency' | 'network' | 'destination'>> & {
+  amount: BigNumber;
+  source: PayMcpConfig['destination'];
+}
+
+export type ChargeResponse = {
+  success: boolean;
+  requiredPayment: Charge;
+}
+
+export type PaymentServer = {
+  charge: (args: Charge) => Promise<ChargeResponse>;
+  createPaymentRequest: (args: Charge & {resource: string}) => Promise<string>;
+}
+
 export type PayMcpConfig = {
-  // Intended for future expansion, to generalize prices to operations than tool calls
-  //price: Price
-  toolPrice: ToolPrice;
   destination: string;
   mountPath: string;
   currency: Currency;
@@ -41,13 +59,10 @@ export type PayMcpConfig = {
   //refundErrors: RefundErrors;
   logger: Logger;
   oAuthDb: OAuthDb;
-  // If not provided, the oAuthClient will be created by the paymcp() middleware
-  oAuthClient: OAuthResourceClient | null;
+  oAuthClient: OAuthResourceClient;
+  paymentServer: PaymentServer;
 }
 
-export type Charge = Required<Pick<PayMcpConfig, 'currency' | 'network' | 'destination'>> & {
-  amount: BigNumber;
-}
 
 export enum TokenProblem {
   NO_TOKEN = 'NO-TOKEN',

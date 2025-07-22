@@ -3,8 +3,8 @@ import { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'http';
 import { JSONRPCRequest } from '@modelcontextprotocol/sdk/types.js';
 import { OAuthResourceClient } from '../oAuthResource.js';
 import { vi } from 'vitest';
-import { Charge, PayMcpConfig, Currency, Network, TokenCheck, TokenCheckPass, TokenCheckFail, TokenProblem, McpMethod, McpName } from './types.js';
-import { DEFAULT_CONFIG } from './index.js';
+import { Charge, PayMcpConfig, Currency, Network, TokenCheck, TokenCheckPass, TokenCheckFail, TokenProblem, McpMethod, McpName, PaymentServer } from './types.js';
+import { DEFAULT_CONFIG } from './payMcp.js';
 import { TokenData } from '../types.js';
 import { Logger } from '../logger.js';
 import { BigNumber } from 'bignumber.js';
@@ -49,6 +49,16 @@ export function config({
   // which means it'd be shared across tests. So we create a new one for each test.
   const oAuthDb = new SqliteOAuthDb({db: ':memory:'});
   return {...DEFAULT_CONFIG, oAuthDb, toolPrice, destination, logger: logger(), ...rest };
+}
+
+export function paymentServer({
+  charge = vi.fn().mockResolvedValue({success: true, requiredPaymentId: null}),
+  createPaymentRequest = vi.fn().mockResolvedValue('test-payment-request-id')
+} = {}) : PaymentServer {
+  return {
+    charge,
+    createPaymentRequest,
+  } as unknown as PaymentServer;
 }
 
 export function mcpRequest({method = 'tools/call', params = {}, id = 'call-1'}: {
