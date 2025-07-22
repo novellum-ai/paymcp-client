@@ -6,7 +6,8 @@ import { sendOAuthChallenge } from "./oAuthChallenge.js";
 import { withPayMcpContext } from "./payMcpContext.js";
 import { parseMcpRequests } from "./http.js";
 import { Request, Response, NextFunction } from "express";
-import { getProtectedResourceMetadata as getPRMResponse, getResource, sendProtectedResourceMetadata } from "./protectedResourceMetadata.js";
+import { getProtectedResourceMetadata as getPRMResponse, sendProtectedResourceMetadata } from "./protectedResourceMetadata.js";
+import { getResource } from "./getResource.js";
 import { PayMcpPaymentServer } from "./paymentServer.js";
 import { OAuthResourceClient } from "../oAuthResource.js";
 

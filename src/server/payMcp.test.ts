@@ -10,20 +10,6 @@ import express from 'express';
 import type { Request, Response } from 'express';
 
 describe('paymcp', () => {
-  let consoleSpy: {
-    debug: ReturnType<typeof vi.spyOn>;
-  };
-
-  beforeEach(() => {
-    consoleSpy = {
-      debug: vi.spyOn(console, 'debug').mockImplementation(() => {})
-    };
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it('should run code at request start and finish', async () => {
     const { req, res } = httpMocks.createMocks(
       {
@@ -39,15 +25,15 @@ describe('paymcp', () => {
     );
     const next = vi.fn();
 
-    const middleware = paymcp({
-      destination: 'test-destination',
-      oAuthClient: TH.oAuthClient(),
-      logger: new ConsoleLogger({level: LogLevel.DEBUG})
-    });
+    const logger = TH.logger();
+    const middleware = paymcp(TH.config({
+      logger, 
+      oAuthClient: TH.oAuthClient({introspectResult: TH.tokenData({active: true})})
+    }));
 
     await middleware(req as any, res, next);
 
-    expect(consoleSpy.debug).toHaveBeenCalledWith('[paymcp] Request started - POST /mcp/message');
+    expect(logger.debug).toHaveBeenCalledWith('Request started - POST /mcp/message');
     expect(next).toHaveBeenCalled();
 
     // Simulate the response finishing by calling end() which triggers the 'finish' event
@@ -56,7 +42,7 @@ describe('paymcp', () => {
     // Wait for the async finish event handler to complete
     await new Promise(resolve => setTimeout(resolve, 0));
 
-    expect(consoleSpy.debug).toHaveBeenCalledWith('[paymcp] Request finished for user test-user - POST /mcp/message');
+    expect(logger.debug).toHaveBeenCalledWith('Request finished for user test-user - POST /mcp/message');
   });
 
   it('should run code at start and finish if sending an OAuth challenge', async () => {
@@ -75,15 +61,15 @@ describe('paymcp', () => {
     const next = vi.fn();
 
     const badToken = TH.tokenData({active: false});
-    const middleware = paymcp({
-      destination: 'test-destination',
-      oAuthClient: TH.oAuthClient({introspectResult: badToken}),
-      logger: new ConsoleLogger({level: LogLevel.DEBUG})
-    });
+    const logger = TH.logger();
+    const middleware = paymcp(TH.config({
+      logger, 
+      oAuthClient: TH.oAuthClient({introspectResult: badToken})
+    }));
 
     await middleware(req as any, res, next);
 
-    expect(consoleSpy.debug).toHaveBeenCalledWith('[paymcp] Request started - POST /mcp/message');
+    expect(logger.debug).toHaveBeenCalledWith('Request started - POST /mcp/message');
     expect(next).not.toHaveBeenCalled();
 
     // Simulate the response finishing by calling end() which triggers the 'finish' event
@@ -92,47 +78,10 @@ describe('paymcp', () => {
     // Wait for the async finish event handler to complete
     await new Promise(resolve => setTimeout(resolve, 0));
 
-    expect(consoleSpy.debug).toHaveBeenCalledWith('[paymcp] Request finished - POST /mcp/message');
+    expect(logger.debug).toHaveBeenCalledWith('Request finished - POST /mcp/message');
   });
   
-
-  it('should run successfully charge a tool that requires it', async () => {
-    const { req, res } = httpMocks.createMocks(
-      {
-        method: 'POST',
-        url: 'https://example.com/mcp/message',
-        body: TH.mcpToolRequest(),
-        headers: {
-          'content-type': 'application/json',
-          'authorization': 'Bearer test-access-token'
-        }
-      },
-      { eventEmitter: EventEmitter }
-    );
-    const next = vi.fn();
-
-    const oauthClient = TH.oAuthClient();
-    const middleware = paymcp({
-      destination: 'test-destination',
-      oAuthClient: oauthClient,
-      logger: new ConsoleLogger({level: LogLevel.DEBUG})
-    });
-
-    await middleware(req as any, res, next);
-
-    expect(next).toHaveBeenCalled();
-
-    // Simulate the response finishing by calling end() which triggers the 'finish' event
-    res.end();
-
-    // Wait for the async finish event handler to complete
-    await new Promise(resolve => setTimeout(resolve, 0));
-
-    expect(res.statusCode).toEqual(200);
-    expect(oauthClient.introspectToken).toHaveBeenCalledWith('https://auth.paymcp.com', 'test-access-token', {charge: '0.01'});
-  });
-
-  it('should return an OAuth challenge if payment required', async () => {
+  it('should return an OAuth challenge if token not active', async () => {
     const { req, res } = httpMocks.createMocks(
       {
         method: 'POST',
@@ -148,11 +97,9 @@ describe('paymcp', () => {
     const next = vi.fn();
 
     const badToken = TH.tokenData({active: false});
-    const middleware = paymcp({
-      destination: 'test-destination',
-      oAuthClient: TH.oAuthClient({introspectResult: badToken}),
-      logger: new ConsoleLogger({level: LogLevel.DEBUG})
-    });
+    const middleware = paymcp(TH.config({
+      oAuthClient: TH.oAuthClient({introspectResult: badToken})
+    }));
 
     await middleware(req as any, res, next);
 

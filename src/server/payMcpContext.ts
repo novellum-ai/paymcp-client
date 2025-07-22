@@ -1,5 +1,4 @@
 import { TokenData } from "../types.js";
-import { getResource } from "./protectedResourceMetadata.js";
 import { PayMcpConfig, TokenCheck } from "./types.js";
 import { AsyncLocalStorage } from "async_hooks";
 

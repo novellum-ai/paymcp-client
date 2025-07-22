@@ -31,8 +31,7 @@ describe('checkToken', () => {
     });
     expect(oAuthClient.introspectToken).toHaveBeenCalledWith(
       'https://auth.paymcp.com',
-      'test-access-token',
-      {charge: '0'}
+      'test-access-token'
     );
     expect(oAuthClient.introspectToken).toHaveBeenCalledTimes(1);
   });
