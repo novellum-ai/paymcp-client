@@ -1,11 +1,9 @@
 import { ConsoleLogger } from "../logger.js";
 import { SqliteOAuthDb } from "../oAuthDb.js";
 import { PayMcpConfig } from "./types.js";
-import { getCharge } from "./charge.js";
 import { checkToken } from "./token.js";
 import { sendOAuthChallenge } from "./oAuthChallenge.js";
 import { withPayMcpContext } from "./payMcpContext.js";
-import { getRefunds, processRefunds } from "./refund.js";
 import { parseMcpRequests } from "./http.js";
 import { Request, Response, NextFunction } from "express";
 import { getProtectedResourceMetadata as getPRMResponse, sendProtectedResourceMetadata } from "./protectedResourceMetadata.js";
@@ -63,15 +61,11 @@ export function paymcp(args: PayMcpArgs): (req: Request, res: Response, next: Ne
       }
 
       logger.debug(`Request started - ${req.method} ${req.path}`);
-      const charges = await Promise.all(mcpRequests.map(mcpr => getCharge(config, req, mcpr)));
-      const tokenCheck = await checkToken(config, req, charges);
+      const tokenCheck = await checkToken(config, req);
       const user = tokenCheck.data?.sub ?? null;
 
       // Listen for when the response is finished
       res.on('finish', async () => {
-        const refunds = await getRefunds(config, res, charges);
-        await processRefunds(config, user, refunds);
-        
         logger.debug(`Request finished ${user ? `for user ${user} ` : ''}- ${req.method} ${req.path}`);
       });
 

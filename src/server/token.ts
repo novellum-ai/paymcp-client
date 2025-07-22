@@ -1,8 +1,8 @@
 import { BigNumber } from "bignumber.js";
 import { IncomingMessage } from "http";
-import { Charge, PayMcpConfig, TokenCheck, TokenProblem } from "./types.js";
+import { PayMcpConfig, TokenCheck, TokenProblem } from "./types.js";
 
-export async function checkToken(config: PayMcpConfig, req: IncomingMessage, charges: Charge[]): Promise<TokenCheck> {
+export async function checkToken(config: PayMcpConfig, req: IncomingMessage): Promise<TokenCheck> {
   const url = new URL(req.url || '');
   const protocol = url.protocol;
   const protectedResourceMetadataUrl = `${protocol}//${url.host}/.well-known/oauth-protected-resource${url.pathname}`;
@@ -23,12 +23,8 @@ export async function checkToken(config: PayMcpConfig, req: IncomingMessage, cha
 
   const token = authHeader.substring(7);
 
-  // Nope
-  const aggregatedCharge = aggregateCharge(config, charges);
-
   try {
-    let additionalParameters = {charge: aggregatedCharge.amount.toString()};
-    const introspectionResult = await config.oAuthClient.introspectToken(config.server, token, additionalParameters);
+    const introspectionResult = await config.oAuthClient.introspectToken(config.server, token);
     
     if (!introspectionResult.active) {
       return {...failure, problem: TokenProblem.INVALID_TOKEN, data: null, token}
@@ -43,31 +39,4 @@ export async function checkToken(config: PayMcpConfig, req: IncomingMessage, cha
     config.logger.error(`Error during token introspection: ${error}`);
     return {...failure, problem: TokenProblem.INTROSPECT_ERROR, data: null, token};
   }
-}
-
-function aggregateCharge(config: PayMcpConfig, charges: Charge[]): Charge  {
-  if (charges.length === 0) {
-    return {
-      amount: BigNumber(0),
-      currency: config.currency,
-      network: config.network,
-      destination: config.destination,
-    };
-  }
-
-  const res: Charge = {...charges[0], amount: BigNumber(0)};
-  for (const charge of charges) {
-    if (charge.currency !== config.currency) {
-      throw new Error('Charges with multiple currencies are not allowed');
-    }
-    if (charge.network !== config.network) {
-      throw new Error('Charges with multiple networks are not allowed');
-    }
-    if (charge.destination !== config.destination) {
-      throw new Error('Charges with multiple destinations are not allowed');
-    }
-    res.amount = res.amount.plus(charge.amount);
-  }
-
-  return res;
 }
