@@ -11,13 +11,14 @@ describe('continueWithPayMcpContext', () => {
   });
 
   it('should make config available within the context', () => {
-    withPayMcpContext(TH.config(), 'https://example.com', TH.tokenCheck(), () => {
+    const config = TH.config();
+    withPayMcpContext(config, 'https://example.com', TH.tokenCheck(), () => {
       const config = getPayMcpConfig();
-      expect(config).toBe(TH.config());
+      expect(config).toBe(config);
     });
   });
 
-  it('should make config available in event callbacks', () => {
+  it('should make user available in event callbacks', () => {
     return new Promise<void>((resolve) => {
       withPayMcpContext(TH.config(), 'https://example.com', TH.tokenCheck(), () => {
         // Simulate setting up an event listener (like res.on('finish'))
@@ -38,14 +39,15 @@ describe('continueWithPayMcpContext', () => {
 
   it('should make config available in event callbacks', () => {
     return new Promise<void>((resolve) => {
-      withPayMcpContext(TH.config(), 'https://example.com', TH.tokenCheck(), () => {
+      const testConfig = TH.config();
+      withPayMcpContext(testConfig, 'https://example.com', TH.tokenCheck(), () => {
         // Simulate setting up an event listener (like res.on('finish'))
         const eventEmitter = new EventTarget();
         
         eventEmitter.addEventListener('test', () => {
           // This callback should have access to the config
           const config = getPayMcpConfig();
-          expect(config).toBe(TH.config());
+          expect(config).toBe(testConfig);
           resolve();
         });
         
