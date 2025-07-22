@@ -8,7 +8,7 @@ describe('getProtectedResourceMetadata', () => {
       url: 'https://example.com/.well-known/oauth-protected-resource'
     });
     const config = TH.config();
-    const metadata = getProtectedResourceMetadata(config, req);
+    const metadata = getProtectedResourceMetadata(config, 'https://example.com', req);
     expect(metadata).toMatchObject({
       resource: 'https://example.com',
       resource_name: 'A PayMcp Server',
@@ -23,7 +23,7 @@ describe('getProtectedResourceMetadata', () => {
       url: 'https://example.com/.well-known/oauth-protected-resource'
     });
     const config = TH.config({payeeName: 'test-payee'});
-    const metadata = getProtectedResourceMetadata(config, req);
+    const metadata = getProtectedResourceMetadata(config, 'https://example.com', req);
     expect(metadata).toMatchObject({
       resource: 'https://example.com',
       resource_name: 'test-payee',
@@ -38,7 +38,7 @@ describe('getProtectedResourceMetadata', () => {
       url: 'http://example.com/.well-known/oauth-protected-resource/mcp'
     });
     const config = TH.config({mountPath: '/mcp'});
-    const metadata = getProtectedResourceMetadata(config, req);
+    const metadata = getProtectedResourceMetadata(config, 'https://example.com', req);
     expect(metadata).toMatchObject({
       resource: 'http://example.com/mcp',
       resource_name: 'A PayMcp Server',
@@ -53,7 +53,7 @@ describe('getProtectedResourceMetadata', () => {
       url: 'https://example.com/.well-known/oauth-protected-resource/some/sub/path'
     });
     const config = TH.config();
-    const metadata = getProtectedResourceMetadata(config, req);
+    const metadata = getProtectedResourceMetadata(config, 'https://example.com', req);
     expect(metadata).toBeNull();
   });
 
@@ -62,7 +62,7 @@ describe('getProtectedResourceMetadata', () => {
       url: 'https://example.com/some/random/path'
     });
     const config = TH.config();
-    const metadata = getProtectedResourceMetadata(config, req);
+    const metadata = getProtectedResourceMetadata(config, 'https://example.com', req);
     expect(metadata).toBeNull();
   });
 
@@ -71,7 +71,7 @@ describe('getProtectedResourceMetadata', () => {
       url: 'https://example.com'
     });
     const config = TH.config();
-    const metadata = getProtectedResourceMetadata(config, req);
+    const metadata = getProtectedResourceMetadata(config, 'https://example.com', req);
     expect(metadata).toBeNull();
   });
 
@@ -80,7 +80,7 @@ describe('getProtectedResourceMetadata', () => {
       url: 'https://example.com/.well-known/oauth-protected-resource/'
     });
     const config = TH.config();
-    const metadata = getProtectedResourceMetadata(config, req);
+    const metadata = getProtectedResourceMetadata(config, 'https://example.com', req);
     expect(metadata).toMatchObject({
       resource: 'https://example.com',
       resource_name: 'A PayMcp Server',
@@ -95,7 +95,7 @@ describe('getProtectedResourceMetadata', () => {
       url: 'https://example.com/.well-known/oauth-protected-resource'
     });
     const config = TH.config();
-    const metadata = getProtectedResourceMetadata(config, req);
+    const metadata = getProtectedResourceMetadata(config, 'https://example.com', req);
     expect(metadata).toMatchObject({
       resource: 'https://example.com',
       resource_name: 'A PayMcp Server',
@@ -110,7 +110,7 @@ describe('getProtectedResourceMetadata', () => {
       url: 'https://example.com/.well-known/oauth-protected-resource/mcp'
     });
     const config = TH.config({mountPath: '/mcp/'});
-    const metadata = getProtectedResourceMetadata(config, req);
+    const metadata = getProtectedResourceMetadata(config, 'https://example.com', req);
     expect(metadata).toMatchObject({
       resource: 'https://example.com/mcp',
       resource_name: 'A PayMcp Server',
@@ -125,7 +125,7 @@ describe('getProtectedResourceMetadata', () => {
       url: 'https://example.com/.well-known/oauth-protected-resource/mcp'
     });
     const config = TH.config({mountPath: '/mcp'});
-    const metadata = getProtectedResourceMetadata(config, req);
+    const metadata = getProtectedResourceMetadata(config, 'https://example.com', req);
     expect(metadata).toMatchObject({
       resource: 'https://example.com/mcp',
       resource_name: 'A PayMcp Server',
@@ -140,7 +140,7 @@ describe('getProtectedResourceMetadata', () => {
       url: 'https://example.com/.well-known/oauth-protected-resource/mcp?query=string'
     });
     const config = TH.config({mountPath: '/mcp'});
-    const metadata = getProtectedResourceMetadata(config, req);
+    const metadata = getProtectedResourceMetadata(config, 'https://example.com', req);
     expect(metadata).toMatchObject({
       resource: 'https://example.com/mcp',
       resource_name: 'A PayMcp Server',
@@ -155,7 +155,7 @@ describe('getProtectedResourceMetadata', () => {
       url: 'https://example.com/.well-known/oauth-protected-resource/mcp/message'
     });
     const config = TH.config({mountPath: '/mcp'});
-    const metadata = getProtectedResourceMetadata(config, req);
+    const metadata = getProtectedResourceMetadata(config, 'https://example.com', req);
     expect(metadata).toMatchObject({
       resource: 'https://example.com/mcp/message',
       resource_name: 'A PayMcp Server',

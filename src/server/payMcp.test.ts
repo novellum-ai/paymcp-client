@@ -40,7 +40,6 @@ describe('paymcp', () => {
     const next = vi.fn();
 
     const middleware = paymcp({
-      toolPrice: new BigNumber(0.01),
       destination: 'test-destination',
       oAuthClient: TH.oAuthClient(),
       logger: new ConsoleLogger({level: LogLevel.DEBUG})
@@ -77,7 +76,6 @@ describe('paymcp', () => {
 
     const badToken = TH.tokenData({active: false});
     const middleware = paymcp({
-      toolPrice: new BigNumber(0.01),
       destination: 'test-destination',
       oAuthClient: TH.oAuthClient({introspectResult: badToken}),
       logger: new ConsoleLogger({level: LogLevel.DEBUG})
@@ -115,7 +113,6 @@ describe('paymcp', () => {
 
     const oauthClient = TH.oAuthClient();
     const middleware = paymcp({
-      toolPrice: new BigNumber(0.01),
       destination: 'test-destination',
       oAuthClient: oauthClient,
       logger: new ConsoleLogger({level: LogLevel.DEBUG})
@@ -152,7 +149,6 @@ describe('paymcp', () => {
 
     const badToken = TH.tokenData({active: false});
     const middleware = paymcp({
-      toolPrice: new BigNumber(0.01),
       destination: 'test-destination',
       oAuthClient: TH.oAuthClient({introspectResult: badToken}),
       logger: new ConsoleLogger({level: LogLevel.DEBUG})
@@ -175,7 +171,6 @@ describe('paymcp', () => {
     const next = vi.fn();
 
     const middleware = paymcp({
-      toolPrice: new BigNumber(0.01),
       destination: 'test-destination',
     });
 
@@ -196,7 +191,6 @@ describe('paymcp', () => {
     const next = vi.fn();
 
     const middleware = paymcp({
-      toolPrice: new BigNumber(0.01),
       destination: 'test-destination',
     });
 

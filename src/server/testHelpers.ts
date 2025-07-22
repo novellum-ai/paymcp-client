@@ -4,27 +4,29 @@ import { JSONRPCRequest } from '@modelcontextprotocol/sdk/types.js';
 import { OAuthResourceClient } from '../oAuthResource.js';
 import { vi } from 'vitest';
 import { Charge, PayMcpConfig, Currency, Network, TokenCheck, TokenCheckPass, TokenCheckFail, TokenProblem, McpMethod, McpName, PaymentServer } from './types.js';
-import { DEFAULT_CONFIG } from './payMcp.js';
 import { TokenData } from '../types.js';
 import { Logger } from '../logger.js';
 import { BigNumber } from 'bignumber.js';
-import { SqliteOAuthDb } from '../oAuthDb.js';
+import { buildConfig, PayMcpArgs } from './payMcp.js';
 
 export const DESTINATION = 'testDestination';
+export const SOURCE = 'testSource';
 
 export function charge({
     amount = BigNumber(0.01),
     currency = 'USDC',
     network = 'solana',
-    destination = DESTINATION
+    destination = DESTINATION,
+    source = SOURCE
   }: {
     amount?: BigNumber,
     currency?: Currency,
     network?: Network,
-    destination?: string
+    destination?: string,
+    source?: string
   } = {}): Charge {
 
-  return { amount, currency, network, destination };
+  return { amount, currency, network, destination, source };
 }
 
 export const oneCentCharge = charge({amount: BigNumber(0.01)});
@@ -40,15 +42,8 @@ export function logger(): Logger {
   };
 }
 
-export function config({
-  toolPrice = BigNumber(0.01), 
-  destination = DESTINATION, 
-  ...rest}: Partial<PayMcpConfig> = {}): PayMcpConfig {
-
-  // DEFAULT_CONFIG by default creates a single in-memory DB at load time,
-  // which means it'd be shared across tests. So we create a new one for each test.
-  const oAuthDb = new SqliteOAuthDb({db: ':memory:'});
-  return {...DEFAULT_CONFIG, oAuthDb, toolPrice, destination, logger: logger(), ...rest };
+export function config(args: Partial<PayMcpConfig> = {}): PayMcpConfig {
+  return buildConfig({...args, destination: args.destination ?? DESTINATION});
 }
 
 export function paymentServer({

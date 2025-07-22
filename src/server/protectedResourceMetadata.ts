@@ -17,7 +17,10 @@ function getPath(req: IncomingMessage): string {
   return fullPath;
 }
 
-export function getResource(req: IncomingMessage): string {
+export function getResource(config: PayMcpConfig, req: IncomingMessage): string {
+  if (config.resource) {
+    return config.resource;
+  }
   const url = new URL(req.url || '');
   const protocol = url.protocol;
   const host = url.host;
@@ -30,9 +33,8 @@ export function getResource(req: IncomingMessage): string {
   return resource;
 }
 
-export function getProtectedResourceMetadata(config: PayMcpConfig, req: IncomingMessage): ProtectedResourceMetadata | null {
+export function getProtectedResourceMetadata(config: PayMcpConfig, resource: string, req: IncomingMessage): ProtectedResourceMetadata | null {
   if (isProtectedResourceMetadataRequest(config, req)) {
-    const resource = getResource(req);
     return {
       resource,
       resource_name: config.payeeName || resource,

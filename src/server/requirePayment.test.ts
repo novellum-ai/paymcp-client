@@ -15,7 +15,7 @@ describe('requirePayment', () => {
   it('should pass if there is money', () => {
     const paymentServer = TH.paymentServer({charge: vi.fn().mockResolvedValue({success: true, requiredPaymentId: null})});
     const config = TH.config({ paymentServer });
-    withPayMcpContext(config, TH.tokenCheck(), async () => {
+    withPayMcpContext(config, 'https://example.com', TH.tokenCheck(), async () => {
       expect(async() => await requirePayment({price: BigNumber(0.01)})).resolves.not.toThrow();
     });
   });
@@ -23,7 +23,7 @@ describe('requirePayment', () => {
   it('should call the paymcp server /charge endpoint', () => {
     const paymentServer = TH.paymentServer({charge: vi.fn().mockResolvedValue({success: true, requiredPaymentId: null})});
     const config = TH.config({ paymentServer });
-    withPayMcpContext(config, TH.tokenCheck(), async () => {
+    withPayMcpContext(config, 'https://example.com', TH.tokenCheck(), async () => {
       expect(async() => await requirePayment({price: BigNumber(0.01)})).resolves.not.toThrow();
       expect(paymentServer.charge).toHaveBeenCalledWith({
         amount: BigNumber(0.01),
@@ -38,7 +38,7 @@ describe('requirePayment', () => {
   it('should throw an error if there is no money', () => {
     const paymentServer = TH.paymentServer({charge: vi.fn().mockResolvedValue({success: false, requiredPaymentId: 'test-payment-request-id'})});
     const config = TH.config({ paymentServer });
-    withPayMcpContext(config, TH.tokenCheck(), async () => {
+    withPayMcpContext(config, 'https://example.com', TH.tokenCheck(), async () => {
       try {
         await requirePayment({price: BigNumber(0.01)});
       } catch (err: any) {
@@ -50,7 +50,7 @@ describe('requirePayment', () => {
   it('should create a payment request if there is no money', () => {
     const paymentServer = TH.paymentServer({charge: vi.fn().mockResolvedValue({success: false, requiredPaymentId: 'test-payment-request-id'})});
     const config = TH.config({ paymentServer });
-    withPayMcpContext(config, TH.tokenCheck(), async () => {
+    withPayMcpContext(config, 'https://example.com', TH.tokenCheck(), async () => {
       try {
         await requirePayment({price: BigNumber(0.01)});
       } catch (err: any) {
@@ -69,7 +69,7 @@ describe('requirePayment', () => {
   it('should throw an error if the user is not set', () => {
     const paymentServer = TH.paymentServer();
     const config = TH.config({ paymentServer });
-    withPayMcpContext(config, null, async () => {
+    withPayMcpContext(config, 'https://example.com', null, async () => {
       try {
         await requirePayment({price: BigNumber(0.01)});
       } catch (err: any) {
@@ -82,7 +82,7 @@ describe('requirePayment', () => {
   it('error should include the elicitation url constructed from paymcp() config', () => {
     const paymentServer = TH.paymentServer({charge: vi.fn().mockResolvedValue({success: false, requiredPaymentId: 'test-payment-request-id'})});
     const config = TH.config({ paymentServer, server: 'https://example.com' });
-    withPayMcpContext(config, TH.tokenCheck(), async () => {
+    withPayMcpContext(config, 'https://example.com', TH.tokenCheck(), async () => {
       try {
         await requirePayment({price: BigNumber(0.01)});
       } catch (err: any) {
@@ -96,7 +96,7 @@ describe('requirePayment', () => {
   it('should provide a way for consumer to do an idempotency check', () => {
     const paymentServer = TH.paymentServer({ charge: vi.fn().mockResolvedValue({success: false, requiredPaymentId: 'test-payment-request-id'}) });
     const config = TH.config({ paymentServer });
-    withPayMcpContext(config, TH.tokenCheck(), async () => {
+    withPayMcpContext(config, 'https://example.com', TH.tokenCheck(), async () => {
       try {
         await requirePayment({price: BigNumber(0.01), getExistingPaymentId: async () => 'some-other-payment-id'});
       } catch (err: any) {
@@ -114,7 +114,7 @@ describe('requirePayment', () => {
       createPaymentRequest: vi.fn().mockRejectedValue(new Error('Payment request failed')),
     });
     const config = TH.config({ paymentServer });
-    withPayMcpContext(config, TH.tokenCheck(), async () => {
+    withPayMcpContext(config, 'https://example.com', TH.tokenCheck(), async () => {
       try {
         await requirePayment({price: BigNumber(0.01)});
       } catch (err: any) {

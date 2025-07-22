@@ -28,11 +28,6 @@ export type RequirePaymentConfig = {
   getExistingPaymentId?: () => Promise<string | null>;
 }
 
-export type RequirePaymentResponse = {
-  success: boolean;
-  requiredPaymentId: string | null;
-}
-
 export type Charge = Required<Pick<PayMcpConfig, 'currency' | 'network' | 'destination'>> & {
   amount: BigNumber;
   source: PayMcpConfig['destination'];
@@ -40,7 +35,7 @@ export type Charge = Required<Pick<PayMcpConfig, 'currency' | 'network' | 'desti
 
 export type ChargeResponse = {
   success: boolean;
-  requiredPayment: Charge;
+  requiredPayment: Charge | null;
 }
 
 export type PaymentServer = {
@@ -55,6 +50,8 @@ export type PayMcpConfig = {
   network: Network;
   server: AuthorizationServerUrl;
   payeeName: string;
+  // If not provided, the resource will be inferred from the request URL
+  resource: string | null;
   allowHttp: boolean;
   //refundErrors: RefundErrors;
   logger: Logger;

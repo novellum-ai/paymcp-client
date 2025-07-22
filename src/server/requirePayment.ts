@@ -1,5 +1,5 @@
-import { RequirePaymentConfig, RequirePaymentResponse, ChargeResponse, PayMcpConfig } from "./types.js";
-import { getPayMcpConfig, payMcpUser } from "./payMcpContext.js";
+import { RequirePaymentConfig, PayMcpConfig } from "./types.js";
+import { getPayMcpConfig, getPayMcpResource, payMcpUser } from "./payMcpContext.js";
 
 export class PaymentRequestError extends Error { 
   paymentRequestId: string;
@@ -14,8 +14,12 @@ export class PaymentRequestError extends Error {
 
 export async function requirePayment(paymentConfig: RequirePaymentConfig): Promise<void> {
   const config = getPayMcpConfig();
+  const resource = getPayMcpResource();
   if (!config) {
     throw new Error('No config found');
+  }
+  if (!resource) {
+    throw new Error('No resource found');
   }
   const user = payMcpUser();
   if (!user) {
@@ -38,14 +42,13 @@ export async function requirePayment(paymentConfig: RequirePaymentConfig): Promi
     return;
   }
 
-
   const existingPaymentId = await paymentConfig.getExistingPaymentId?.();
   if (existingPaymentId) {
     config.logger.info(`Found existing payment ID ${existingPaymentId}`);
     throw new PaymentRequestError(config, existingPaymentId)
   }
 
-  const paymentId = await config.paymentServer.createPaymentRequest({...charge, resource: config.resource});
+  const paymentId = await config.paymentServer.createPaymentRequest({...charge, resource});
   config.logger.info(`Created payment request ${paymentId}`);
   throw new PaymentRequestError(config, paymentId);
 }

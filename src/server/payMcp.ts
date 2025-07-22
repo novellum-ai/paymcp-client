@@ -6,14 +6,14 @@ import { sendOAuthChallenge } from "./oAuthChallenge.js";
 import { withPayMcpContext } from "./payMcpContext.js";
 import { parseMcpRequests } from "./http.js";
 import { Request, Response, NextFunction } from "express";
-import { getProtectedResourceMetadata as getPRMResponse, sendProtectedResourceMetadata } from "./protectedResourceMetadata.js";
+import { getProtectedResourceMetadata as getPRMResponse, getResource, sendProtectedResourceMetadata } from "./protectedResourceMetadata.js";
 import { PayMcpPaymentServer } from "./paymentServer.js";
 import { OAuthResourceClient } from "../oAuthResource.js";
 
 type RequiredPayMcpConfigFields = 'destination';
 type RequiredPayMcpConfig = Pick<PayMcpConfig, RequiredPayMcpConfigFields>;
 type OptionalPayMcpConfig = Omit<PayMcpConfig, RequiredPayMcpConfigFields>;
-type PayMcpArgs = RequiredPayMcpConfig & Partial<OptionalPayMcpConfig>;
+export type PayMcpArgs = RequiredPayMcpConfig & Partial<OptionalPayMcpConfig>;
 type BuildablePayMcpConfigFields = 'oAuthDb' | 'oAuthClient' | 'paymentServer' | 'logger';
 
 export const DEFAULT_CONFIG: Required<Omit<OptionalPayMcpConfig, BuildablePayMcpConfigFields>> = {
@@ -23,10 +23,11 @@ export const DEFAULT_CONFIG: Required<Omit<OptionalPayMcpConfig, BuildablePayMcp
   server: 'https://auth.paymcp.com' as const,
   payeeName: 'A PayMcp Server',
   allowHttp: process.env.NODE_ENV === 'development',
+  resource: null, // Set dynamically from the request URL
   //refundErrors: true,
 };
 
-const buildConfig = (args: PayMcpArgs): PayMcpConfig => {
+export function buildConfig(args: PayMcpArgs): PayMcpConfig {
   const withDefaults = { ...DEFAULT_CONFIG, ...args };
   const oAuthDb = withDefaults.oAuthDb ?? new SqliteOAuthDb({db: ':memory:'});
   const oAuthClient = withDefaults.oAuthClient ?? new OAuthResourceClient({
@@ -35,8 +36,8 @@ const buildConfig = (args: PayMcpArgs): PayMcpConfig => {
     clientName: withDefaults.payeeName,
   });
   const paymentServer = withDefaults.paymentServer ?? new PayMcpPaymentServer(withDefaults.server, oAuthDb);
-  const logger = new ConsoleLogger();
-  const built = { oAuthDb, oAuthClient, paymentServer, logger };
+  const logger = withDefaults.logger ?? new ConsoleLogger();
+  const built = { oAuthDb, oAuthClient, paymentServer, logger};
   return Object.freeze({ ...withDefaults, ...built });
 };
 
@@ -47,7 +48,8 @@ export function paymcp(args: PayMcpArgs): (req: Request, res: Response, next: Ne
     try {
       const logger = config.logger;  // Capture logger in closure
 
-      const prmResponse = getPRMResponse(config, req);
+      const resource = getResource(config, req);
+      const prmResponse = getPRMResponse(config, resource, req);
       if (sendProtectedResourceMetadata(res, prmResponse)) {
         return;
       }
@@ -74,7 +76,7 @@ export function paymcp(args: PayMcpArgs): (req: Request, res: Response, next: Ne
         return;
       }
 
-      return withPayMcpContext(config, tokenCheck, next);
+      return withPayMcpContext(config, resource, tokenCheck, next);
     } catch (error) {
       config.logger.error(`Critical error in paymcp middleware - return HTTP 500. Error: ${error instanceof Error ? error.message : String(error)}`);
       res.status(500).json({ error: 'server_error', error_description: 'An internal server error occurred' });
