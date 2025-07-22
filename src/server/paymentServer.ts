@@ -42,10 +42,14 @@ export class PayMcpPaymentServer implements PaymentServer {
     if(!credentials) {
       throw new Error('No client credentials found');
     }
+    
+    // Use Basic authentication with client credentials (client_id:client_secret base64 encoded)
+    const encodedCredentials = Buffer.from(`${credentials.clientId}:${credentials.clientSecret}`).toString('base64');
+    
     const response = await this.fetchFn(url, {
       method,
       headers: {
-        'Authorization': `Bearer ${credentials.clientSecret}`,
+        'Authorization': `Basic ${encodedCredentials}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(body)
