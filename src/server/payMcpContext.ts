@@ -1,18 +1,33 @@
 import { TokenData } from "../types.js";
-import { getResource } from "./protectedResourceMetadata.js";
 import { PayMcpConfig, TokenCheck } from "./types.js";
 import { AsyncLocalStorage } from "async_hooks";
 
-const contextStorage = new AsyncLocalStorage<TokenData | null>();
+const contextStorage = new AsyncLocalStorage<PayMcpContext | null>();
+
+type PayMcpContext = {
+  tokenData: TokenData | null;
+  config: PayMcpConfig;
+  resource: string;
+}
+
+export function getPayMcpConfig(): PayMcpConfig | null {
+  const context = contextStorage.getStore();
+  return context?.config ?? null;
+}
+
+export function getPayMcpResource(): string | null {
+  const context = contextStorage.getStore();
+  return context?.resource ?? null;
+}
 
 // Helper function to get the current request's user
 export function payMcpUser(): string | null {
-  const tokenData = contextStorage.getStore();
-  return tokenData?.sub ?? null;
+  const context = contextStorage.getStore();
+  return context?.tokenData?.sub ?? null;
 }
 
 // Helper function to run code within a user context
-export async function continueWithUserContext(config: PayMcpConfig, tokenInfo: Pick<TokenCheck, 'token' | 'data'> | null, next: () => void): Promise<void> {
+export async function withPayMcpContext(config: PayMcpConfig, resource: string, tokenInfo: Pick<TokenCheck, 'token' | 'data'> | null, next: () => void): Promise<void> {
   config.logger.debug(`Setting user context to ${tokenInfo?.data?.sub ?? 'null'}`);
   
   if(tokenInfo && tokenInfo.data?.sub) {
@@ -29,6 +44,11 @@ export async function continueWithUserContext(config: PayMcpConfig, tokenInfo: P
       config.logger.debug(`Token data: ${JSON.stringify(tokenInfo.data)}`);
     }
   }
-  
-  return contextStorage.run(tokenInfo?.data || null, next);
+
+  const ctx = {
+    tokenData: tokenInfo?.data || null,
+    config,
+    resource
+  };
+  return contextStorage.run(ctx, next);
 } 

@@ -2,8 +2,6 @@ import { describe, it, expect } from 'vitest';
 import httpMocks from 'node-mocks-http';
 import { parseMcpRequests } from './http.js';
 import * as TH from './testHelpers.js'
-import { DEFAULT_CONFIG } from './index.js';
-import { BigNumber } from 'bignumber.js';
 
 describe('http', () => {
   describe('parseMcpMessages', () => {
