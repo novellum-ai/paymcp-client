@@ -51,7 +51,7 @@ export function paymcp(args: PayMcpArgs): (req: Request, res: Response, next: Ne
 
       const requestUrl = new URL(req.url, req.protocol + '://' + req.host);
       const resource = getResource(config, requestUrl);
-      const prmResponse = getPRMResponse(config, resource);
+      const prmResponse = getPRMResponse(config, requestUrl);
       if (sendProtectedResourceMetadata(res, prmResponse)) {
         return;
       }
