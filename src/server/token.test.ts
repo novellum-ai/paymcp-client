@@ -9,8 +9,9 @@ describe('checkToken', () => {
     const tokenData = TH.tokenData();
     const oAuthClient = TH.oAuthClient({introspectResult: tokenData});
     const cfg = TH.config({oAuthClient});
+    const resource = new URL('https://example.com/');
     const req = TH.incomingToolMessage({authHeader: 'Bearer test-access-token'});
-    const res = await checkToken(cfg, req);
+    const res = await checkToken(cfg, resource, req);
     expect(res).toMatchObject({
       passes: true,
       data: tokenData,
@@ -22,8 +23,9 @@ describe('checkToken', () => {
     const tokenData = TH.tokenData();
     const oAuthClient = TH.oAuthClient({introspectResult: tokenData});
     const cfg = TH.config({oAuthClient});
+    const resource = new URL('https://example.com/');
     const req = TH.incomingToolMessage({authHeader: 'Bearer test-access-token'});
-    const res = await checkToken(cfg, req);
+    const res = await checkToken(cfg, resource, req);
     expect(res).toMatchObject({
       passes: true,
       data: tokenData,
@@ -38,8 +40,9 @@ describe('checkToken', () => {
 
   it('should return NO_TOKEN when no authorization header is present', async () => {
     const cfg = TH.config();
+    const resource = new URL('https://example.com/');
     const req = TH.incomingToolMessage({authHeader: undefined});
-    const res = await checkToken(cfg, req);
+    const res = await checkToken(cfg, resource, req);
     expect(res).toMatchObject({
       passes: false,
       problem: TokenProblem.NO_TOKEN,
@@ -49,8 +52,9 @@ describe('checkToken', () => {
 
   it('should return a Protected Resource Metadata URL in the WWW-Authenticate header', async () => {
     const cfg = TH.config();
-    const req = TH.incomingToolMessage({authHeader: undefined, url: 'https://example.com/'});
-    const res = await checkToken(cfg, req);
+    const resource = new URL('https://example.com/');
+    const req = TH.incomingToolMessage({authHeader: undefined, url: '/'});
+    const res = await checkToken(cfg, resource, req);
     expect(res).toMatchObject({
       resourceMetadataUrl: 'https://example.com/.well-known/oauth-protected-resource/'
     });
@@ -58,8 +62,9 @@ describe('checkToken', () => {
 
   it('should use the same protocol as the request for the Protected Resource Metadata URL', async () => {
     const cfg = TH.config();
-    const req = TH.incomingToolMessage({authHeader: undefined, url: 'http://example.com/'});
-    const res = await checkToken(cfg, req);
+    const resource = new URL('http://example.com/');
+    const req = TH.incomingToolMessage({authHeader: undefined, url: '/'});
+    const res = await checkToken(cfg, resource, req);
     expect(res).toMatchObject({
       resourceMetadataUrl: 'http://example.com/.well-known/oauth-protected-resource/'
     });
@@ -67,8 +72,9 @@ describe('checkToken', () => {
 
   it('should set Protected Resource Metadata URL to path matching the request path', async () => {
     const cfg = TH.config();
-    const req = TH.incomingToolMessage({authHeader: undefined, url: 'http://example.com/some/path/here'});
-    const res = await checkToken(cfg, req);
+    const resource = new URL('http://example.com/some/path/here');
+    const req = TH.incomingToolMessage({authHeader: undefined, url: '/some/path/here'});
+    const res = await checkToken(cfg, resource, req);
     expect(res).toMatchObject({
       resourceMetadataUrl: 'http://example.com/.well-known/oauth-protected-resource/some/path/here'
     });
@@ -76,8 +82,9 @@ describe('checkToken', () => {
 
   it('should return NO_TOKEN when authorization header does not start with Bearer', async () => {
     const cfg = TH.config();
+    const resource = new URL('https://example.com/');
     const req = TH.incomingToolMessage({authHeader: 'foo'});
-    const res = await checkToken(cfg, req);
+    const res = await checkToken(cfg, resource, req);
     expect(res).toMatchObject({
       passes: false,
       problem: TokenProblem.NON_BEARER_AUTH_HEADER
@@ -87,8 +94,9 @@ describe('checkToken', () => {
   it('should return token data from client when token is valid', async () => {
     const tokenData = TH.tokenData();
     const cfg = TH.config({oAuthClient: TH.oAuthClient({introspectResult: tokenData})});
+    const resource = new URL('https://example.com/');
     const req = TH.incomingToolMessage({authHeader: 'Bearer test-access-token'});
-    const res = await checkToken(cfg, req);
+    const res = await checkToken(cfg, resource, req);
     expect(res).toMatchObject({
       passes: true
     });

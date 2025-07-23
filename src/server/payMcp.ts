@@ -46,7 +46,7 @@ export function paymcp(args: PayMcpArgs): (req: Request, res: Response, next: Ne
   const config = buildConfig(args);
 
   return async (req: Request, res: Response, next: NextFunction) => {
-    try {
+    //try {
       const logger = config.logger;  // Capture logger in closure
 
       const requestUrl = new URL(req.url, req.protocol + '://' + req.host);
@@ -56,7 +56,7 @@ export function paymcp(args: PayMcpArgs): (req: Request, res: Response, next: Ne
         return;
       }
 
-      const mcpRequests = await parseMcpRequests(config, req, req.body);
+      const mcpRequests = await parseMcpRequests(config, requestUrl, req, req.body);
       logger.debug(`${mcpRequests.length} MCP requests found in request`);
 
       if(mcpRequests.length === 0) {
@@ -65,7 +65,7 @@ export function paymcp(args: PayMcpArgs): (req: Request, res: Response, next: Ne
       }
 
       logger.debug(`Request started - ${req.method} ${req.path}`);
-      const tokenCheck = await checkToken(config, req);
+      const tokenCheck = await checkToken(config, resource, req);
       const user = tokenCheck.data?.sub ?? null;
 
       // Listen for when the response is finished
@@ -79,10 +79,10 @@ export function paymcp(args: PayMcpArgs): (req: Request, res: Response, next: Ne
       }
 
       return withPayMcpContext(config, resource, tokenCheck, next);
-    } catch (error) {
+    /*} catch (error) {
       config.logger.error(`Critical error in paymcp middleware - return HTTP 500. Error: ${error instanceof Error ? error.message : String(error)}`);
       config.logger.debug(JSON.stringify(error, null, 2));
       res.status(500).json({ error: 'server_error', error_description: 'An internal server error occurred' });
-    }
+    }*/
   };
 }

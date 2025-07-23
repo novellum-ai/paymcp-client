@@ -3,8 +3,8 @@ import { McpOperation, PayMcpConfig } from "./types.js";
 import { parseMcpRequests } from "./http.js";
 import { JSONRPCMessage, JSONRPCRequest, isJSONRPCRequest } from "@modelcontextprotocol/sdk/types.js";
 
-export async function getMcpOperations(config: PayMcpConfig, req: IncomingMessage, parsedMcpMessages?: JSONRPCMessage[]): Promise<McpOperation[]> {
-  parsedMcpMessages = parsedMcpMessages ?? await parseMcpRequests(config, req);
+export async function getMcpOperations(config: PayMcpConfig, requestUrl: URL, req: IncomingMessage, parsedMcpMessages?: JSONRPCMessage[]): Promise<McpOperation[]> {
+  parsedMcpMessages = parsedMcpMessages ?? await parseMcpRequests(config, requestUrl, req);
   if (parsedMcpMessages.length === 0) {
     return [];
   }

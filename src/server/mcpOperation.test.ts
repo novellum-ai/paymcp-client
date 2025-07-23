@@ -9,7 +9,8 @@ describe('getMcpOperations', () => {
     const req = TH.incomingMessage({
       body: TH.mcpToolRequest({toolName: 'testTool'})
     });
-    const ops = await getMcpOperations(config, req);
+    const url = new URL('https://example.com/mcp');
+    const ops = await getMcpOperations(config, url, req);
     expect(ops).toEqual(['tools/call:testTool']);
   });
   
@@ -18,7 +19,8 @@ describe('getMcpOperations', () => {
       TH.mcpToolRequest({toolName: 'testTool'}),
       TH.mcpToolRequest({toolName: 'testTool2'})
     ]});
-    const ops = await getMcpOperations(config, req);
+    const url = new URL('https://example.com/mcp');
+    const ops = await getMcpOperations(config, url, req);
     expect(ops).toEqual(['tools/call:testTool', 'tools/call:testTool2']);
   });
 });

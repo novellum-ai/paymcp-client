@@ -11,7 +11,7 @@ import { PayMcpConfig } from "./types.js";
 // Using the same value as MCP SDK
 const MAXIMUM_MESSAGE_SIZE = "4mb";
 
-export async function parseMcpRequests(config: PayMcpConfig, req: IncomingMessage, parsedBody?: any): Promise<JSONRPCRequest[]> {
+export async function parseMcpRequests(config: PayMcpConfig, requestUrl: URL, req: IncomingMessage, parsedBody?: any): Promise<JSONRPCRequest[]> {
   if (!req.method) {
     return [];
   }
@@ -22,7 +22,7 @@ export async function parseMcpRequests(config: PayMcpConfig, req: IncomingMessag
 
   // The middleware has to be mounted at the root to serve the protected resource metadata,
   // but the actual MCP server it's controlling is specified by the mountPath.
-  let path = new URL(req.url || '').pathname;
+  let path = requestUrl.pathname;
   if (!path) {
     path = '/';
   }
