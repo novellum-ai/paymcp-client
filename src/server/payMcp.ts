@@ -106,6 +106,7 @@ export function paymcp({
       return withPayMcpContext(config, resource, tokenCheck, next);
     } catch (error) {
       config.logger.error(`Critical error in paymcp middleware - return HTTP 500. Error: ${error instanceof Error ? error.message : String(error)}`);
+      config.logger.debug(JSON.stringify(error, null, 2));
       res.status(500).json({ error: 'server_error', error_description: 'An internal server error occurred' });
     }
   };
