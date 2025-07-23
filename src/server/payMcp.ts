@@ -42,8 +42,34 @@ export function buildConfig(args: PayMcpArgs): PayMcpConfig {
   return Object.freeze({ ...withDefaults, ...built });
 };
 
-export function paymcp(args: PayMcpArgs): (req: Request, res: Response, next: NextFunction) => Promise<void> {
-  const config = buildConfig(args);
+export function paymcp({
+  destination,
+  mountPath,
+  currency,
+  network,
+  server,
+  payeeName,
+  resource,
+  allowHttp,
+  logger,
+  oAuthDb,
+  oAuthClient,
+  paymentServer
+}: PayMcpArgs): (req: Request, res: Response, next: NextFunction) => Promise<void> {
+  const config = buildConfig({
+    destination,
+    mountPath,
+    currency,
+    network,
+    server,
+    payeeName,
+    resource,
+    allowHttp,
+    logger,
+    oAuthDb,
+    oAuthClient,
+    paymentServer
+  });
 
   return async (req: Request, res: Response, next: NextFunction) => {
     try {

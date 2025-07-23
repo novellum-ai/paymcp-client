@@ -12,7 +12,7 @@ export class PaymentRequestError extends Error {
   }
 }
 
-export async function requirePayment(paymentConfig: RequirePaymentConfig): Promise<void> {
+export async function requirePayment({price, getExistingPaymentId}: RequirePaymentConfig): Promise<void> {
   const config = getPayMcpConfig();
   const resource = getPayMcpResource();
   if (!config) {
@@ -28,7 +28,7 @@ export async function requirePayment(paymentConfig: RequirePaymentConfig): Promi
   }
 
   const charge = {
-    amount: paymentConfig.price, 
+    amount: price, 
     currency: config.currency, 
     network: config.network, 
     destination: config.destination, 
@@ -42,7 +42,7 @@ export async function requirePayment(paymentConfig: RequirePaymentConfig): Promi
     return;
   }
 
-  const existingPaymentId = await paymentConfig.getExistingPaymentId?.();
+  const existingPaymentId = await getExistingPaymentId?.();
   if (existingPaymentId) {
     config.logger.info(`Found existing payment ID ${existingPaymentId}`);
     throw new PaymentRequestError(config, existingPaymentId)
