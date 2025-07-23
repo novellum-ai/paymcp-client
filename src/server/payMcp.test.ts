@@ -14,7 +14,7 @@ describe('paymcp', () => {
     const { req, res } = httpMocks.createMocks(
       {
         method: 'POST',
-        url: 'https://example.com/mcp/message',
+        url: 'https://example.com/',
         body: TH.mcpToolRequest(),
         headers: {
           'content-type': 'application/json',
@@ -33,20 +33,20 @@ describe('paymcp', () => {
 
     await middleware(req as any, res, next);
 
-    expect(logger.debug).toHaveBeenCalledWith('Request started - POST /mcp/message');
+    expect(logger.debug).toHaveBeenCalledWith('Request started - POST /');
     expect(next).toHaveBeenCalled();
 
     // Simulate the response finishing by calling end() which triggers the 'finish' event
     res.end();
 
-    expect(logger.debug).toHaveBeenCalledWith('Request finished for user test-user - POST /mcp/message');
+    expect(logger.debug).toHaveBeenCalledWith('Request finished for user test-user - POST /');
   });
 
   it('should run code at start and finish if sending an OAuth challenge', async () => {
     const { req, res } = httpMocks.createMocks(
       {
         method: 'POST',
-        url: 'https://example.com/mcp/message',
+        url: 'https://example.com/',
         body: TH.mcpToolRequest(),
         headers: {
           'content-type': 'application/json',
@@ -66,17 +66,17 @@ describe('paymcp', () => {
 
     await middleware(req as any, res, next);
 
-    expect(logger.debug).toHaveBeenCalledWith('Request started - POST /mcp/message');
+    expect(logger.debug).toHaveBeenCalledWith('Request started - POST /');
     expect(next).not.toHaveBeenCalled();
 
-    expect(logger.debug).toHaveBeenCalledWith('Request finished - POST /mcp/message');
+    expect(logger.debug).toHaveBeenCalledWith('Request finished - POST /');
   });
   
   it('should return an OAuth challenge if token not active', async () => {
     const { req, res } = httpMocks.createMocks(
       {
         method: 'POST',
-        url: 'https://example.com/mcp/message',
+        url: 'https://example.com/',
         body: TH.mcpToolRequest(),
         headers: {
           'content-type': 'application/json',
@@ -95,7 +95,7 @@ describe('paymcp', () => {
     await middleware(req as any, res, next);
 
     expect(res.statusCode).toEqual(401);
-    expect(res.getHeader('www-authenticate')).toEqual('Bearer resource_metadata="https://example.com/.well-known/oauth-protected-resource/mcp/message"');
+    expect(res.getHeader('www-authenticate')).toEqual('Bearer resource_metadata="https://example.com/.well-known/oauth-protected-resource/"');
   });
 
   it('should not intercept non-MCP requests', async () => {

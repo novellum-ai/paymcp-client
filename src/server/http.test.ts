@@ -9,7 +9,7 @@ describe('http', () => {
       const req = TH.incomingMessage({
         body: TH.mcpToolRequest({toolName: 'testTool', args: { paramOne: 'test' }})
       });
-      const url = new URL('https://example.com/mcp');
+      const url = new URL('https://example.com/');
       const msgs = await parseMcpRequests(TH.config(), url, req);
       expect(msgs).toEqual([{
         id: 'call-1',
@@ -27,7 +27,7 @@ describe('http', () => {
         TH.mcpToolRequest({toolName: 'testTool'}),
         TH.mcpToolRequest({toolName: 'testTool2'})
       ]});
-      const url = new URL('https://example.com/mcp');
+      const url = new URL('https://example.com');
       const msgs = await parseMcpRequests(TH.config(), url, req);
       expect(msgs.length).toEqual(2);
       expect((msgs[0] as any).params.name).toEqual('testTool');
@@ -48,7 +48,7 @@ describe('http', () => {
       expect(msgs).toEqual([]);
     });
 
-    it('should return messages for a sub-path of the mountPath', async () => {
+    it('should not return messages for an arbitrary sub-path of the mountPath', async () => {
       const pathConfig = TH.config({
         mountPath: '/mount-path'
       });
@@ -57,15 +57,7 @@ describe('http', () => {
       });
       const url = new URL('https://example.com/mount-path/sub-path');
       const msgs = await parseMcpRequests(pathConfig, url, req);
-      expect(msgs).toEqual([{
-        jsonrpc: '2.0',
-        method: 'tools/call',
-        params: {
-          name: 'testTool',
-          arguments: { paramOne: 'test' }
-        },
-        id: 'call-1',
-      }]);
+      expect(msgs).toEqual([]);
     });
 
     it('should ignore MCP messages outside of its mountPath', async () => {
@@ -136,7 +128,7 @@ describe('http', () => {
         body: TH.mcpToolRequest({toolName: 'testTool', args: { paramOne: 'test' }})
       });
       const url = new URL('https://example.com/mcp/message');
-      const msgs = await parseMcpRequests(TH.config(), url, req, req.body);
+      const msgs = await parseMcpRequests(TH.config({mountPath: '/mcp/'}), url, req, req.body);
       expect(msgs).toEqual([{
         jsonrpc: '2.0',
         method: 'tools/call',
