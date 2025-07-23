@@ -9,6 +9,11 @@ export async function getMcpOperations(config: PayMcpConfig, requestUrl: URL, re
     return [];
   }
 
+  if(requestUrl.pathname.replace(/\/$/, '') !== config.mountPath.replace(/\/$/, '')) {
+    config.logger.debug(`Request path (${requestUrl.pathname}) does not match the mountPath (${config.mountPath}), skipping MCP middleware`);
+    return [];
+  }
+
   const operations = parsedMcpMessages.map(msg => getMcpOperation(msg));
   return operations.filter(op => op !== null);
 }

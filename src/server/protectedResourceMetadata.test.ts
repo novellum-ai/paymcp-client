@@ -28,7 +28,7 @@ describe('getProtectedResourceMetadata', () => {
   });
 
   it('should return null for a request that does not match the mountPath', async () => {
-    const config = TH.config();
+    const config = TH.config({mountPath: '/'});
     const metadata = getProtectedResourceMetadata(config, new URL('https://example.com/.well-known/oauth-protected-resource/some/sub/path'));
     expect(metadata).toBeNull();
   });
