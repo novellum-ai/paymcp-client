@@ -49,8 +49,9 @@ export function paymcp(args: PayMcpArgs): (req: Request, res: Response, next: Ne
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const logger = config.logger;  // Capture logger in closure
-
       const requestUrl = new URL(req.url, req.protocol + '://' + req.host);
+      logger.debug(`Handling ${req.method} ${requestUrl.toString()}`);
+
       const resource = getResource(config, requestUrl);
       const prmResponse = getPRMResponse(config, requestUrl);
       if (sendProtectedResourceMetadata(res, prmResponse)) {

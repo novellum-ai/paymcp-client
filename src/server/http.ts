@@ -15,19 +15,16 @@ export async function parseMcpRequests(config: PayMcpConfig, requestUrl: URL, re
   if (!req.method) {
     return [];
   }
-  const isPost = req.method.toLowerCase() === 'post';
-  if (!isPost) {
+  if (req.method.toLowerCase() !== 'post') {
     return [];
   }
 
   // The middleware has to be mounted at the root to serve the protected resource metadata,
   // but the actual MCP server it's controlling is specified by the mountPath.
-  let path = requestUrl.pathname;
-  if (!path) {
-    path = '/';
-  }
-  const mountPath = config.mountPath ?? '/';
-  if (!path.startsWith(mountPath)) {
+  let path = requestUrl.pathname.replace(/\/$/, '');
+  const mountPath = config.mountPath.replace(/\/$/, '');
+  if (path !== mountPath && path !== `${mountPath}/message`) {
+    config.logger.debug(`Request path (${path}) does not match the mountPath (${mountPath}), skipping MCP middleware`);
     return [];
   }
 
