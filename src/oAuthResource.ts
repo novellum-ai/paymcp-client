@@ -115,6 +115,10 @@ export class OAuthResourceClient {
       );
     }
     
+    if(introspectionResponse.status !== 200) {
+      throw new Error(`Token introspection failed with status ${introspectionResponse.status}: ${introspectionResponse.statusText}`);
+    }
+    
     // Process the introspection response
     const tokenData = await oauth.processIntrospectionResponse(
       authorizationServer,
