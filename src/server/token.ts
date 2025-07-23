@@ -2,10 +2,11 @@ import { BigNumber } from "bignumber.js";
 import { IncomingMessage } from "http";
 import { PayMcpConfig, TokenCheck, TokenProblem } from "./types.js";
 
-export async function checkToken(config: PayMcpConfig, req: IncomingMessage): Promise<TokenCheck> {
-  const url = new URL(req.url || '');
-  const protocol = url.protocol;
-  const protectedResourceMetadataUrl = `${protocol}//${url.host}/.well-known/oauth-protected-resource${url.pathname}`;
+export async function checkToken(config: PayMcpConfig, resourceURL: URL, req: IncomingMessage): Promise<TokenCheck> {
+  const protocol = resourceURL.protocol;
+  const host = resourceURL.host;
+  const pathname = resourceURL.pathname;
+  const protectedResourceMetadataUrl = `${protocol}//${host}/.well-known/oauth-protected-resource${pathname}`;
 
   const failure = {
     passes: false as const,

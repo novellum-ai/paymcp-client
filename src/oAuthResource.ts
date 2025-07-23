@@ -179,7 +179,7 @@ export class OAuthResourceClient {
     }
   }
 
-  protected authorizationServerFromUrl = async (authServerUrl: URL): Promise<oauth.AuthorizationServer> => {
+  authorizationServerFromUrl = async (authServerUrl: URL): Promise<oauth.AuthorizationServer> => {
     try {
       // Explicitly throw for a tricky edge case to trigger tests
       if (authServerUrl.toString().includes('/.well-known/oauth-protected-resource')) {

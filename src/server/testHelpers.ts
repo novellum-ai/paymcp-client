@@ -7,7 +7,8 @@ import { Charge, PayMcpConfig, Currency, Network, TokenCheck, TokenCheckPass, To
 import { TokenData } from '../types.js';
 import { Logger } from '../logger.js';
 import { BigNumber } from 'bignumber.js';
-import { buildConfig, PayMcpArgs } from './payMcp.js';
+import { buildConfig } from './payMcp.js';
+import * as oauth from 'oauth4webapi';
 
 export const DESTINATION = 'testDestination';
 export const SOURCE = 'testSource';
@@ -79,7 +80,7 @@ export function mcpToolRequest({
 export function incomingMessage({
     body = {},
     method = 'POST', 
-    url = 'https://example.com/', 
+    url = '/', 
     headers = {'content-type': 'application/json'}
   } : {
     body?: any,
@@ -103,7 +104,7 @@ export function incomingMessage({
 
 export function incomingToolMessage({
     authHeader = undefined,
-    url = 'https://example.com/',
+    url = '/',
   }: {
     authHeader?: string,
     url?: string,
@@ -116,9 +117,18 @@ export function incomingToolMessage({
   });
 }
 
-export function oAuthClient({introspectResult = tokenData()}: {introspectResult?: TokenData} = {}): OAuthResourceClient {
+export function oAuthClient({
+  introspectResult = tokenData(),
+  authorizationServer = {
+    issuer: 'https://auth.paymcp.com',
+  }
+}: {
+  introspectResult?: TokenData
+  authorizationServer?: oauth.AuthorizationServer
+} = {}): OAuthResourceClient {
   return {
-    introspectToken: vi.fn().mockResolvedValue(introspectResult)
+    introspectToken: vi.fn().mockResolvedValue(introspectResult),
+    authorizationServerFromUrl: vi.fn().mockResolvedValue(authorizationServer)
   } as unknown as OAuthResourceClient;
 }
 

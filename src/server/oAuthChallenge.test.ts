@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import * as TH from './testHelpers.js';
-import { checkToken } from './token.js';
 import { TokenProblem } from './types.js';
 import { sendOAuthChallenge } from './oAuthChallenge.js';
 

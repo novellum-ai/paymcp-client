@@ -10,6 +10,7 @@ import { getProtectedResourceMetadata as getPRMResponse, sendProtectedResourceMe
 import { getResource } from "./getResource.js";
 import { PayMcpPaymentServer } from "./paymentServer.js";
 import { OAuthResourceClient } from "../oAuthResource.js";
+import { getOAuthMetadata, sendOAuthMetadata } from "./oAuthMetadata.js";
 
 type RequiredPayMcpConfigFields = 'destination';
 type RequiredPayMcpConfig = Pick<PayMcpConfig, RequiredPayMcpConfigFields>;
@@ -56,7 +57,13 @@ export function paymcp(args: PayMcpArgs): (req: Request, res: Response, next: Ne
         return;
       }
 
-      const mcpRequests = await parseMcpRequests(config, req, req.body);
+      // Some older clients don't use PRM and assume the MCP server is an OAuth server
+      const oAuthMetadata = await getOAuthMetadata(config, requestUrl);
+      if(sendOAuthMetadata(res, oAuthMetadata)) {
+        return;
+      }
+
+      const mcpRequests = await parseMcpRequests(config, requestUrl, req, req.body);
       logger.debug(`${mcpRequests.length} MCP requests found in request`);
 
       if(mcpRequests.length === 0) {
@@ -65,7 +72,7 @@ export function paymcp(args: PayMcpArgs): (req: Request, res: Response, next: Ne
       }
 
       logger.debug(`Request started - ${req.method} ${req.path}`);
-      const tokenCheck = await checkToken(config, req);
+      const tokenCheck = await checkToken(config, resource, req);
       const user = tokenCheck.data?.sub ?? null;
 
       // Listen for when the response is finished

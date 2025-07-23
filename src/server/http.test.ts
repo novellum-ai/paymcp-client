@@ -9,7 +9,8 @@ describe('http', () => {
       const req = TH.incomingMessage({
         body: TH.mcpToolRequest({toolName: 'testTool', args: { paramOne: 'test' }})
       });
-      const msgs = await parseMcpRequests(TH.config(), req);
+      const url = new URL('https://example.com/mcp');
+      const msgs = await parseMcpRequests(TH.config(), url, req);
       expect(msgs).toEqual([{
         id: 'call-1',
         jsonrpc: '2.0',
@@ -26,7 +27,8 @@ describe('http', () => {
         TH.mcpToolRequest({toolName: 'testTool'}),
         TH.mcpToolRequest({toolName: 'testTool2'})
       ]});
-      const msgs = await parseMcpRequests(TH.config(), req);
+      const url = new URL('https://example.com/mcp');
+      const msgs = await parseMcpRequests(TH.config(), url, req);
       expect(msgs.length).toEqual(2);
       expect((msgs[0] as any).params.name).toEqual('testTool');
       expect((msgs[1] as any).params.name).toEqual('testTool2');
@@ -34,13 +36,15 @@ describe('http', () => {
 
     it('should return an empty array for a post with a non-MCP body', async () => {
       const req = TH.incomingMessage({body: { not: 'a-mcp-message' }});
-      const msgs = await parseMcpRequests(TH.config(), req);
+      const url = new URL('https://example.com/mcp');
+      const msgs = await parseMcpRequests(TH.config(), url, req);
       expect(msgs).toEqual([]);
     });
 
     it('should return an empty array for GET requests', async () => { 
       const req = TH.incomingMessage({method: 'GET'});
-      const msgs = await parseMcpRequests(TH.config(), req);
+      const url = new URL('https://example.com/mcp');
+      const msgs = await parseMcpRequests(TH.config(), url, req);
       expect(msgs).toEqual([]);
     });
 
@@ -50,9 +54,9 @@ describe('http', () => {
       });
       const req = TH.incomingMessage({
         body: TH.mcpToolRequest({toolName: 'testTool'}), 
-        url: 'https://example.com/mount-path/sub-path'
       });
-      const msgs = await parseMcpRequests(pathConfig, req);
+      const url = new URL('https://example.com/mount-path/sub-path');
+      const msgs = await parseMcpRequests(pathConfig, url, req);
       expect(msgs).toEqual([{
         jsonrpc: '2.0',
         method: 'tools/call',
@@ -68,18 +72,18 @@ describe('http', () => {
       const subPathConfig = TH.config({mountPath: '/mount-path'});
       const req = TH.incomingMessage({
         body: TH.mcpToolRequest({toolName: 'testTool'}), 
-        url: 'https://example.com/not-the-mount-path'
       });
-      const msgs = await parseMcpRequests(subPathConfig, req);
+      const url = new URL('https://example.com/not-the-mount-path');
+      const msgs = await parseMcpRequests(subPathConfig, url, req);
       expect(msgs).toEqual([]);
     });
 
     it('should extract MCP messages from SSE endpoints', async () => {
       const req = TH.incomingMessage({
         body: TH.mcpToolRequest({toolName: 'testTool'}), 
-        url: 'https://example.com/mcp/message'
       });
-      const msgs = await parseMcpRequests(TH.config({mountPath: '/mcp'}), req);
+      const url = new URL('https://example.com/mcp/message');
+      const msgs = await parseMcpRequests(TH.config({mountPath: '/mcp'}), url, req);
       expect(msgs).toEqual([{
         jsonrpc: '2.0',
         method: 'tools/call',
@@ -94,9 +98,9 @@ describe('http', () => {
     it('should treat an empty path as /', async () => {
       const req = TH.incomingMessage({
         body: TH.mcpToolRequest({toolName: 'testTool'}), 
-        url: 'https://example.com'
       });
-      const msgs = await parseMcpRequests(TH.config(), req);
+      const url = new URL('https://example.com');
+      const msgs = await parseMcpRequests(TH.config(), url, req);
       expect(msgs).toEqual([{
         jsonrpc: '2.0',
         method: 'tools/call',
@@ -113,7 +117,8 @@ describe('http', () => {
         body: TH.mcpToolRequest({toolName: 'testTool'})
       });
       const emptyMountPathConfig = TH.config({mountPath: ''});
-      const msgs = await parseMcpRequests(emptyMountPathConfig, req);
+      const url = new URL('https://example.com');
+      const msgs = await parseMcpRequests(emptyMountPathConfig, url, req);
       expect(msgs).toEqual([{
         jsonrpc: '2.0',
         method: 'tools/call',
@@ -128,10 +133,10 @@ describe('http', () => {
     it('should extract from an already parsed body', async () => {
       const req = httpMocks.createRequest({
         method: 'POST',
-        url: 'https://example.com/mcp/message',
         body: TH.mcpToolRequest({toolName: 'testTool', args: { paramOne: 'test' }})
       });
-      const msgs = await parseMcpRequests(TH.config(), req, req.body);
+      const url = new URL('https://example.com/mcp/message');
+      const msgs = await parseMcpRequests(TH.config(), url, req, req.body);
       expect(msgs).toEqual([{
         jsonrpc: '2.0',
         method: 'tools/call',

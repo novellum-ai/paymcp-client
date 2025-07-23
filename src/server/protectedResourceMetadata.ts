@@ -27,7 +27,6 @@ export function getProtectedResourceMetadata(config: PayMcpConfig, requestUrl: U
 }
 
 function isProtectedResourceMetadataRequest(config: PayMcpConfig, requestUrl: URL): boolean {
-  config.logger.debug(`Checking if ${requestUrl.toString()} is a protected resource metadata request`);
   const path = getPath(requestUrl);
   if (!path.startsWith('/.well-known/oauth-protected-resource')) {
     return false;
