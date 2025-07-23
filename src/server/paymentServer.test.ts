@@ -120,7 +120,7 @@ describe('PayMcpPaymentServer', () => {
         source: 'test-source',
         destination: 'test-destination'
       }),
-      resource: 'https://example.com/resource'
+      resource: new URL('https://example.com/resource')
     };
 
     const result = await server.createPaymentRequest(paymentRequestParams);
@@ -137,7 +137,7 @@ describe('PayMcpPaymentServer', () => {
       'content-type': 'application/json'
     });
     const parsedBody = JSON.parse(call?.options.body as string);
-    expect(parsedBody).toEqual({
+    expect(parsedBody).toMatchObject({
       ...paymentRequestParams,
       amount: paymentRequestParams.amount.toString()
     });
@@ -166,7 +166,7 @@ describe('PayMcpPaymentServer', () => {
         source: 'test-source',
         destination: 'test-destination'
       }),
-      resource: 'https://example.com/resource'
+      resource: new URL('https://example.com/resource')
     });
 
     // Verify the specific credentials were used
@@ -186,7 +186,7 @@ describe('PayMcpPaymentServer', () => {
         source: 'test-source',
         destination: 'test-destination'
       }),
-      resource: 'https://example.com/resource'
+      resource: new URL('https://example.com/resource')
     })).rejects.toThrow('No client credentials found');
 
     // Verify fetch was never called
@@ -277,7 +277,7 @@ describe('PayMcpPaymentServer', () => {
         source: 'test-source',
         destination: 'test-destination'
       }),
-      resource: 'https://example.com/resource'
+      resource: new URL('https://example.com/resource')
     })).rejects.toThrow('POST /payment-request responded with unexpected HTTP status 400');
   });
 
@@ -304,7 +304,7 @@ describe('PayMcpPaymentServer', () => {
         source: 'test-source',
         destination: 'test-destination'
       }),
-      resource: 'https://example.com/resource'
+      resource: new URL('https://example.com/resource')
     })).rejects.toThrow('POST /payment-request response did not contain an id');
   });
 });

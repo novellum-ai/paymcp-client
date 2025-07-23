@@ -1,24 +1,20 @@
 import { PayMcpConfig } from "./types.js";
-import { IncomingMessage } from "http";
 
-export function getPath(req: IncomingMessage): string {
-  const url = new URL(req.url || '');
+export function getPath(url: URL): string {
   const fullPath = url.pathname.replace(/^\/$/, '');
   return fullPath;
 }
 
-export function getResource(config: PayMcpConfig, req: IncomingMessage): string {
+export function getResource(config: PayMcpConfig, requestUrl: URL): URL {
   if (config.resource) {
-    return config.resource;
+    return new URL(config.resource);
   }
-  const url = new URL(req.url || '');
-  const protocol = url.protocol;
-  const host = url.host;
+  const url = new URL(`${requestUrl.protocol}//${requestUrl.host}${requestUrl.pathname}`);
 
-  const fullPath = getPath(req);
+  const fullPath = getPath(url);
   // If this is a PRM path, conver the it into the path for the resource this is the metadata for
   const resourcePath = fullPath.replace('/.well-known/oauth-protected-resource', '').replace(/\/$/, '');
 
-  const resource = `${protocol}//${host}${resourcePath}`;
+  const resource = new URL(`${requestUrl.protocol}//${requestUrl.host}${resourcePath}`);
   return resource;
 }
