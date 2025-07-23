@@ -10,6 +10,7 @@ import { getProtectedResourceMetadata as getPRMResponse, sendProtectedResourceMe
 import { getResource } from "./getResource.js";
 import { PayMcpPaymentServer } from "./paymentServer.js";
 import { OAuthResourceClient } from "../oAuthResource.js";
+import { getOAuthMetadata, sendOAuthMetadata } from "./oAuthMetadata.js";
 
 type RequiredPayMcpConfigFields = 'destination';
 type RequiredPayMcpConfig = Pick<PayMcpConfig, RequiredPayMcpConfigFields>;
@@ -46,13 +47,19 @@ export function paymcp(args: PayMcpArgs): (req: Request, res: Response, next: Ne
   const config = buildConfig(args);
 
   return async (req: Request, res: Response, next: NextFunction) => {
-    //try {
+    try {
       const logger = config.logger;  // Capture logger in closure
 
       const requestUrl = new URL(req.url, req.protocol + '://' + req.host);
       const resource = getResource(config, requestUrl);
       const prmResponse = getPRMResponse(config, requestUrl);
       if (sendProtectedResourceMetadata(res, prmResponse)) {
+        return;
+      }
+
+      // Some older clients don't use PRM and assume the MCP server is an OAuth server
+      const oAuthMetadata = await getOAuthMetadata(config, requestUrl);
+      if(sendOAuthMetadata(res, oAuthMetadata)) {
         return;
       }
 
@@ -79,10 +86,10 @@ export function paymcp(args: PayMcpArgs): (req: Request, res: Response, next: Ne
       }
 
       return withPayMcpContext(config, resource, tokenCheck, next);
-    /*} catch (error) {
+    } catch (error) {
       config.logger.error(`Critical error in paymcp middleware - return HTTP 500. Error: ${error instanceof Error ? error.message : String(error)}`);
       config.logger.debug(JSON.stringify(error, null, 2));
       res.status(500).json({ error: 'server_error', error_description: 'An internal server error occurred' });
-    }*/
+    }
   };
 }

@@ -8,6 +8,7 @@ import { TokenData } from '../types.js';
 import { Logger } from '../logger.js';
 import { BigNumber } from 'bignumber.js';
 import { buildConfig } from './payMcp.js';
+import * as oauth from 'oauth4webapi';
 
 export const DESTINATION = 'testDestination';
 export const SOURCE = 'testSource';
@@ -116,9 +117,18 @@ export function incomingToolMessage({
   });
 }
 
-export function oAuthClient({introspectResult = tokenData()}: {introspectResult?: TokenData} = {}): OAuthResourceClient {
+export function oAuthClient({
+  introspectResult = tokenData(),
+  authorizationServer = {
+    issuer: 'https://auth.paymcp.com',
+  }
+}: {
+  introspectResult?: TokenData
+  authorizationServer?: oauth.AuthorizationServer
+} = {}): OAuthResourceClient {
   return {
-    introspectToken: vi.fn().mockResolvedValue(introspectResult)
+    introspectToken: vi.fn().mockResolvedValue(introspectResult),
+    authorizationServerFromUrl: vi.fn().mockResolvedValue(authorizationServer)
   } as unknown as OAuthResourceClient;
 }
 
