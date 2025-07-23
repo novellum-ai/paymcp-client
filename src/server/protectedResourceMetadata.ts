@@ -1,6 +1,6 @@
 import { PayMcpConfig, ProtectedResourceMetadata } from "./types.js";
-import { IncomingMessage, ServerResponse } from "http";
-import { getPath } from "./getResource.js";
+import { ServerResponse } from "http";
+import { getPath, getResource } from "./getResource.js";
 
 export function sendProtectedResourceMetadata(res: ServerResponse, metadata: ProtectedResourceMetadata | null): boolean {
   if (!metadata) {
@@ -12,11 +12,12 @@ export function sendProtectedResourceMetadata(res: ServerResponse, metadata: Pro
   return true;
 }
 
-export function getProtectedResourceMetadata(config: PayMcpConfig, resource: string, req: IncomingMessage): ProtectedResourceMetadata | null {
-  if (isProtectedResourceMetadataRequest(config, req)) {
+export function getProtectedResourceMetadata(config: PayMcpConfig, requestUrl: URL): ProtectedResourceMetadata | null {
+  if (isProtectedResourceMetadataRequest(config, requestUrl)) {
+    const resource = getResource(config, requestUrl);
     return {
       resource,
-      resource_name: config.payeeName || resource,
+      resource_name: config.payeeName || resource.toString(),
       authorization_servers: [config.server],
       bearer_methods_supported: ['header'],
       scopes_supported: ['read', 'write'],
@@ -25,13 +26,14 @@ export function getProtectedResourceMetadata(config: PayMcpConfig, resource: str
   return null;
 }
 
-function isProtectedResourceMetadataRequest(config: PayMcpConfig, req: IncomingMessage): boolean {
-  config.logger.debug(`Checking if ${req.url} is a protected resource metadata request`);
-  const path = getPath(req);
+function isProtectedResourceMetadataRequest(config: PayMcpConfig, requestUrl: URL): boolean {
+  config.logger.debug(`Checking if ${requestUrl.toString()} is a protected resource metadata request`);
+  const path = getPath(requestUrl);
   if (!path.startsWith('/.well-known/oauth-protected-resource')) {
     return false;
   }
-  const resourcePath = path.replace('/.well-known/oauth-protected-resource', '').replace(/\/$/, '');
+  const resource = getResource(config, requestUrl);
+  const resourcePath = getPath(resource);
   const mountPath = config.mountPath.replace(/\/$/, '');
   if (resourcePath === mountPath) {
     return true;

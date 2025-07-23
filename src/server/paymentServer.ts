@@ -23,8 +23,8 @@ export class PayMcpPaymentServer implements PaymentServer {
   }
 
   createPaymentRequest = async({source, destination, network, currency, amount, resource}: 
-    {source: string, destination: string, network: Network, currency: Currency, amount: BigNumber, resource: string}): Promise<string> => {
-    const body = {source, destination, network, currency, amount, resource};
+    {source: string, destination: string, network: Network, currency: Currency, amount: BigNumber, resource: URL}): Promise<string> => {
+    const body = {source, destination, network, currency, amount, resource: resource.toString()};
     const response = await this.makeRequest('POST', '/payment-request', body);
     const json = await response.json() as any;
     if (response.status !== 200) {

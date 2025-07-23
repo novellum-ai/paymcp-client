@@ -7,7 +7,7 @@ const contextStorage = new AsyncLocalStorage<PayMcpContext | null>();
 type PayMcpContext = {
   tokenData: TokenData | null;
   config: PayMcpConfig;
-  resource: string;
+  resource: URL;
 }
 
 export function getPayMcpConfig(): PayMcpConfig | null {
@@ -15,7 +15,7 @@ export function getPayMcpConfig(): PayMcpConfig | null {
   return context?.config ?? null;
 }
 
-export function getPayMcpResource(): string | null {
+export function getPayMcpResource(): URL | null {
   const context = contextStorage.getStore();
   return context?.resource ?? null;
 }
@@ -27,7 +27,7 @@ export function payMcpUser(): string | null {
 }
 
 // Helper function to run code within a user context
-export async function withPayMcpContext(config: PayMcpConfig, resource: string, tokenInfo: Pick<TokenCheck, 'token' | 'data'> | null, next: () => void): Promise<void> {
+export async function withPayMcpContext(config: PayMcpConfig, resource: URL, tokenInfo: Pick<TokenCheck, 'token' | 'data'> | null, next: () => void): Promise<void> {
   config.logger.debug(`Setting user context to ${tokenInfo?.data?.sub ?? 'null'}`);
   
   if(tokenInfo && tokenInfo.data?.sub) {

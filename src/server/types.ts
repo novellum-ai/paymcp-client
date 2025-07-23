@@ -21,7 +21,8 @@ export type Currency = 'USDC';
 export type Network = 'solana';
 export type RefundErrors = boolean | 'nonMcpOnly';
 
-export type AuthorizationServerUrl = `http://${string}` | `https://${string}`;
+export type UrlString = `http://${string}` | `https://${string}`;
+export type AuthorizationServerUrl = UrlString;
 
 export type RequirePaymentConfig = {
   price: BigNumber;
@@ -40,7 +41,7 @@ export type ChargeResponse = {
 
 export type PaymentServer = {
   charge: (args: Charge) => Promise<ChargeResponse>;
-  createPaymentRequest: (args: Charge & {resource: string}) => Promise<string>;
+  createPaymentRequest: (args: Charge & {resource: URL}) => Promise<string>;
 }
 
 export type PayMcpConfig = {
@@ -51,7 +52,7 @@ export type PayMcpConfig = {
   server: AuthorizationServerUrl;
   payeeName: string;
   // If not provided, the resource will be inferred from the request URL
-  resource: string | null;
+  resource: UrlString | null;
   allowHttp: boolean;
   //refundErrors: RefundErrors;
   logger: Logger;
@@ -87,7 +88,7 @@ export type TokenCheckFail = {
 export type TokenCheck = TokenCheckPass | TokenCheckFail;
 
 export type ProtectedResourceMetadata = {
-  resource: string;
+  resource: URL;
   resource_name: string;
   authorization_servers: string[];
   bearer_methods_supported: string[];
