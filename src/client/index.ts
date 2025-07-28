@@ -13,5 +13,5 @@ export * from './solanaPaymentMaker.js';
 export * from './types.js';
 export * from './server/index.js';
 export * from './server/types.js';
-export * from './common/logger.js';
+export * from './logger.js';
 export * from './server/index.js';

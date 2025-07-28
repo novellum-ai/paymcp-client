@@ -1,13 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { paymcp, requirePayment } from './index.js';
-import httpMocks from 'node-mocks-http';
+import { requirePayment } from './index.js';
 import * as TH from './testHelpers.js';
-import { ConsoleLogger, LogLevel } from '../logger.js';
 import { BigNumber } from 'bignumber.js';
-import { EventEmitter } from 'events';
-import { mcpToolRequest } from './testHelpers.js';
-import express from 'express';
-import type { Request, Response } from 'express';
 import { withPayMcpContext } from './payMcpContext.js';
 import { PaymentRequestError } from './requirePayment.js';
 
@@ -80,7 +74,7 @@ describe('requirePayment', () => {
     });
   });
 
-  it('error should include the elicitation url constructed from paymcp() config', async () => {
+  it('error should include the elicitation url constructed from payMcpServer() config', async () => {
     const paymentServer = TH.paymentServer({charge: vi.fn().mockResolvedValue({success: false, requiredPaymentId: 'test-payment-request-id'})});
     const config = TH.config({ paymentServer, server: 'https://example.com' });
     await withPayMcpContext(config, new URL('https://example.com'), TH.tokenCheck(), async () => {

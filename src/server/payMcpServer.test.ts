@@ -1,13 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { paymcp } from './index.js';
+import { payMcpServer } from './payMcpServer.js';
 import httpMocks from 'node-mocks-http';
 import * as TH from './testHelpers.js';
-import { ConsoleLogger, LogLevel } from '../logger.js';
-import { BigNumber } from 'bignumber.js';
 import { EventEmitter } from 'events';
-import { mcpToolRequest } from './testHelpers.js';
-import express from 'express';
-import type { Request, Response } from 'express';
 
 describe('paymcp', () => {
   it('should run code at request start and finish', async () => {
@@ -26,7 +21,7 @@ describe('paymcp', () => {
     const next = vi.fn();
 
     const logger = TH.logger();
-    const middleware = paymcp(TH.config({
+    const middleware = payMcpServer(TH.config({
       logger, 
       oAuthClient: TH.oAuthClient({introspectResult: TH.tokenData({active: true})})
     }));
@@ -59,7 +54,7 @@ describe('paymcp', () => {
 
     const badToken = TH.tokenData({active: false});
     const logger = TH.logger();
-    const middleware = paymcp(TH.config({
+    const middleware = payMcpServer(TH.config({
       logger, 
       oAuthClient: TH.oAuthClient({introspectResult: badToken})
     }));
@@ -88,7 +83,7 @@ describe('paymcp', () => {
     const next = vi.fn();
 
     const badToken = TH.tokenData({active: false});
-    const middleware = paymcp(TH.config({
+    const middleware = payMcpServer(TH.config({
       oAuthClient: TH.oAuthClient({introspectResult: badToken})
     }));
 
@@ -102,7 +97,7 @@ describe('paymcp', () => {
     const { req, res } = httpMocks.createMocks({ url: 'https://example.com/non-mcp' });
     const next = vi.fn();
 
-    const middleware = paymcp({
+    const middleware = payMcpServer({
       destination: 'test-destination',
     });
 
@@ -118,7 +113,7 @@ describe('paymcp', () => {
     const { req, res } = httpMocks.createMocks({ url: 'https://example.com/.well-known/oauth-protected-resource' });
     const next = vi.fn();
 
-    const middleware = paymcp({
+    const middleware = payMcpServer({
       destination: 'test-destination',
     });
 

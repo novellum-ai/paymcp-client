@@ -1,5 +1,5 @@
 import { BigNumber } from "bignumber.js";
-import { Logger } from "../logger.js";
+import { Logger } from "../common/types.js";
 import { OAuthDb, TokenData } from "../types.js";
 import { OAuthResourceClient } from "../oAuthResource.js";
 
@@ -17,8 +17,6 @@ export type McpName = string;
 export type McpNamePattern = McpName | '*';
 export type McpOperation = `${McpMethod}` | `${McpMethod}:${McpName}`;
 export type McpOperationPattern = McpOperation | '*' | `${McpMethod}:*`;
-export type Currency = 'USDC';
-export type Network = 'solana';
 export type RefundErrors = boolean | 'nonMcpOnly';
 
 export type UrlString = `http://${string}` | `https://${string}`;

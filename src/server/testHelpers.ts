@@ -5,9 +5,9 @@ import { OAuthResourceClient } from '../oAuthResource.js';
 import { vi } from 'vitest';
 import { Charge, PayMcpConfig, Currency, Network, TokenCheck, TokenCheckPass, TokenCheckFail, TokenProblem, McpMethod, McpName, PaymentServer } from './types.js';
 import { TokenData } from '../types.js';
-import { Logger } from '../logger.js';
+import { Logger } from '../common/types.js';
 import { BigNumber } from 'bignumber.js';
-import { buildConfig } from './payMcp.js';
+import { buildConfig } from './payMcpServer.js';
 import * as oauth from 'oauth4webapi';
 
 export const DESTINATION = 'testDestination';
