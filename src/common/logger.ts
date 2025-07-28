@@ -1,18 +1,5 @@
-import { assertNever } from './utils.js';
-
-export enum LogLevel {
-  DEBUG = 0,
-  INFO = 1,
-  WARN = 2,
-  ERROR = 3
-}
-
-export type Logger = {
-  debug: (message: string) => void;
-  info: (message: string) => void;
-  warn: (message: string) => void;
-  error: (message: string) => void;
-}
+import { assertNever } from '../utils.js';
+import { Logger, LogLevel } from './types.js';
 
 export class ConsoleLogger implements Logger {
   private readonly prefix: string;

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ConsoleLogger, LogLevel } from './logger.js';
+import { ConsoleLogger } from './logger.js';
+import { LogLevel } from './types.js';
 
 describe('ConsoleLogger', () => {
   let consoleSpy: {

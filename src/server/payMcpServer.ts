@@ -1,4 +1,4 @@
-import { ConsoleLogger } from "../logger.js";
+import { ConsoleLogger } from "../common/logger.js";
 import { SqliteOAuthDb } from "../oAuthDb.js";
 import { PayMcpConfig } from "./types.js";
 import { checkToken } from "./token.js";
@@ -43,7 +43,7 @@ export function buildConfig(args: PayMcpArgs): PayMcpConfig {
   return Object.freeze({ ...withDefaults, ...built });
 };
 
-export function paymcp(args: PayMcpArgs): (req: Request, res: Response, next: NextFunction) => Promise<void> {
+export function payMcpServer(args: PayMcpArgs): (req: Request, res: Response, next: NextFunction) => Promise<void> {
   const config = buildConfig(args);
 
   return async (req: Request, res: Response, next: NextFunction) => {
