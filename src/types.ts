@@ -11,7 +11,6 @@ export type CustomJWTPayload = {
 
 export interface PaymentMaker {
   makePayment: (amount: BigNumber, currency: string, receiver: string, resourceName?: string) => Promise<string>;
-  signBySource: (requestId: string, message: string) => Promise<string>;
   generateJWT: (paymentIds?: string[]) => Promise<string>;
 }
 

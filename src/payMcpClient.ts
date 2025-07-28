@@ -10,7 +10,6 @@ export interface PayMcpClientConfig {
   fetchFn?: FetchLike;
   sideChannelFetch?: FetchLike;
   strict?: boolean;
-  useJWTBasedAuth?: boolean;
   allowInsecureRequests?: boolean;
 }
 
@@ -18,7 +17,6 @@ export class PayMcpClient {
   protected oauthClient: OAuthClient;
   protected paymentMakers: Map<string, PaymentMaker>;
   protected sideChannelFetch: FetchLike;
-  protected useJWTBasedAuth: boolean;
 
   constructor({
     userId,
@@ -27,7 +25,6 @@ export class PayMcpClient {
     fetchFn = fetch,
     sideChannelFetch = fetchFn,
     strict = true,
-    useJWTBasedAuth = false,
     allowInsecureRequests = process.env.NODE_ENV === 'development'
   }: PayMcpClientConfig) {
     // Use React Native safe fetch if in React Native environment
@@ -49,7 +46,6 @@ export class PayMcpClient {
     });
     this.paymentMakers = new Map(Object.entries(paymentMakers));
     this.sideChannelFetch = safeSideChannelFetch;
-    this.useJWTBasedAuth = useJWTBasedAuth;
   }
 
   protected handleAuthFailure = async (oauthError: OAuthAuthenticationRequiredError): Promise<string> => {
@@ -102,17 +98,7 @@ export class PayMcpClient {
     const paymentId = await paymentMaker.makePayment(amount, currency, destination, authorizationUrl.searchParams.get('resourceName') || undefined);
     console.log(`PayMCP: made payment of ${amount} ${currency} on ${requestedNetwork}: ${paymentId}`);
 
-    let authToken = '';
-    if (this.useJWTBasedAuth) {
-      authToken = await paymentMaker.generateJWT([paymentId]);
-    } else {
-      const signature = await paymentMaker.signBySource(codeChallenge, paymentId);
-      // The authToken is base64 encoded versions of the paymentId and signature, 
-      // separate by a :
-      //   The signature is calculated over codeChallenge+paymentId in order to 
-      // prevent re-use of the token (since the codeChallenge is going to be unique per auth request).
-      authToken = Buffer.from(`${paymentId}:${signature}`).toString('base64');
-    }
+    const authToken = await paymentMaker.generateJWT([paymentId]);
 
     // Make a fetch call to the authorization URL with the payment ID
     // redirect=false is a hack

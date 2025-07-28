@@ -9,7 +9,6 @@ import { OAuthDb, FetchLike, PaymentMaker } from './types';
 function payMcpClient(fetchFn: FetchLike, solanaPaymentMaker?: PaymentMaker, db?: OAuthDb, isPublic: boolean = false, strict: boolean = true) {
   solanaPaymentMaker = solanaPaymentMaker ?? {
     makePayment: vi.fn().mockResolvedValue('testPaymentId'),
-    signBySource: vi.fn().mockResolvedValue('testSignature'),
     generateJWT: vi.fn().mockResolvedValue('testJWT')
   };
   return new PayMcpClient({
@@ -36,7 +35,6 @@ describe('payMcpClient.fetch', () => {
     mockAuthorizationServer(f, 'https://paymcp.com', '?payMcp=1&network=solana&destination=testDestination&currency=USDC');
     const paymentMaker = {
       makePayment: vi.fn().mockResolvedValue('testPaymentId'),
-      signBySource: vi.fn().mockResolvedValue('testSignature'),
       generateJWT: vi.fn().mockResolvedValue('testJWT')
     };
     const client = payMcpClient(f.fetchHandler, paymentMaker);
@@ -60,7 +58,6 @@ describe('payMcpClient.fetch', () => {
       });
     const paymentMaker = {
       makePayment: vi.fn().mockResolvedValue('testPaymentId'),
-      signBySource: vi.fn().mockResolvedValue('testSignature'),
       generateJWT: vi.fn().mockResolvedValue('testJWT')
     };
     const client = payMcpClient(f.fetchHandler, paymentMaker);
@@ -68,7 +65,6 @@ describe('payMcpClient.fetch', () => {
     await client.fetch('https://example.com/mcp');
     // Ensure we make a payment and sign it
     expect(paymentMaker.makePayment).toHaveBeenCalled();
-    expect(paymentMaker.signBySource).toHaveBeenCalled();
 
     // Ensure we call the authorization endpoint
     const authCall = f.callHistory.lastCall('begin:https://paymcp.com/authorize');
@@ -78,9 +74,9 @@ describe('payMcpClient.fetch', () => {
     const authHeader = (authCall!.args[1] as any).headers['Authorization'];
     expect(authHeader).toBeDefined();
     expect(authHeader).toContain('Bearer ');
-    const encodedPayment = authHeader.split(' ')[1];
-    const decodedPayment = Buffer.from(encodedPayment, 'base64').toString('utf-8');
-    expect(decodedPayment).toBe('testPaymentId:testSignature');
+    const jwtToken = authHeader.split(' ')[1];
+    // const decodedPayment = Buffer.from(encodedPayment, 'base64').toString('utf-8');
+    expect(jwtToken).toBe('testJWT');
   });
 
   it('should throw if PayMcp authorization server response is not successful', async () => {

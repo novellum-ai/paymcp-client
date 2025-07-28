@@ -77,13 +77,4 @@ export class SolanaPaymentMaker implements PaymentMaker {
     );
     return transactionHash;
   }
-
-  signBySource = async (requestId: string, transactionId: string): Promise<string> => {
-    console.log("GENERATING SIGNATURE", requestId, transactionId, this.source.publicKey.toBase58());
-    // https://solana.com/developers/cookbook/wallets/sign-message
-    const messageBytes = naclUtil.decodeUTF8(requestId + transactionId);
-    const signature = nacl.sign.detached(messageBytes, this.source.secretKey);
-    const res = Buffer.from(signature).toString('base64');
-    return res;
-  }
 }
