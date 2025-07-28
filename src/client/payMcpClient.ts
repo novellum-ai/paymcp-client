@@ -2,7 +2,8 @@ import { ClientConfig } from "./types.js";
 import { SqliteOAuthDb } from "../oAuthDb.js";
 import { ConsoleLogger } from "../common/logger.js";
 import { PayMcpClient } from "../payMcpClient.js";
-import * as mcp from '@modelcontextprotocol/sdk';
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
 type RequiredClientConfigFields = 'mcpServer' | 'account';
 type RequiredClientConfig = Pick<ClientConfig, RequiredClientConfigFields>;
@@ -33,7 +34,7 @@ export function buildConfig(args: ClientArgs): ClientConfig {
   return Object.freeze({ ...withDefaults, ...built });
 };
 
-export async function payMcpClient(args: ClientArgs): Promise<mcp.Client> {
+export async function payMcpClient(args: ClientArgs): Promise<Client> {
   const config = buildConfig(args);
 
   const fetcher = new PayMcpClient({
@@ -45,8 +46,8 @@ export async function payMcpClient(args: ClientArgs): Promise<mcp.Client> {
     allowInsecureRequests: config.allowHttp
   });
 
-  const client = new mcp.Client(config.clientInfo, config.clientOptions);
-  const transport = new mcp.StreamableHTTPClientTransport(new URL(args.mcpServer), {fetch: fetcher.fetch});
+  const client = new Client(config.clientInfo, config.clientOptions);
+  const transport = new StreamableHTTPClientTransport(new URL(args.mcpServer), {fetch: fetcher.fetch});
   await client.connect(transport);
 
   return client;

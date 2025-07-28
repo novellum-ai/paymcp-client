@@ -15,3 +15,6 @@ export * from './server/index.js';
 export * from './server/types.js';
 export * from './common/logger.js';
 export * from './server/index.js';
+export * from './client/index.js';
+export * from './client/types.js';
+export * from './common/types.js';

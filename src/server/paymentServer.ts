@@ -1,4 +1,5 @@
-import { PaymentServer, Network, Currency, AuthorizationServerUrl, ChargeResponse } from "./types.js";
+import { PaymentServer, ChargeResponse } from "./types.js";
+import { Network, Currency, AuthorizationServerUrl } from "../common/types.js";
 import { FetchLike, OAuthDb } from "../types.js";
 
 export class PayMcpPaymentServer implements PaymentServer {

@@ -12,5 +12,8 @@ export type Logger = {
   error: (message: string) => void;
 }
 
+export type UrlString = `http://${string}` | `https://${string}`;
+export type AuthorizationServerUrl = UrlString;
+
 export type Currency = 'USDC';
 export type Network = 'solana';

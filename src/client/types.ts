@@ -1,12 +1,9 @@
 import { BigNumber } from "bignumber.js";
-import { Logger } from "../common/types.js";
-import { OAuthDb, PaymentMaker, TokenData } from "../types.js";
+import { AuthorizationServerUrl, Currency, Logger, Network, UrlString } from "../common/types.js";
+import { OAuthDb, PaymentMaker } from "../types.js";
 import { FetchLike } from "../types.js";
-import * as mcp from '@modelcontextprotocol/sdk';
-import { Network, Currency } from "../common/types.js";
+import { ClientOptions } from "@modelcontextprotocol/sdk/client/index.js";
 
-export type UrlString = `http://${string}` | `https://${string}`;
-export type AuthorizationServerUrl = UrlString;
 type AccountPrefix = Network;
 export type AccountIdString = `${AccountPrefix}${string}`;
 
@@ -34,6 +31,9 @@ export type ClientConfig = {
   oAuthChannelFetch: FetchLike;
   allowHttp: boolean;
   logger: Logger;
-  clientInfo: mcp.Implementation;
-  clientOptions: mcp.ClientOptions;
+  clientInfo: {
+    name: string;
+    version: string;
+  };
+  clientOptions: ClientOptions;
 }
