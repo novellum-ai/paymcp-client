@@ -22,7 +22,6 @@
     "dev:cli": "tsx src/dev/cli.ts"
   },
   "dependencies": {
-    "@longrun/turtle": "^0.0.80",
     "@modelcontextprotocol/sdk": "^1.15.0",
     "@solana/pay": "^0.2.5",
     "@solana/web3.js": "^1.98.1",
