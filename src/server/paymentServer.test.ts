@@ -119,8 +119,7 @@ describe('PayMcpPaymentServer', () => {
       ...TH.charge({
         source: 'test-source',
         destination: 'test-destination'
-      }),
-      resource: new URL('https://example.com/resource')
+      })
     };
 
     const result = await server.createPaymentRequest(paymentRequestParams);

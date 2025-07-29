@@ -54,8 +54,7 @@ describe('requirePayment', () => {
           currency: config.currency,
           network: config.network,
           destination: config.destination,
-          source: 'test-user',
-          resource: new URL('https://example.com/'),
+          source: 'test-user'
         });
       }
     });
