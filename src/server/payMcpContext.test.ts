@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { withPayMcpContext, getPayMcpConfig, payMcpUser } from './payMcpContext.js';
-import * as TH from './testHelpers.js';
+import * as TH from './serverTestHelpers.js';
 
 describe('continueWithPayMcpContext', () => {
   it('should make user available within the context', () => {

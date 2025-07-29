@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { payMcpServer } from './payMcpServer.js';
 import httpMocks from 'node-mocks-http';
-import * as TH from './testHelpers.js';
+import * as TH from './serverTestHelpers.js';
 import { EventEmitter } from 'events';
+import { SqliteOAuthDb } from '../common/oAuthDb.js';
 
 describe('paymcp', () => {
   it('should run code at request start and finish', async () => {
@@ -65,6 +66,39 @@ describe('paymcp', () => {
     expect(next).not.toHaveBeenCalled();
 
     expect(logger.debug).toHaveBeenCalledWith('Request finished - POST /');
+  });
+
+  it('should save the oAuth token in the DB if it is active', async () => {
+    const { req, res } = httpMocks.createMocks(
+      {
+        method: 'POST',
+        url: 'https://example.com/',
+        body: TH.mcpToolRequest(),
+        headers: {
+          'content-type': 'application/json',
+          'authorization': 'Bearer self-access-token'
+        }
+      },
+      { eventEmitter: EventEmitter }
+    );
+    const next = vi.fn();
+
+    const goodToken = TH.tokenData({active: true, sub: 'test-user'});
+    const oAuthDb = new SqliteOAuthDb({ db: ':memory:' });
+    const middleware = payMcpServer(TH.config({
+      oAuthClient: TH.oAuthClient({introspectResult: goodToken}),
+      oAuthDb
+    }));
+
+    await middleware(req as any, res, next);
+
+    expect(res.statusCode).toEqual(200);
+    // payMcpServer stores the oAuth token that was used to auth to ITSELF under the url ''
+    const tokenFromDb = await oAuthDb.getAccessToken('test-user', '');
+    expect(tokenFromDb).toMatchObject({
+      accessToken: 'self-access-token',
+      resourceUrl: ''
+    });
   });
   
   it('should return an OAuth challenge if token not active', async () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { getOAuthMetadata } from './oAuthMetadata.js';
-import * as TH from './testHelpers.js';
+import * as TH from './serverTestHelpers.js';
 
 const METADATA = {
   issuer: 'https://auth.paymcp.com',

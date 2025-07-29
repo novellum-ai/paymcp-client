@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { requirePayment } from './index.js';
-import * as TH from './testHelpers.js';
+import * as TH from './serverTestHelpers.js';
 import { BigNumber } from 'bignumber.js';
 import { withPayMcpContext } from './payMcpContext.js';
-import { PaymentRequestError } from './requirePayment.js';
+import { PaymentRequestError } from '../common/paymentRequestError.js';
 
 describe('requirePayment', () => {
   it('should pass if there is money', async () => {

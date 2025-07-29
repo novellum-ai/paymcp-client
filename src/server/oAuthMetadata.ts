@@ -1,7 +1,7 @@
 import { PayMcpConfig } from "./types.js";
 import * as oauth from 'oauth4webapi';
 import { ServerResponse } from "http";
-import { getPath, getResource } from "./getResource.js";
+import { getPath } from "./getResource.js";
 
 export function sendOAuthMetadata(res: ServerResponse, metadata: oauth.AuthorizationServer | null): boolean {
   if (!metadata) {

@@ -1,7 +1,6 @@
 import { BigNumber } from "bignumber.js";
 import { AuthorizationServerUrl, Currency, Logger, Network, UrlString } from "../common/types.js";
-import { OAuthDb, PaymentMaker } from "../types.js";
-import { FetchLike } from "../types.js";
+import { OAuthDb, FetchLike } from "../common/types.js";
 import { ClientOptions } from "@modelcontextprotocol/sdk/client/index.js";
 
 type AccountPrefix = Network;
@@ -36,4 +35,9 @@ export type ClientConfig = {
     version: string;
   };
   clientOptions: ClientOptions;
+}
+
+export interface PaymentMaker {
+  makePayment: (amount: BigNumber, currency: string, receiver: string, resourceName?: string) => Promise<string>;
+  generateJWT: (params: {paymentIds?: string[], codeChallenge?: string}) => Promise<string>;
 }

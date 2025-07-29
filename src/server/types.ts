@@ -1,7 +1,6 @@
 import { BigNumber } from "bignumber.js";
-import { AuthorizationServerUrl, Currency, Logger, Network, UrlString } from "../common/types.js";
-import { OAuthDb, TokenData } from "../types.js";
-import { OAuthResourceClient } from "../oAuthResource.js";
+import { AuthorizationServerUrl, Currency, Logger, PaymentRequestData, Network, UrlString, OAuthDb, TokenData } from "../common/types.js";
+import { OAuthResourceClient } from "../common/oAuthResource.js";
 
 // https://github.com/modelcontextprotocol/typescript-sdk/blob/c6ac083b1b37b222b5bfba5563822daa5d03372e/src/types.ts
 // ctrl+f "method: z.literal(""
@@ -19,24 +18,19 @@ export type McpOperation = `${McpMethod}` | `${McpMethod}:${McpName}`;
 export type McpOperationPattern = McpOperation | '*' | `${McpMethod}:*`;
 export type RefundErrors = boolean | 'nonMcpOnly';
 
-export type RequirePaymentConfig = {
-  price: BigNumber;
-  getExistingPaymentId?: () => Promise<string | null>;
-}
-
-export type Charge = Required<Pick<PayMcpConfig, 'currency' | 'network' | 'destination'>> & {
-  amount: BigNumber;
-  source: PayMcpConfig['destination'];
-}
+// When the server is talking to the paymcp AS, it doesn't need to provide
+// the resource or resourceName - those are already known by the AS, and 
+// we shouldn't trust the RS to self-report them
+export type Charge = Omit<PaymentRequestData, 'resource' | 'resourceName'>;
 
 export type ChargeResponse = {
   success: boolean;
-  requiredPayment: Charge | null;
+  requiredPayment: PaymentRequestData | null;
 }
 
 export type PaymentServer = {
   charge: (args: Charge) => Promise<ChargeResponse>;
-  createPaymentRequest: (args: Charge & {resource: URL}) => Promise<string>;
+  createPaymentRequest: (args: Charge) => Promise<string>;
 }
 
 export type PayMcpConfig = {

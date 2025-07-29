@@ -1,5 +1,5 @@
-import { sqlite, SQLiteDatabase } from './platform/index';
-import type { AccessToken, ClientCredentials, OAuthDb, PKCEValues } from './types';
+import { sqlite, SQLiteDatabase } from '../client/platform/index';
+import type { AccessToken, ClientCredentials, OAuthDb, PKCEValues } from './types.js';
 
 export interface OAuthDbConfig {
   db?: string | SQLiteDatabase;

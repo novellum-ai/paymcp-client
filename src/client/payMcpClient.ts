@@ -1,7 +1,7 @@
 import { ClientConfig } from "./types.js";
-import { SqliteOAuthDb } from "../oAuthDb.js";
+import { SqliteOAuthDb } from "../common/oAuthDb.js";
 import { ConsoleLogger } from "../common/logger.js";
-import { PayMcpClient } from "../payMcpClient.js";
+import { PayMcpFetcher } from "./payMcpFetcher.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
@@ -26,7 +26,7 @@ export const DEFAULT_CLIENT_CONFIG: Required<Omit<OptionalClientConfig, Buildabl
   },
 };
 
-export function buildConfig(args: ClientArgs): ClientConfig {
+export function buildClientConfig(args: ClientArgs): ClientConfig {
   const withDefaults = { ...DEFAULT_CLIENT_CONFIG, ...args };
   const oAuthDb = withDefaults.oAuthDb ?? new SqliteOAuthDb({db: ':memory:'});
   const logger = withDefaults.logger ?? new ConsoleLogger();
@@ -35,9 +35,9 @@ export function buildConfig(args: ClientArgs): ClientConfig {
 };
 
 export async function payMcpClient(args: ClientArgs): Promise<Client> {
-  const config = buildConfig(args);
+  const config = buildClientConfig(args);
 
-  const fetcher = new PayMcpClient({
+  const fetcher = new PayMcpFetcher({
     userId: args.account.accountId,
     db: config.oAuthDb,
     paymentMakers: args.account.paymentMakers,

@@ -1,6 +1,6 @@
 import { PaymentServer, ChargeResponse } from "./types.js";
-import { Network, Currency, AuthorizationServerUrl } from "../common/types.js";
-import { FetchLike, OAuthDb } from "../types.js";
+import { Network, Currency, AuthorizationServerUrl, FetchLike, OAuthDb } from "../common/types.js";
+import BigNumber from "bignumber.js";
 
 export class PayMcpPaymentServer implements PaymentServer {
   constructor(
@@ -23,9 +23,9 @@ export class PayMcpPaymentServer implements PaymentServer {
     }
   }
 
-  createPaymentRequest = async({source, destination, network, currency, amount, resource}: 
-    {source: string, destination: string, network: Network, currency: Currency, amount: BigNumber, resource: URL}): Promise<string> => {
-    const body = {source, destination, network, currency, amount, resource: resource.toString()};
+  createPaymentRequest = async({source, destination, network, currency, amount}: 
+    {source: string, destination: string, network: Network, currency: Currency, amount: BigNumber}): Promise<string> => {
+    const body = {source, destination, network, currency, amount};
     const response = await this.makeRequest('POST', '/payment-request', body);
     const json = await response.json() as any;
     if (response.status !== 200) {

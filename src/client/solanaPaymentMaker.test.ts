@@ -9,7 +9,7 @@ describe('solanaPaymentMaker.generateJWT', () => {
   it('should generate a valid JWT with default payload', async () => {
     const keypair = Keypair.generate();
     const paymentMaker = new SolanaPaymentMaker('https://example.com', bs58.encode(keypair.secretKey));
-    const jwt = await paymentMaker.generateJWT();
+    const jwt = await paymentMaker.generateJWT({});
 
     // JWT format: header.payload.signature (all base64url)
     const [headerB64, payloadB64, signatureB64] = jwt.split('.');
@@ -47,7 +47,7 @@ describe('solanaPaymentMaker.generateJWT', () => {
     const keypair = Keypair.generate();
     const paymentMaker = new SolanaPaymentMaker('https://example.com', bs58.encode(keypair.secretKey));
     const paymentIds = ['id1', 'id2'];
-    const jwt = await paymentMaker.generateJWT(paymentIds);
+    const jwt = await paymentMaker.generateJWT({paymentIds});
     const [, payloadB64] = jwt.split('.');
     const decodeB64Url = (str: string) => {
       let b64 = str.replace(/-/g, '+').replace(/_/g, '/');

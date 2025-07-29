@@ -1,17 +1,18 @@
-import { SqliteOAuthDb } from './oAuthDb';
-import { OAuthAuthenticationRequiredError } from './oAuth';
+import { SqliteOAuthDb } from '../common/oAuthDb';
+import { OAuthAuthenticationRequiredError } from './oAuth.js';
 import { describe, it, expect, vi } from 'vitest';
 import fetchMock from 'fetch-mock';
-import { mockResourceServer, mockAuthorizationServer } from './testHelpers';
-import { PayMcpClient } from './payMcpClient';
-import { OAuthDb, FetchLike, PaymentMaker } from './types';
+import { mockResourceServer, mockAuthorizationServer } from '../testHelpers.js';
+import { PayMcpFetcher } from './payMcpFetcher.js';
+import { OAuthDb, FetchLike } from '../common/types.js';
+import { PaymentMaker } from './types.js';
 
 function payMcpClient(fetchFn: FetchLike, solanaPaymentMaker?: PaymentMaker, db?: OAuthDb, isPublic: boolean = false, strict: boolean = true) {
   solanaPaymentMaker = solanaPaymentMaker ?? {
     makePayment: vi.fn().mockResolvedValue('testPaymentId'),
     generateJWT: vi.fn().mockResolvedValue('testJWT')
   };
-  return new PayMcpClient({
+  return new PayMcpFetcher({
     userId: "bdj",
     db: db ?? new SqliteOAuthDb({db: ':memory:'}),
     paymentMakers: {'solana': solanaPaymentMaker},

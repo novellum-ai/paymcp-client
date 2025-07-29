@@ -1,13 +1,14 @@
 import * as oauth from 'oauth4webapi';
-
-import { OAuthResourceClient } from './oAuthResource.js';
+import { OAuthResourceClient } from '../common/oAuthResource.js';
 import { crypto } from './platform/index.js';
-import { AccessToken, ClientCredentials, FetchLike, OAuthDb, PKCEValues } from './types.js';
+import { AccessToken, ClientCredentials, FetchLike, OAuthDb, PKCEValues } from '../common/types.js';
 
 export class OAuthAuthenticationRequiredError extends Error {
   constructor(
     public readonly url: string,
     public readonly resourceServerUrl: string,
+    // TODO: Remove OAuthError idempotencyKey - these errors shouldn't need to be
+    // de-duplicated anymore.
     public readonly idempotencyKey: string
   ) {
     super(`OAuth authentication required. Resource server url: ${resourceServerUrl}`);
@@ -128,8 +129,8 @@ export class OAuthClient extends OAuthResourceClient {
           resourceUrl = calledUrl;
         }
         const token = await this.getAccessToken(calledUrl);
-        console.log(`Throwing OAuthAuthenticationRequiredError for ${calledUrl}, resource: ${resourceUrl}`);
-        throw await OAuthAuthenticationRequiredError.create(calledUrl, resourceUrl, token?.accessToken);
+        console.log(`Throwing PaymentRequestError for ${calledUrl}, resource: ${resourceUrl}`);
+        throw await OAuthAuthenticationRequiredError.create(calledUrl, resourceUrl);//, token?.accessToken);
       }
     }
   

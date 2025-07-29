@@ -1,4 +1,4 @@
-import { TokenData } from "../types.js";
+import { TokenData } from "../common/types.js";
 import { PayMcpConfig, TokenCheck } from "./types.js";
 import { AsyncLocalStorage } from "async_hooks";
 

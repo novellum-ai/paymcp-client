@@ -20,7 +20,7 @@ describe('generateJWT', () => {
     };
     const privateKey = await importJWK(jwk, 'EdDSA');
     const walletId = keypair.publicKey.toBase58();
-    const jwt = await generateJWT(walletId, privateKey);
+    const jwt = await generateJWT(walletId, privateKey, [], '');
     const [headerB64, payloadB64, signatureB64] = jwt.split('.');
     expect(headerB64).toBeDefined();
     expect(payloadB64).toBeDefined();
@@ -60,7 +60,7 @@ describe('generateJWT', () => {
     const privateKey = await importJWK(jwk, 'EdDSA');
     const walletId = keypair.publicKey.toBase58();
     const paymentIds = ['id1', 'id2'];
-    const jwt = await generateJWT(walletId, privateKey, paymentIds);
+    const jwt = await generateJWT(walletId, privateKey, paymentIds, '');
     const [, payloadB64] = jwt.split('.');
     const payload = decodeB64Url(payloadB64);
     expect(payload.paymentIds).toEqual(paymentIds);
