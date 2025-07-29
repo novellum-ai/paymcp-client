@@ -219,7 +219,8 @@ export class PayMcpFetcher {
       // token in the DB under the '' resource URL).
       const existingToken = await this.db.getAccessToken(this.userId, '');
       if (!existingToken) {
-        throw new Error(`PayMCP: no token found for the current server - we can't exchange a token if we don't have one`);
+        console.log(`PayMCP: no token found for the current server - we can't exchange a token if we don't have one`);
+        throw error;
       }
       const newToken = await this.exchangeToken(existingToken, error.resourceServerUrl);
       this.db.saveAccessToken(this.userId, error.resourceServerUrl, newToken);

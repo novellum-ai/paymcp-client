@@ -14,18 +14,18 @@ export function mockResourceServer(mock: FetchMock, baseUrl: string = 'https://e
   return mock;
 }
 
-export function mockAuthorizationServer(mock: FetchMock, baseUrl: string = 'https://paymcp.com', querystring: string = '') {
-  mock.get(`${baseUrl}/.well-known/oauth-authorization-server${querystring}`, {
-    issuer: `${baseUrl}${querystring}`,
-    authorization_endpoint: `${baseUrl}/authorize${querystring}`,
-    registration_endpoint: `${baseUrl}/register${querystring}`,
-    token_endpoint: `${baseUrl}/token${querystring}`,
-    introspection_endpoint: `${baseUrl}/introspect${querystring}`
+export function mockAuthorizationServer(mock: FetchMock, baseUrl: string = 'https://paymcp.com') {
+  mock.get(`${baseUrl}/.well-known/oauth-authorization-server`, {
+    issuer: `${baseUrl}`,
+    authorization_endpoint: `${baseUrl}/authorize`,
+    registration_endpoint: `${baseUrl}/register`,
+    token_endpoint: `${baseUrl}/token`,
+    introspection_endpoint: `${baseUrl}/introspect`
   });
   // Use the more verbose route method to name the route, so we can .modifyRoute it later
   mock.route({
-    name: `${baseUrl}/token${querystring}`,
-    url: `${baseUrl}/token${querystring}`,
+    name: `${baseUrl}/token`,
+    url: `${baseUrl}/token`,
     method: 'post',
     repeat: 1,
     response: {
@@ -36,8 +36,8 @@ export function mockAuthorizationServer(mock: FetchMock, baseUrl: string = 'http
     }
   });
   mock.route({
-    name: `${baseUrl}/register${querystring}`,
-    url: `${baseUrl}/register${querystring}`, 
+    name: `${baseUrl}/register`,
+    url: `${baseUrl}/register`, 
     method: 'post',
     response: {
       status: 201,
@@ -49,8 +49,8 @@ export function mockAuthorizationServer(mock: FetchMock, baseUrl: string = 'http
     }
   });
   mock.route({
-    name: `${baseUrl}/introspect${querystring}`,
-    url: `${baseUrl}/introspect${querystring}`,
+    name: `${baseUrl}/introspect`,
+    url: `${baseUrl}/introspect`,
     method: 'post',
     repeat: 1,
     response: {
