@@ -2,6 +2,7 @@ import { BigNumber } from "bignumber.js";
 import { AuthorizationServerUrl, Currency, Logger, Network, UrlString } from "../common/types.js";
 import { OAuthDb, FetchLike } from "../common/types.js";
 import { ClientOptions } from "@modelcontextprotocol/sdk/client/index.js";
+import { Implementation } from "@modelcontextprotocol/sdk/types.js";
 
 type AccountPrefix = Network;
 export type AccountIdString = `${AccountPrefix}${string}`;
@@ -30,10 +31,7 @@ export type ClientConfig = {
   oAuthChannelFetch: FetchLike;
   allowHttp: boolean;
   logger: Logger;
-  clientInfo: {
-    name: string;
-    version: string;
-  };
+  clientInfo: Implementation;
   clientOptions: ClientOptions;
 }
 
