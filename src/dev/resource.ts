@@ -1,42 +1,48 @@
-import BigNumber from 'bignumber.js';
-import express from 'express';
-import bodyParser from 'body-parser';
-import { createMcpServer, defineTool } from '@longrun/turtle';
+import express, { Request, Response } from 'express';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
-import { requirePayment, payMcpServer, ConsoleLogger, LogLevel } from '../index';
+import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { BigNumber } from 'bignumber.js';
+import { payMcpServer, ConsoleLogger, LogLevel, requirePayment } from '../index.js';
 import 'dotenv/config';
 
 const PORT = 3009;
 
-// Create the Express app
+const getServer = () => {
+  // Create an MCP server with implementation details
+  const server = new McpServer({
+    name: 'stateless-streamable-http-server',
+    version: '1.0.0',
+  }, { capabilities: { logging: {} } });
+
+  // Register a tool specifically for testing resumability
+  server.tool(
+    'secure-data',
+    'Secure data',
+    {
+      message: z.string().optional().describe('Message to secure'),
+    },
+    async ({ message }: { message?: string }): Promise<CallToolResult> => {
+      await requirePayment({price: BigNumber(0.01)});
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Secure data: ${message || 'No message provided'}`,
+          }
+        ],
+      };
+    }
+  );
+
+  return server;
+}
+
 const app = express();
+app.use(express.json());
 
-app.use(bodyParser.json());
-
-// Set up an MCP server to use as an example
-// Define MCP tools that require authentication
-const secureTool = defineTool(
-  'secure-data',
-  'Get secure data that requires authentication',
-  z.object({
-    message: z.string().optional()
-  }),
-  async () => {
-    await requirePayment({price: BigNumber(0.01)});
-    console.log('Got past requirePayment');
-    // The user is already authenticated by the MCP server's auth middleware
-    return 'Secure data accessed successfully';
-  }
-);
-
-// Create MCP server with OAuth authentication
-const mcpServer = createMcpServer({
-  mountpath: '/',
-  tools: [secureTool],
-  name: 'Secure Data Tool',
-});
-
-// Mount the MCP server
+console.log('Starting MCP server with destination', process.env.SOLANA_DESTINATION);
 app.use(payMcpServer({
   destination: process.env.SOLANA_DESTINATION!,
   resource: `http://localhost:${PORT}`,
@@ -46,11 +52,72 @@ app.use(payMcpServer({
   allowHttp: true,
   logger: new ConsoleLogger({level: LogLevel.DEBUG})
 }));
-app.use(mcpServer);
+
+
+app.post('/', async (req: Request, res: Response) => {
+  const server = getServer();
+  try {
+    const transport: StreamableHTTPServerTransport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+    });
+    await server.connect(transport);
+    await transport.handleRequest(req, res, req.body);
+    res.on('close', () => {
+      console.log('Request closed');
+      transport.close();
+      server.close();
+    });
+  } catch (error) {
+    console.error('Error handling MCP request:', error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        jsonrpc: '2.0',
+        error: {
+          code: -32603,
+          message: 'Internal server error',
+        },
+        id: null,
+      });
+    }
+  }
+});
+
+app.get('/', async (req: Request, res: Response) => {
+  console.log('Received GET MCP request');
+  res.writeHead(405).end(JSON.stringify({
+    jsonrpc: "2.0",
+    error: {
+      code: -32000,
+      message: "Method not allowed."
+    },
+    id: null
+  }));
+});
+
+app.delete('/', async (req: Request, res: Response) => {
+  console.log('Received DELETE MCP request');
+  res.writeHead(405).end(JSON.stringify({
+    jsonrpc: "2.0",
+    error: {
+      code: -32000,
+      message: "Method not allowed."
+    },
+    id: null
+  }));
+});
 
 
 // Start the server
-app.listen(PORT, async () => {
-  console.log(`MCP server running at http://localhost:${PORT}`);
-  console.log('MCP server mounted at /');
+app.listen(PORT, (error) => {
+  if (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+  console.log(`MCP Stateless Streamable HTTP Server listening on port ${PORT}`);
+});
+
+// Handle server shutdown
+process.on('SIGINT', async () => {
+  console.log('Shutting down server...');
+  process.exit(0);
 });

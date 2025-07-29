@@ -21,7 +21,7 @@ export async function requirePayment(paymentConfig: RequirePaymentConfig): Promi
     source: user
   };
 
-  config.logger.debug(`Charging ${charge.amount} for source ${charge.source}`);
+  config.logger.debug(`Charging amount ${charge.amount}, destination ${charge.destination}, source ${charge.source}`);
   const chargeResponse = await config.paymentServer.charge(charge);
   if (chargeResponse.success) {
     config.logger.info(`Charged ${charge.amount} for source ${charge.source}`);

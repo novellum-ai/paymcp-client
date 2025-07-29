@@ -20,9 +20,10 @@ export class PayMcpPaymentServer implements PaymentServer {
     } else if (chargeResponse.status === 402) {
       return {success: false, requiredPayment: json};
     } else {
-      this.logger.error(`Unexpected status code ${chargeResponse.status} from payment server POST /charge endpoint`);
-      this.logger.info(`Response body: ${JSON.stringify(json)}`);
-      throw new Error(`Unexpected status code ${chargeResponse.status} from payment server POST /charge endpoint`);
+      const msg = `Unexpected status code ${chargeResponse.status} from payment server POST /charge endpoint`;
+      this.logger.warn(msg);
+      this.logger.debug(`Response body: ${JSON.stringify(json)}`);
+      throw new Error(msg);
     }
   }
 
@@ -32,8 +33,8 @@ export class PayMcpPaymentServer implements PaymentServer {
     const response = await this.makeRequest('POST', '/payment-request', body);
     const json = await response.json() as any;
     if (response.status !== 200) {
-      this.logger.error(`POST /payment-request responded with unexpected HTTP status ${response.status}`);
-      this.logger.info(`Response body: ${JSON.stringify(json)}`);
+      this.logger.warn(`POST /payment-request responded with unexpected HTTP status ${response.status}`);
+      this.logger.debug(`Response body: ${JSON.stringify(json)}`);
       throw new Error(`POST /payment-request responded with unexpected HTTP status ${response.status}`); 
     }
     if(!json.id) {
@@ -46,7 +47,7 @@ export class PayMcpPaymentServer implements PaymentServer {
     const url = new URL(path, this.server);
     const credentials = await this.oAuthDb.getClientCredentials(this.server);
     if(!credentials) {
-      this.logger.error(`No client credentials found for ${this.server}`);
+      this.logger.warn(`No client credentials found for ${this.server}`);
       throw new Error('No client credentials found');
     }
     

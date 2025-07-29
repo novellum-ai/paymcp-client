@@ -31,6 +31,10 @@ export const DEFAULT_CONFIG: Required<Omit<OptionalPayMcpConfig, BuildablePayMcp
 };
 
 export function buildServerConfig(args: PayMcpArgs): PayMcpConfig {
+  if(!args.destination) {
+    throw new Error('destination is required');
+  }
+
   const withDefaults = { ...DEFAULT_CONFIG, ...args };
   const oAuthDb = withDefaults.oAuthDb ?? new SqliteOAuthDb({db: ':memory:'});
   const oAuthClient = withDefaults.oAuthClient ?? new OAuthResourceClient({
@@ -127,7 +131,7 @@ export function payMcpServer(args: PayMcpArgs): Router {
 
   // Add both middleware to the router
   router.use(payMcpMiddleware);
-  router.use(errorHandler);
+  //router.use(errorHandler);
 
   return router;
 }
