@@ -99,12 +99,13 @@ export function payMcpServer(args: PayMcpArgs): Router {
 
   const errorHandler = (error: Error, req: Request, res: Response, next: NextFunction) => {
     if (error instanceof PaymentRequestError) {
+      // Based on the current draft of the MCP url elicitation proposal:
+      // https://github.com/modelcontextprotocol/modelcontextprotocol/pull/887/files#diff-f270d43e0167b99f433086ab9fd986ae08905b57751401badeb6217b1ae2ee63R388
       res.json({
         "jsonrpc": "2.0",
-        "id": 2,
         "error": {
           "code": -32604, // ELICITATION_REQUIRED
-          "message": "This request requires more information.",
+          "message": error.message,
           "data": {
             "elicitations": [
               {

@@ -22,7 +22,8 @@ const secureTool = defineTool(
     message: z.string().optional()
   }),
   async () => {
-    requirePayment({price: BigNumber(0.01)});
+    await requirePayment({price: BigNumber(0.01)});
+    console.log('Got past requirePayment');
     // The user is already authenticated by the MCP server's auth middleware
     return 'Secure data accessed successfully';
   }
