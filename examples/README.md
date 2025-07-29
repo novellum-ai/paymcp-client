@@ -1,6 +1,6 @@
 # PayMcp Client Example
 
-This is an example CLI application that demonstrates how to use the `paymcp-client` library to interact with various MCP services using the PayMcp payment system. It imports from the compiled JavaScript files in the main library's `dist` directory.
+This is an example CLI application that demonstrates how to use the `paymcp-client` library to interact with various MCP services using the PayMcp payment system. It imports from the compiled JavaScript files in the main library's `dist` directory because the source files are designed to be compiled to CommonJS and use `.js` extensions in their imports, which requires compilation for proper module resolution.
 
 ## Features
 
@@ -68,6 +68,23 @@ npx tsx src/index.ts image "a beautiful sunset over mountains"
 npx tsx src/index.ts search "latest news about AI"
 ```
 
+### Debug Mode
+
+To enable debug output, set the `DEBUG` environment variable:
+
+```bash
+# With debug output
+DEBUG=1 npm run dev image "test prompt"
+
+# Or for production
+DEBUG=1 npm start image "test prompt"
+```
+
+Debug output includes:
+- Service configuration details
+- Request success messages
+- Result data
+
 
 
 ## How it works
@@ -123,9 +140,11 @@ The application uses SQLite to store OAuth tokens and client credentials. The da
 
 ### Import Errors
 If you encounter import errors like "The requested module does not provide an export", make sure:
-1. The main library's TypeScript source files are available
-2. You're using the correct import paths (pointing to `src/` directory)
+1. The main library has been built: `cd .. && npm run build`
+2. You're using the correct import paths (pointing to `dist/` directory)
 3. The TypeScript compiler can resolve the imports correctly
+
+**Note**: The example uses compiled JavaScript files from the `dist` directory because the source files are designed to be compiled to CommonJS and use `.js` extensions in their imports, which requires compilation for proper module resolution.
 
 ### Private Key Format
 The `SOLANA_PRIVATE_KEY` must be in base58 format. You can get this from your Solana wallet or generate a new keypair.

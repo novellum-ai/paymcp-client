@@ -1,8 +1,15 @@
 #!/usr/bin/env node
 
-import { payMcpClient } from '../../dist/src/client/payMcpClient.js';
-import { SolanaPaymentMaker } from '../../dist/src/solanaPaymentMaker.js';
-import { SqliteOAuthDb } from '../../dist/src/oAuthDb.js';
+import { payMcpClient } from '../../dist/client/payMcpClient.js';
+import { SolanaPaymentMaker } from '../../dist/solanaPaymentMaker.js';
+import { SqliteOAuthDb } from '../../dist/oAuthDb.js';
+
+// Debug function that only prints when DEBUG environment variable is set
+function debug(...args: any[]) {
+  if (process.env.DEBUG) {
+    console.log('[DEBUG]', ...args);
+  }
+}
 
 interface ServiceConfig {
   mcpServer: string;
@@ -65,7 +72,7 @@ async function main() {
   }
 
   const serviceConfig = SERVICES[service];
-  console.log(`Using ${serviceConfig.description} service with prompt: "${prompt}"`);
+  debug(`Using ${serviceConfig.description} service with prompt: "${prompt}"`);
 
   // Validate environment variables
   const solanaEndpoint = process.env.SOLANA_ENDPOINT;
@@ -107,8 +114,8 @@ async function main() {
       arguments: serviceConfig.getArguments(prompt)
     });
 
-    console.log(`${serviceConfig.description} request successful!`);
-    console.log('Result:', serviceConfig.getResult(result));
+    debug(`${serviceConfig.description} request successful!`);
+    debug('Result:', serviceConfig.getResult(result));
 
   } catch (error) {
     console.error(`Error with ${serviceConfig.description}:`, error);
