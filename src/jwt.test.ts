@@ -20,7 +20,8 @@ describe('generateJWT', () => {
     };
     const privateKey = await importJWK(jwk, 'EdDSA');
     const walletId = keypair.publicKey.toBase58();
-    const jwt = await generateJWT(walletId, privateKey);
+    const codeChallenge = 'code_challenge';
+    const jwt = await generateJWT(walletId, codeChallenge, privateKey);
     const [headerB64, payloadB64, signatureB64] = jwt.split('.');
     expect(headerB64).toBeDefined();
     expect(payloadB64).toBeDefined();
@@ -31,6 +32,7 @@ describe('generateJWT', () => {
     expect(header.typ).toBe('JWT');
     expect(payload.sub).toBe(walletId);
     expect(payload.iss).toBe('paymcp.com');
+    expect(payload.code_challenge).toBe(codeChallenge);
     expect(payload.aud).toBe('https://api.paymcp.com');
     expect(typeof payload.iat).toBe('number');
     expect(payload.paymentIds).toBeUndefined();
@@ -59,10 +61,11 @@ describe('generateJWT', () => {
     };
     const privateKey = await importJWK(jwk, 'EdDSA');
     const walletId = keypair.publicKey.toBase58();
+    const codeChallenge = 'code_challenge';
     const paymentIds = ['id1', 'id2'];
-    const jwt = await generateJWT(walletId, privateKey, paymentIds);
+    const jwt = await generateJWT(walletId, codeChallenge, privateKey, paymentIds);
     const [, payloadB64] = jwt.split('.');
     const payload = decodeB64Url(payloadB64);
-    expect(payload.paymentIds).toEqual(paymentIds);
+    expect(payload.payment_request_id).toEqual(paymentIds[0]);
   });
 }); 

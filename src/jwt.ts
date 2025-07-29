@@ -21,7 +21,6 @@ export const generateJWT = async (
     code_challenge: codeChallenge,
   };
   if (paymentIds && paymentIds.length > 0) payload.payment_request_id = paymentIds[0];
-  console.log('payload', payload);
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: 'EdDSA', typ: 'JWT' })
     .setIssuedAt()

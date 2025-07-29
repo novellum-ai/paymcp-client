@@ -55,7 +55,7 @@ describe('solanaPaymentMaker.generateJWT', () => {
       return JSON.parse(Buffer.from(b64, 'base64').toString('utf-8'));
     };
     const payload = decodeB64Url(payloadB64);
-    expect(payload.paymentIds).toEqual(paymentIds);
+    expect(payload.payment_request_id).toEqual(paymentIds[0]);
   });
 });
 
