@@ -6,12 +6,13 @@ export type OpPriceMap = { [key: string]: number };
 export type OpPrices = OpPriceMap | (({request}: {request: Request}) => OpPriceMap);
 
 export type CustomJWTPayload = {
-  paymentIds?: string[];
+  code_challenge: string,
+  payment_request_id?: string;
 }
 
 export interface PaymentMaker {
   makePayment: (amount: BigNumber, currency: string, receiver: string, resourceName?: string) => Promise<string>;
-  generateJWT: (paymentIds?: string[]) => Promise<string>;
+  generateJWT: (codeChallenge: string, paymentIds?: string[]) => Promise<string>;
 }
 
 export type ClientCredentials = {

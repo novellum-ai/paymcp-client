@@ -97,8 +97,8 @@ export class PayMcpClient {
 
     const paymentId = await paymentMaker.makePayment(amount, currency, destination, authorizationUrl.searchParams.get('resourceName') || undefined);
     console.log(`PayMCP: made payment of ${amount} ${currency} on ${requestedNetwork}: ${paymentId}`);
-
-    const authToken = await paymentMaker.generateJWT([paymentId]);
+    console.log('Generating JWT with codeChallenge', codeChallenge);
+    const authToken = await paymentMaker.generateJWT(codeChallenge, [paymentId]);
 
     // Make a fetch call to the authorization URL with the payment ID
     // redirect=false is a hack
