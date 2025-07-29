@@ -30,10 +30,10 @@ export type PaymentRequestData = {
 
 
 export type CustomJWTPayload = {
-  paymentIds?: string[];
   // TODO: Change to codeChallenge - we'll also need to update the validation in 
   // paymcp's payment-request-put handler
   code_challenge?: string;
+  payment_request_id?: string;
 }
 
 export type ClientCredentials = {

@@ -43,11 +43,11 @@ describe('solanaPaymentMaker.generateJWT', () => {
     expect(isValid).toBe(true);
   });
 
-  it('should include paymentIds if provided', async () => {
+  it('should include payment request id if provided', async () => {
     const keypair = Keypair.generate();
     const paymentMaker = new SolanaPaymentMaker('https://example.com', bs58.encode(keypair.secretKey));
-    const paymentIds = ['id1', 'id2'];
-    const jwt = await paymentMaker.generateJWT({paymentIds});
+    const paymentRequestId = 'id1';
+    const jwt = await paymentMaker.generateJWT({paymentRequestId});
     const [, payloadB64] = jwt.split('.');
     const decodeB64Url = (str: string) => {
       let b64 = str.replace(/-/g, '+').replace(/_/g, '/');
@@ -55,7 +55,7 @@ describe('solanaPaymentMaker.generateJWT', () => {
       return JSON.parse(Buffer.from(b64, 'base64').toString('utf-8'));
     };
     const payload = decodeB64Url(payloadB64);
-    expect(payload.paymentIds).toEqual(paymentIds);
+    expect(payload.payment_request_id).toEqual(paymentRequestId);
   });
 });
 
