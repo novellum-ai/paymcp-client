@@ -11,7 +11,6 @@ import { getResource } from "./getResource.js";
 import { PayMcpPaymentServer } from "./paymentServer.js";
 import { OAuthResourceClient } from "../common/oAuthResource.js";
 import { getOAuthMetadata, sendOAuthMetadata } from "./oAuthMetadata.js";
-import { PaymentRequestError } from "../common/paymentRequestError.js";
 
 type RequiredPayMcpConfigFields = 'destination';
 type RequiredPayMcpConfig = Pick<PayMcpConfig, RequiredPayMcpConfigFields>;
@@ -27,7 +26,6 @@ export const DEFAULT_CONFIG: Required<Omit<OptionalPayMcpConfig, BuildablePayMcp
   payeeName: 'A PayMcp Server',
   allowHttp: process.env.NODE_ENV === 'development',
   resource: null, // Set dynamically from the request URL
-  //refundErrors: true,
 };
 
 export function buildServerConfig(args: PayMcpArgs): PayMcpConfig {
@@ -101,37 +99,8 @@ export function payMcpServer(args: PayMcpArgs): Router {
     }
   };
 
-  const errorHandler = (error: Error, req: Request, res: Response, next: NextFunction) => {
-    if (error instanceof PaymentRequestError) {
-      // Based on the current draft of the MCP url elicitation proposal:
-      // https://github.com/modelcontextprotocol/modelcontextprotocol/pull/887/files#diff-f270d43e0167b99f433086ab9fd986ae08905b57751401badeb6217b1ae2ee63R388
-      res.json({
-        "jsonrpc": "2.0",
-        "error": {
-          "code": -32604, // ELICITATION_REQUIRED
-          "message": error.message,
-          "data": {
-            "elicitations": [
-              {
-                "mode": "url",
-                "elicitionId": error.paymentRequestId,
-                "url": error.paymentRequestUrl,
-                "message": error.message
-              }
-            ]
-          }
-        }
-      });
-    }
-
-    config.logger.error(`Critical error in paymcp middleware - return HTTP 500. Error: ${error instanceof Error ? error.message : String(error)}`);
-    config.logger.debug(JSON.stringify(error, null, 2));
-    res.status(500).json({ error: 'server_error', error_description: 'An internal server error occurred' });
-  };
-
   // Add both middleware to the router
   router.use(payMcpMiddleware);
-  //router.use(errorHandler);
 
   return router;
 }
