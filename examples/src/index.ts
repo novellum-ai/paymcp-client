@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 
 import { payMcpClient } from '../../dist/client/payMcpClient.js';
-import { SolanaPaymentMaker } from '../../dist/solanaPaymentMaker.js';
-import { SqliteOAuthDb } from '../../dist/oAuthDb.js';
+import { SolanaPaymentMaker } from '../../dist/client/solanaPaymentMaker.js';
 
 // Debug function that only prints when DEBUG environment variable is set
 function debug(...args: any[]) {
@@ -90,9 +89,6 @@ async function main() {
     process.exit(1);
   }
 
-  // Create database instance
-  const db = new SqliteOAuthDb({ db: 'example-oauth.db' });
-
   try {
     // Create Solana payment maker
     const solanaPaymentMaker = new SolanaPaymentMaker(solanaEndpoint, solanaPrivateKey);
@@ -104,8 +100,6 @@ async function main() {
         accountId: 'paymcp', // As specified in PROMPT.md
         paymentMakers: { solana: solanaPaymentMaker } // As specified in PROMPT.md
       },
-      oAuthDb: db,
-      allowHttp: process.env.NODE_ENV === 'development'
     });
 
     // Call the appropriate tool using the MCP client
@@ -120,9 +114,6 @@ async function main() {
   } catch (error) {
     console.error(`Error with ${serviceConfig.description}:`, error);
     process.exit(1);
-  } finally {
-    // Close the database connection
-    await db.close();
   }
 }
 
