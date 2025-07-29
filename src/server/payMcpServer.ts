@@ -99,7 +99,7 @@ export function payMcpServer(args: PayMcpArgs): Router {
     }
   };
 
-  // Add both middleware to the router
+  // Add middleware to the router
   router.use(payMcpMiddleware);
 
   return router;

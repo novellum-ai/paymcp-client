@@ -120,52 +120,6 @@ describe('paymcp', () => {
     expect(response.headers['www-authenticate']).toMatch(/Bearer resource_metadata="http:\/\/127\.0\.0\.1:\d+\/.well-known\/oauth-protected-resource\/"/);
   });
 
-  it('should return an elicitation error if payment exception is throw by route code', async () => {
-    const goodToken = TH.tokenData({active: true, sub: 'test-user'});
-    const config = TH.config({
-      oAuthClient: TH.oAuthClient({introspectResult: goodToken}),
-    });
-    const router = payMcpServer(config);
-
-    const app = express();
-    app.use(express.json());
-    app.use(router);
-    
-    // Add a test endpoint
-    app.post('/', (req, res) => {
-      // In the real world, the MCP SDK is running the tool code, which is what will throw these
-      // errors. But as of the writing of this test, the MCP SDK doesn't intercept these
-      // errors, it just lets them bubble up
-      throw new PaymentRequestError(config.server, 'test-payment-request-id');
-    });
-
-    const response = await request(app)
-      .post('/')
-      .set('Content-Type', 'application/json')
-      .set('Authorization', 'Bearer self-access-token')
-      .send(TH.mcpToolRequest());
-
-    expect(response.status).toBe(200);
-    expect(response.body).toMatchObject({ 
-      "jsonrpc": "2.0",
-        "id": 2,
-        "error": {
-          "code": -32604, // ELICITATION_REQUIRED
-          "message": "This request requires more information.",
-          "data": {
-            "elicitations": [
-              {
-                "mode": "url",
-                "elicitionId": "test-payment-request-id",
-                "url": "http://127.0.0.1:62050/payment-request",
-                "message": "This request requires more information."
-              }
-            ]
-          }
-        }
-    });
-  });
-
   it('should not intercept non-MCP requests', async () => {
     const router = payMcpServer({
       destination: 'test-destination',
