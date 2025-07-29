@@ -4,12 +4,8 @@ import { PaymentRequestError } from "../common/paymentRequestError.js";
 
 export async function requirePayment(paymentConfig: RequirePaymentConfig): Promise<void> {
   const config = getPayMcpConfig();
-  const resource = getPayMcpResource();
   if (!config) {
     throw new Error('No config found');
-  }
-  if (!resource) {
-    throw new Error('No resource found');
   }
   const user = payMcpUser();
   if (!user) {

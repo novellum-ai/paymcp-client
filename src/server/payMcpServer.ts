@@ -5,12 +5,13 @@ import { checkToken } from "./token.js";
 import { sendOAuthChallenge } from "./oAuthChallenge.js";
 import { withPayMcpContext } from "./payMcpContext.js";
 import { parseMcpRequests } from "./http.js";
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction, Router } from "express";
 import { getProtectedResourceMetadata as getPRMResponse, sendProtectedResourceMetadata } from "./protectedResourceMetadata.js";
 import { getResource } from "./getResource.js";
 import { PayMcpPaymentServer } from "./paymentServer.js";
 import { OAuthResourceClient } from "../common/oAuthResource.js";
 import { getOAuthMetadata, sendOAuthMetadata } from "./oAuthMetadata.js";
+import { PaymentRequestError } from "../common/paymentRequestError.js";
 
 type RequiredPayMcpConfigFields = 'destination';
 type RequiredPayMcpConfig = Pick<PayMcpConfig, RequiredPayMcpConfigFields>;
@@ -37,16 +38,18 @@ export function buildServerConfig(args: PayMcpArgs): PayMcpConfig {
     allowInsecureRequests: withDefaults.allowHttp,
     clientName: withDefaults.payeeName,
   });
-  const paymentServer = withDefaults.paymentServer ?? new PayMcpPaymentServer(withDefaults.server, oAuthDb);
   const logger = withDefaults.logger ?? new ConsoleLogger();
+  const paymentServer = withDefaults.paymentServer ?? new PayMcpPaymentServer(withDefaults.server, oAuthDb, logger);
   const built = { oAuthDb, oAuthClient, paymentServer, logger};
   return Object.freeze({ ...withDefaults, ...built });
 };
 
-export function payMcpServer(args: PayMcpArgs): (req: Request, res: Response, next: NextFunction) => Promise<void> {
+export function payMcpServer(args: PayMcpArgs): Router {
   const config = buildServerConfig(args);
+  const router = Router();
 
-  return async (req: Request, res: Response, next: NextFunction) => {
+  // Regular middleware
+  const payMcpMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const logger = config.logger;  // Capture logger in closure
       const requestUrl = new URL(req.url, req.protocol + '://' + req.host);
@@ -88,9 +91,42 @@ export function payMcpServer(args: PayMcpArgs): (req: Request, res: Response, ne
 
       return withPayMcpContext(config, resource, tokenCheck, next);
     } catch (error) {
-      config.logger.error(`Critical error in paymcp middleware - return HTTP 500. Error: ${error instanceof Error ? error.message : String(error)}`);
+      config.logger.error(`Critical error in paymcp middleware - returning HTTP 500. Error: ${error instanceof Error ? error.message : String(error)}`);
       config.logger.debug(JSON.stringify(error, null, 2));
       res.status(500).json({ error: 'server_error', error_description: 'An internal server error occurred' });
     }
   };
+
+  const errorHandler = (error: Error, req: Request, res: Response, next: NextFunction) => {
+    if (error instanceof PaymentRequestError) {
+      res.json({
+        "jsonrpc": "2.0",
+        "id": 2,
+        "error": {
+          "code": -32604, // ELICITATION_REQUIRED
+          "message": "This request requires more information.",
+          "data": {
+            "elicitations": [
+              {
+                "mode": "url",
+                "elicitionId": error.paymentRequestId,
+                "url": error.paymentRequestUrl,
+                "message": error.message
+              }
+            ]
+          }
+        }
+      });
+    }
+
+    config.logger.error(`Critical error in paymcp middleware - return HTTP 500. Error: ${error instanceof Error ? error.message : String(error)}`);
+    config.logger.debug(JSON.stringify(error, null, 2));
+    res.status(500).json({ error: 'server_error', error_description: 'An internal server error occurred' });
+  };
+
+  // Add both middleware to the router
+  router.use(payMcpMiddleware);
+  router.use(errorHandler);
+
+  return router;
 }

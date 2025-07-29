@@ -5,7 +5,7 @@ export class PaymentRequestError extends Error {
   paymentRequestUrl: string;
   constructor(server: AuthorizationServerUrl, paymentRequestId: string) {
     const url = `${server}/payment-request/${paymentRequestId}`;
-    super(`Payment request failed. Please pay at: ${url}`);
+    super(`Payment is required. Please pay at: ${url}`);
     this.paymentRequestId = paymentRequestId;
     this.paymentRequestUrl = url;
   }

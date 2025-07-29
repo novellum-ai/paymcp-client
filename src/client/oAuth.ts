@@ -129,7 +129,7 @@ export class OAuthClient extends OAuthResourceClient {
           resourceUrl = calledUrl;
         }
         const token = await this.getAccessToken(calledUrl);
-        console.log(`Throwing PaymentRequestError for ${calledUrl}, resource: ${resourceUrl}`);
+        console.log(`Throwing OAuthAuthenticationRequiredError for ${calledUrl}, resource: ${resourceUrl}`);
         throw await OAuthAuthenticationRequiredError.create(calledUrl, resourceUrl);//, token?.accessToken);
       }
     }
