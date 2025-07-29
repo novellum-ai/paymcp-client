@@ -4,18 +4,55 @@ import { payMcpClient } from '../../dist/src/client/payMcpClient.js';
 import { SolanaPaymentMaker } from '../../dist/src/solanaPaymentMaker.js';
 import { SqliteOAuthDb } from '../../dist/src/oAuthDb.js';
 
+interface ServiceConfig {
+  mcpServer: string;
+  toolName: string;
+  description: string;
+  getArguments: (prompt: string) => Record<string, any>;
+}
+
+const SERVICES: Record<string, ServiceConfig> = {
+  image: {
+    mcpServer: 'https://image.corp.novellum.ai',
+    toolName: 'image_create_image',
+    description: 'image generation',
+    getArguments: (prompt: string) => ({ prompt })
+  },
+  search: {
+    mcpServer: 'https://search.corp.novellum.ai',
+    toolName: 'search_search',
+    description: 'search',
+    getArguments: (prompt: string) => ({ query: prompt })
+  }
+};
+
 async function main() {
-  // Get the command line argument (the prompt for image generation)
+  // Parse command line arguments
   const args = process.argv.slice(2);
   
-  if (args.length === 0) {
-    console.error('Usage: node index.js "your image prompt here"');
-    console.error('Example: node index.js "a beautiful sunset over mountains"');
+  if (args.length < 2) {
+    console.error('Usage: node index.js <service> "your prompt/query here"');
+    console.error('Services available:');
+    console.error('  image - Generate images');
+    console.error('  search - Search for information');
+    console.error('');
+    console.error('Examples:');
+    console.error('  node index.js image "a beautiful sunset over mountains"');
+    console.error('  node index.js search "latest news about AI"');
     process.exit(1);
   }
 
-  const imagePrompt = args[0];
-  console.log(`Creating image with prompt: "${imagePrompt}"`);
+  const service = args[0].toLowerCase();
+  const prompt = args[1];
+
+  if (!SERVICES[service]) {
+    console.error(`Error: Unknown service "${service}"`);
+    console.error('Available services:', Object.keys(SERVICES).join(', '));
+    process.exit(1);
+  }
+
+  const serviceConfig = SERVICES[service];
+  console.log(`Using ${serviceConfig.description} service with prompt: "${prompt}"`);
 
   // Validate environment variables
   const solanaEndpoint = process.env.SOLANA_ENDPOINT;
@@ -42,7 +79,7 @@ async function main() {
 
     // Create MCP client using payMcpClient function
     const client = await payMcpClient({
-      mcpServer: 'https://image.corp.novellum.ai', // As specified in PROMPT.md
+      mcpServer: serviceConfig.mcpServer as any,
       account: {
         accountId: 'paymcp', // As specified in PROMPT.md
         paymentMakers: { solana: solanaPaymentMaker } // As specified in PROMPT.md
@@ -51,28 +88,31 @@ async function main() {
       allowHttp: process.env.NODE_ENV === 'development'
     });
 
-    // Call the createImage tool using the MCP client
+    // Call the appropriate tool using the MCP client
     const result = await client.callTool({
-      name: 'image_create_image',
-      arguments: {
-        prompt: imagePrompt
-      }
+      name: serviceConfig.toolName,
+      arguments: serviceConfig.getArguments(prompt)
     });
 
-    console.log('Image creation request successful!');
+    console.log(`${serviceConfig.description} request successful!`);
     console.log('Result:', JSON.stringify(result, null, 2));
-    if (result.content && Array.isArray(result.content) && result.content[0]?.text) {
-      const parsedResult = JSON.parse(result.content[0].text);
-      console.log('Parsed result:', parsedResult.url);
-    }
 
-    // If the response contains image data or URL, you could save it here
+    // Handle different result formats based on service
     if (result.content && Array.isArray(result.content) && result.content[0]?.text) {
-      console.log(`Image result: ${result.content[0].text}`);
+      if (service === 'image') {
+        try {
+          const parsedResult = JSON.parse(result.content[0].text);
+          console.log('Image URL:', parsedResult.url);
+        } catch (e) {
+          console.log('Image result:', result.content[0].text);
+        }
+      } else if (service === 'search') {
+        console.log('Search results:', result.content[0].text);
+      }
     }
 
   } catch (error) {
-    console.error('Error creating image:', error);
+    console.error(`Error with ${serviceConfig.description}:`, error);
     process.exit(1);
   } finally {
     // Close the database connection

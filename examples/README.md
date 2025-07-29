@@ -1,13 +1,16 @@
 # PayMcp Client Example
 
-This is an example CLI application that demonstrates how to use the `paymcp-client` library to create images using the PayMcp payment system. It imports from the compiled JavaScript files in the main library's `dist` directory.
+This is an example CLI application that demonstrates how to use the `paymcp-client` library to interact with various MCP services using the PayMcp payment system. It imports from the compiled JavaScript files in the main library's `dist` directory.
 
 ## Features
 
-- Takes a command line argument as an image prompt
+- Supports multiple services: image generation and search
+- Takes service type and prompt/query as command line arguments
 - Uses the `payMcpClient` function to create a proper MCP client
 - Handles OAuth authentication and payments automatically
-- Connects to the image generation service at `https://image.corp.novellum.ai`
+- Connects to different MCP servers based on the service:
+  - Image generation: `https://image.corp.novellum.ai`
+  - Search: `https://search.corp.novellum.ai`
 - Uses Solana as the payment network
 - Makes proper MCP tool calls instead of raw HTTP requests
 
@@ -36,7 +39,11 @@ This is an example CLI application that demonstrates how to use the `paymcp-clie
 
 ### Development mode (using tsx):
 ```bash
-npm run dev "a beautiful sunset over mountains"
+# Image generation
+npm run dev image "a beautiful sunset over mountains"
+
+# Search
+npm run dev search "latest news about AI"
 ```
 
 **Note**: The development script uses a shell script to properly handle argument passing.
@@ -44,38 +51,58 @@ npm run dev "a beautiful sunset over mountains"
 ### Production mode (build and run):
 ```bash
 npm run build
-npm start "a beautiful sunset over mountains"
+
+# Image generation
+npm start image "a beautiful sunset over mountains"
+
+# Search
+npm start search "latest news about AI"
 ```
 
 ### Direct execution:
 ```bash
-npx tsx src/index.ts "a beautiful sunset over mountains"
+# Image generation
+npx tsx src/index.ts image "a beautiful sunset over mountains"
+
+# Search
+npx tsx src/index.ts search "latest news about AI"
 ```
 
 
 
 ## How it works
 
-1. The application takes an image prompt as a command line argument
+1. The application takes a service type and prompt/query as command line arguments
 2. It creates a Solana payment maker for handling payments
 3. Uses the `payMcpClient` function to create a proper MCP client
 4. The MCP client automatically handles:
    - OAuth authentication flow
    - Payment processing when required
-   - Tool calls to the image generation service
-5. Returns the image generation result
+   - Tool calls to the appropriate service (image generation or search)
+5. Returns the service result with appropriate formatting
 
 ## Configuration
 
-The application is configured with the following settings as specified in PROMPT.md:
-- **MCP Server**: `https://image.corp.novellum.ai`
+The application is configured with the following settings:
 - **Account**: `paymcp`
 - **Payment Makers**: `solana`
+
+### Services
+
+- **Image Generation**:
+  - MCP Server: `https://image.corp.novellum.ai`
+  - Tool: `image_create_image`
+  - Parameter: `prompt`
+- **Search**:
+  - MCP Server: `https://search.corp.novellum.ai`
+  - Tool: `search_search`
+  - Parameter: `query`
 
 ## Error Handling
 
 The application includes comprehensive error handling for:
 - Missing command line arguments
+- Invalid service types
 - Missing environment variables
 - Network errors
 - Payment failures
