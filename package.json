@@ -18,10 +18,11 @@
     "test:watch": "vitest",
     "test:node": "vitest run",
     "test:expo": "jest --config jest.expo.config.js",
-    "cli": "tsx src/scripts/cli.ts",
-    "cli:fetch": "tsx src/scripts/cli-fetch.ts"
+    "dev:resource": "tsx src/dev/resource.ts",
+    "dev:cli": "tsx src/dev/cli.ts"
   },
   "dependencies": {
+    "@longrun/turtle": "^0.0.80",
     "@modelcontextprotocol/sdk": "^1.15.0",
     "@solana/pay": "^0.2.5",
     "@solana/web3.js": "^1.98.1",

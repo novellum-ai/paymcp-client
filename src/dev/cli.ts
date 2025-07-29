@@ -1,9 +1,5 @@
-import { PayMcpFetcher } from '../client/payMcpFetcher.js';
-import { SolanaPaymentMaker } from '../client/solanaPaymentMaker.js';
-import { SqliteOAuthDb } from '../common/oAuthDb.js';
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { payMcpClient, SolanaAccount, SqliteOAuthDb, ConsoleLogger, LogLevel } from '../index';
 import 'dotenv/config';
-import {StreamableHTTPClientTransport} from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
 function validateEnv() {
   const requiredVars = ['SOLANA_ENDPOINT', 'SOLANA_PRIVATE_KEY'];
@@ -16,8 +12,8 @@ function validateEnv() {
 
 function parseArgs() {
   const args = process.argv.slice(2);
-  const url = args[0] || 'https://browser-use.corp.novellum.ai';
-  const toolName = args[1] || 'checkBalance';
+  const url = args[0] || 'http://localhost:3009';
+  const toolName = args[1] || 'secure-data';
   
   // Parse named arguments
   const namedArgs: Record<string, string> = {};
@@ -36,7 +32,7 @@ async function main() {
   console.log('Starting PayMcpClient example...');
   console.log('\nUsage:');
   console.log('Via npm: npm run cli [url] [toolName] [arg1=value1] [arg2=value2]');
-  console.log('\nExample: npm run cli http://localhost:3001 checkBalance foo=bar\n');
+  console.log('\nExample: npm run cli http://localhost:3009 secure-data message=hello\n');
   console.log('--------------------------------');
   
   const { url, toolName, namedArgs } = parseArgs();
@@ -50,25 +46,16 @@ async function main() {
   
   try {
     validateEnv();
+
+    const account = new SolanaAccount(process.env.SOLANA_ENDPOINT!, process.env.SOLANA_PRIVATE_KEY!);
+    const mcpClient = await payMcpClient({
+      mcpServer: url,
+      account,
+      allowedAuthorizationServers: ['http://localhost:3010'],
+      allowHttp: true,
+      logger: new ConsoleLogger({level: LogLevel.DEBUG})
+    });
     
-    // Create a new OAuth client
-    const solana = new SolanaPaymentMaker(process.env.SOLANA_ENDPOINT!, process.env.SOLANA_PRIVATE_KEY!);
-    const client = new PayMcpFetcher({
-      userId: "local",
-      db,
-      paymentMakers: {"solana": solana}
-    });
-
-    const mcpClient = new Client({
-      name: "paymcp-client cli",
-      version: "0.0.1"
-    }, {
-      capabilities: {}
-    });
-
-    const transport = new StreamableHTTPClientTransport(new URL(url), {fetch: client.fetch});
-    await mcpClient.connect(transport);
-
     const res = await mcpClient.callTool({
       name: toolName,
       arguments: namedArgs
