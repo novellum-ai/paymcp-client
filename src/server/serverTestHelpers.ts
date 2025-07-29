@@ -1,13 +1,13 @@
 import { Readable } from 'stream';
 import { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'http';
 import { JSONRPCRequest } from '@modelcontextprotocol/sdk/types.js';
-import { OAuthResourceClient } from '../oAuthResource.js';
+import { OAuthResourceClient } from '../common/oAuthResource.js';
 import { vi } from 'vitest';
 import { Charge, PayMcpConfig, TokenCheck, TokenCheckPass, TokenCheckFail, TokenProblem, McpMethod, McpName, PaymentServer } from './types.js';
-import { TokenData } from '../types.js';
+import { TokenData } from '../common/types.js';
 import { Logger, Currency, Network } from '../common/types.js';
+import { buildServerConfig } from './payMcpServer.js';
 import { BigNumber } from 'bignumber.js';
-import { buildConfig } from './payMcpServer.js';
 import * as oauth from 'oauth4webapi';
 
 export const DESTINATION = 'testDestination';
@@ -44,7 +44,7 @@ export function logger(): Logger {
 }
 
 export function config(args: Partial<PayMcpConfig> = {}): PayMcpConfig {
-  return buildConfig({...args, destination: args.destination ?? DESTINATION});
+  return buildServerConfig({...args, destination: args.destination ?? DESTINATION});
 }
 
 export function paymentServer({

@@ -1,4 +1,6 @@
-import { PayMcpClient, SolanaPaymentMaker, SqliteOAuthDb } from '../index';
+import { PayMcpFetcher } from '../client/payMcpFetcher.js';
+import { SolanaPaymentMaker } from '../client/solanaPaymentMaker.js';
+import { SqliteOAuthDb } from '../common/oAuthDb.js';
 import 'dotenv/config';
 
 function validateEnv() {
@@ -51,7 +53,7 @@ async function main() {
     
     // Create a new OAuth client
     const solana = new SolanaPaymentMaker(process.env.SOLANA_ENDPOINT!, process.env.SOLANA_PRIVATE_KEY!);
-    const client = new PayMcpClient({
+    const client = new PayMcpFetcher({
       userId: "local",
       db,
       paymentMakers: {"solana": solana}

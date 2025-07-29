@@ -1,5 +1,5 @@
 import { ConsoleLogger } from "../common/logger.js";
-import { SqliteOAuthDb } from "../oAuthDb.js";
+import { SqliteOAuthDb } from "../common/oAuthDb.js";
 import { PayMcpConfig } from "./types.js";
 import { checkToken } from "./token.js";
 import { sendOAuthChallenge } from "./oAuthChallenge.js";
@@ -9,7 +9,7 @@ import { Request, Response, NextFunction } from "express";
 import { getProtectedResourceMetadata as getPRMResponse, sendProtectedResourceMetadata } from "./protectedResourceMetadata.js";
 import { getResource } from "./getResource.js";
 import { PayMcpPaymentServer } from "./paymentServer.js";
-import { OAuthResourceClient } from "../oAuthResource.js";
+import { OAuthResourceClient } from "../common/oAuthResource.js";
 import { getOAuthMetadata, sendOAuthMetadata } from "./oAuthMetadata.js";
 
 type RequiredPayMcpConfigFields = 'destination';
@@ -29,7 +29,7 @@ export const DEFAULT_CONFIG: Required<Omit<OptionalPayMcpConfig, BuildablePayMcp
   //refundErrors: true,
 };
 
-export function buildConfig(args: PayMcpArgs): PayMcpConfig {
+export function buildServerConfig(args: PayMcpArgs): PayMcpConfig {
   const withDefaults = { ...DEFAULT_CONFIG, ...args };
   const oAuthDb = withDefaults.oAuthDb ?? new SqliteOAuthDb({db: ':memory:'});
   const oAuthClient = withDefaults.oAuthClient ?? new OAuthResourceClient({
@@ -44,7 +44,7 @@ export function buildConfig(args: PayMcpArgs): PayMcpConfig {
 };
 
 export function payMcpServer(args: PayMcpArgs): (req: Request, res: Response, next: NextFunction) => Promise<void> {
-  const config = buildConfig(args);
+  const config = buildServerConfig(args);
 
   return async (req: Request, res: Response, next: NextFunction) => {
     try {

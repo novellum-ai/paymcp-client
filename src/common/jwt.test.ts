@@ -20,8 +20,7 @@ describe('generateJWT', () => {
     };
     const privateKey = await importJWK(jwk, 'EdDSA');
     const walletId = keypair.publicKey.toBase58();
-    const codeChallenge = 'code_challenge';
-    const jwt = await generateJWT(walletId, codeChallenge, privateKey);
+    const jwt = await generateJWT(walletId, privateKey, 'paymentRequestId', 'codeChallenge');
     const [headerB64, payloadB64, signatureB64] = jwt.split('.');
     expect(headerB64).toBeDefined();
     expect(payloadB64).toBeDefined();
@@ -32,10 +31,10 @@ describe('generateJWT', () => {
     expect(header.typ).toBe('JWT');
     expect(payload.sub).toBe(walletId);
     expect(payload.iss).toBe('paymcp.com');
-    expect(payload.code_challenge).toBe(codeChallenge);
+    expect(payload.code_challenge).toBe('codeChallenge');
+    expect(payload.payment_request_id).toBe('paymentRequestId');
     expect(payload.aud).toBe('https://api.paymcp.com');
     expect(typeof payload.iat).toBe('number');
-    expect(payload.paymentIds).toBeUndefined();
     // Optionally, verify the JWT using jose
     const publicJwk = {
       kty: 'OKP',
@@ -51,7 +50,7 @@ describe('generateJWT', () => {
     expect(payload.exp).toBeLessThanOrEqual(now + 121); // allow 1s clock drift
   });
 
-  it('should include paymentIds if provided', async () => {
+  it('should include payment request id if provided', async () => {
     const keypair = Keypair.generate();
     const jwk = {
       kty: 'OKP',
@@ -62,10 +61,10 @@ describe('generateJWT', () => {
     const privateKey = await importJWK(jwk, 'EdDSA');
     const walletId = keypair.publicKey.toBase58();
     const codeChallenge = 'code_challenge';
-    const paymentIds = ['id1', 'id2'];
-    const jwt = await generateJWT(walletId, codeChallenge, privateKey, paymentIds);
+    const paymentRequestId = 'id1';
+    const jwt = await generateJWT(walletId, privateKey, paymentRequestId, codeChallenge);
     const [, payloadB64] = jwt.split('.');
     const payload = decodeB64Url(payloadB64);
-    expect(payload.payment_request_id).toEqual(paymentIds[0]);
+    expect(payload.payment_request_id).toEqual(paymentRequestId);
   });
 }); 

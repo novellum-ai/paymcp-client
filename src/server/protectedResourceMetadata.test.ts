@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { getProtectedResourceMetadata } from './protectedResourceMetadata.js';
-import * as TH from './testHelpers.js';
+import * as TH from './serverTestHelpers.js';
 
 describe('getProtectedResourceMetadata', () => {
   it('should return protected resource metadata', async () => {

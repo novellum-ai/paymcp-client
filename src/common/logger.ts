@@ -1,4 +1,4 @@
-import { assertNever } from '../utils.js';
+import { assertNever } from './utils.js';
 import { Logger, LogLevel } from './types.js';
 
 export class ConsoleLogger implements Logger {

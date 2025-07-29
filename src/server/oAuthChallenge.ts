@@ -1,6 +1,6 @@
 import { ServerResponse } from "http";
 import { TokenCheck, TokenProblem } from "./types.js";
-import { assertNever } from "../utils.js";
+import { assertNever } from "../common/utils.js";
 
 export function sendOAuthChallenge(res: ServerResponse, tokenCheck: TokenCheck): boolean {
   if (tokenCheck.passes) {

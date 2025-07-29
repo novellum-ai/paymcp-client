@@ -1,5 +1,5 @@
 import * as nodeCrypto from 'crypto';
-import type { FetchLike } from '../types';
+import type { FetchLike } from '../../common/types.js';
 
 // Platform abstraction layer
 export interface PlatformCrypto {

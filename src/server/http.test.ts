@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import httpMocks from 'node-mocks-http';
 import { parseMcpRequests } from './http.js';
-import * as TH from './testHelpers.js'
+import * as TH from './serverTestHelpers.js'
 
 describe('http', () => {
   describe('parseMcpMessages', () => {

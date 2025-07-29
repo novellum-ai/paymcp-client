@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import * as TH from './testHelpers.js';
+import * as TH from './serverTestHelpers.js';
 import { PayMcpPaymentServer } from './paymentServer.js';
 import { BigNumber } from 'bignumber.js';
 import fetchMock from 'fetch-mock';
-import { SqliteOAuthDb } from '../oAuthDb.js';
+import { SqliteOAuthDb } from '../common/oAuthDb.js';
 
 describe('PayMcpPaymentServer', () => {
   it('should call the charge endpoint', async () => {
@@ -119,8 +119,7 @@ describe('PayMcpPaymentServer', () => {
       ...TH.charge({
         source: 'test-source',
         destination: 'test-destination'
-      }),
-      resource: new URL('https://example.com/resource')
+      })
     };
 
     const result = await server.createPaymentRequest(paymentRequestParams);
@@ -165,8 +164,7 @@ describe('PayMcpPaymentServer', () => {
       ...TH.charge({
         source: 'test-source',
         destination: 'test-destination'
-      }),
-      resource: new URL('https://example.com/resource')
+      })
     });
 
     // Verify the specific credentials were used
@@ -185,8 +183,7 @@ describe('PayMcpPaymentServer', () => {
       ...TH.charge({
         source: 'test-source',
         destination: 'test-destination'
-      }),
-      resource: new URL('https://example.com/resource')
+      })
     })).rejects.toThrow('No client credentials found');
 
     // Verify fetch was never called
@@ -276,8 +273,7 @@ describe('PayMcpPaymentServer', () => {
       ...TH.charge({
         source: 'test-source',
         destination: 'test-destination'
-      }),
-      resource: new URL('https://example.com/resource')
+      })
     })).rejects.toThrow('POST /payment-request responded with unexpected HTTP status 400');
   });
 
@@ -303,8 +299,7 @@ describe('PayMcpPaymentServer', () => {
       ...TH.charge({
         source: 'test-source',
         destination: 'test-destination'
-      }),
-      resource: new URL('https://example.com/resource')
+      })
     })).rejects.toThrow('POST /payment-request response did not contain an id');
   });
 });

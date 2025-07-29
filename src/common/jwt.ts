@@ -1,4 +1,4 @@
-import type { CustomJWTPayload } from "./types";
+import type { CustomJWTPayload } from "./types.js";
 import { SignJWT } from 'jose';
 
 const ISSUER = 'paymcp.com';
@@ -13,14 +13,16 @@ const AUDIENCE = 'https://api.paymcp.com';
  */
 export const generateJWT = async (
   walletId: string,
-  codeChallenge: string,
   privateKey: CryptoKey | Uint8Array,
-  paymentIds?: string[]
+  paymentRequestId: string,
+  codeChallenge: string
 ): Promise<string> => {
   const payload: CustomJWTPayload = {
     code_challenge: codeChallenge,
   };
-  if (paymentIds && paymentIds.length > 0) payload.payment_request_id = paymentIds[0];
+  if (paymentRequestId) payload.payment_request_id = paymentRequestId;
+  if (codeChallenge) payload.code_challenge = codeChallenge;
+
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: 'EdDSA', typ: 'JWT' })
     .setIssuedAt()

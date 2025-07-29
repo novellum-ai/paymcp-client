@@ -1,5 +1,5 @@
 import * as oauth from 'oauth4webapi';
-import { ClientCredentials, FetchLike, OAuthResourceDb, OAuthDb, TokenData } from './types';
+import { ClientCredentials, FetchLike, OAuthResourceDb, OAuthDb, TokenData } from './types.js';
 
 export interface OAuthResourceClientConfig {
   db: OAuthDb;
