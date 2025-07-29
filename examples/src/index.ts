@@ -9,6 +9,7 @@ interface ServiceConfig {
   toolName: string;
   description: string;
   getArguments: (prompt: string) => Record<string, any>;
+  getResult: (result: any) => any;
 }
 
 const SERVICES: Record<string, ServiceConfig> = {
@@ -16,13 +17,25 @@ const SERVICES: Record<string, ServiceConfig> = {
     mcpServer: 'https://image.corp.novellum.ai',
     toolName: 'image_create_image',
     description: 'image generation',
-    getArguments: (prompt: string) => ({ prompt })
+    getArguments: (prompt: string) => ({ prompt }),
+    getResult: (result: any) => {
+            // Handle different result formats based on service
+      if (result.content && Array.isArray(result.content) && result.content[0]?.text) {
+        try {
+          const parsedResult = JSON.parse(result.content[0].text);
+          return parsedResult.url
+        } catch (e) {
+          return result.content[0].text
+        }
+      }
+    }
   },
   search: {
     mcpServer: 'https://search.corp.novellum.ai',
     toolName: 'search_search',
     description: 'search',
-    getArguments: (prompt: string) => ({ query: prompt })
+    getArguments: (prompt: string) => ({ query: prompt }),
+    getResult: (result: any) => result.content[0].text
   }
 };
 
@@ -95,21 +108,7 @@ async function main() {
     });
 
     console.log(`${serviceConfig.description} request successful!`);
-    console.log('Result:', JSON.stringify(result, null, 2));
-
-    // Handle different result formats based on service
-    if (result.content && Array.isArray(result.content) && result.content[0]?.text) {
-      if (service === 'image') {
-        try {
-          const parsedResult = JSON.parse(result.content[0].text);
-          console.log('Image URL:', parsedResult.url);
-        } catch (e) {
-          console.log('Image result:', result.content[0].text);
-        }
-      } else if (service === 'search') {
-        console.log('Search results:', result.content[0].text);
-      }
-    }
+    console.log('Result:', serviceConfig.getResult(result));
 
   } catch (error) {
     console.error(`Error with ${serviceConfig.description}:`, error);
