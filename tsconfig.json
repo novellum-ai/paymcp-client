@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES2018",
+    "target": "ES2018", 
     "module": "CommonJS",
     "lib": ["ES2018", "DOM"],
     "outDir": "./dist",
@@ -16,6 +16,6 @@
       "*": ["node_modules/*"]
     }
   },
-  "include": ["**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "examples", "src/**/*.test.ts", "src/**/*.expo.test.ts", "src/__tests__/**/*"]
 } 
