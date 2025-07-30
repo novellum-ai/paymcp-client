@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import 'dotenv/config'
 import { payMcpClient } from '../../../dist/client/payMcpClient.js';
-import { SolanaPaymentMaker } from '../../../dist/client/solanaPaymentMaker.js';
+import { SolanaAccount } from '../../../dist/client/solanaAccount.js';
 
 // Debug function that only prints when DEBUG environment variable is set
 function debug(...args: any[]) {
@@ -90,16 +90,10 @@ async function main() {
   }
 
   try {
-    // Create Solana payment maker
-    const solanaPaymentMaker = new SolanaPaymentMaker(solanaEndpoint, solanaPrivateKey);
-
     // Create MCP client using payMcpClient function
     const client = await payMcpClient({
       mcpServer: serviceConfig.mcpServer as any,
-      account: {
-        accountId: 'paymcp', // As specified in PROMPT.md
-        paymentMakers: { solana: solanaPaymentMaker } // As specified in PROMPT.md
-      },
+      account: new SolanaAccount(solanaEndpoint, solanaPrivateKey),
     });
 
     // Call the appropriate tool using the MCP client

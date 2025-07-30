@@ -2,7 +2,7 @@
 
 import 'dotenv/config';
 import { buildStreamableTransport } from '../../../dist/client/payMcpClient.js';
-import { SolanaPaymentMaker } from '../../../dist/client/solanaPaymentMaker.js';
+import { SolanaAccount } from '../../../dist/client/solanaAccount.js';
 import { Message, generateText, experimental_createMCPClient as createMCPClient } from "ai";
 import { openai } from "@ai-sdk/openai";
 
@@ -69,16 +69,13 @@ const validateEnvironment = (solanaEndpoint: string, solanaPrivateKey: string) =
   }
 }
 
-const getToolsForService = async (solanaPaymentMaker: SolanaPaymentMaker, service: string) => {
+const getToolsForService = async (account: SolanaAccount, service: string) => {
   const serviceConfig = SERVICES[service];
 
   // Create MCP client using payMcpClient function
   const clientArgs = {
     mcpServer: serviceConfig.mcpServer,
-    account: {
-      accountId: 'paymcp', // As specified in PROMPT.md
-      paymentMakers: { solana: solanaPaymentMaker } // As specified in PROMPT.md
-    },
+    account,
   }
 
   const transport = buildStreamableTransport(clientArgs);
@@ -102,16 +99,15 @@ async function main() {
   validateEnvironment(solanaEndpoint, solanaPrivateKey);
 
   try {
-    // Create Solana payment maker
-    const solanaPaymentMaker = new SolanaPaymentMaker(solanaEndpoint!, solanaPrivateKey!);
-  
+    const account = new SolanaAccount(solanaEndpoint, solanaPrivateKey)
+
     // For each service in SERVICES, get the tools. We need to reduce this
     // to a single array of all tools.
     const services = ['image', 'search'] as const;
 
     let tools = {}
     for (const service of services) {
-      const mcpTools = await getToolsForService(solanaPaymentMaker, service)
+      const mcpTools = await getToolsForService(account, service)
       tools = { ...tools, ...mcpTools }
     }
 
