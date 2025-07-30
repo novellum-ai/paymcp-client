@@ -1,13 +1,10 @@
 #!/usr/bin/env node
 
 import 'dotenv/config';
-import { buildClientConfig, payMcpClient } from '../../../dist/client/payMcpClient.js';
+import { buildStreamableTransport } from '../../../dist/client/payMcpClient.js';
 import { SolanaPaymentMaker } from '../../../dist/client/solanaPaymentMaker.js';
 import { Message, generateText, experimental_createMCPClient as createMCPClient } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp';
-
-import { PayMcpFetcher } from "../../../dist/client/payMcpFetcher.js";
 
 interface ServiceConfig {
   mcpServer: string;
@@ -83,19 +80,8 @@ const getToolsForService = async (solanaPaymentMaker: SolanaPaymentMaker, servic
       paymentMakers: { solana: solanaPaymentMaker } // As specified in PROMPT.md
     },
   }
-  
-  const config = buildClientConfig(clientArgs);
 
-  const fetcher = new PayMcpFetcher({
-    userId: clientArgs.account.accountId,
-    db: config.oAuthDb,
-    paymentMakers: clientArgs.account.paymentMakers,
-    fetchFn: config.fetchFn,
-    sideChannelFetch: config.oAuthChannelFetch,
-    allowInsecureRequests: config.allowHttp
-  });
-
-  const transport = new StreamableHTTPClientTransport(new URL(serviceConfig.mcpServer), {fetch: fetcher.fetch});
+  const transport = buildStreamableTransport(clientArgs);
 
   const mcpClient = await createMCPClient({transport})
   return await mcpClient.tools()
