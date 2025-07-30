@@ -34,7 +34,7 @@ export function buildClientConfig(args: ClientArgs): ClientConfig {
   return Object.freeze({ ...withDefaults, ...built });
 };
 
-export async function payMcpClient(args: ClientArgs): Promise<Client> {
+export function buildStreamableTransport(args: ClientArgs): StreamableHTTPClientTransport {
   const config = buildClientConfig(args);
 
   const fetcher = new PayMcpFetcher({
@@ -45,9 +45,14 @@ export async function payMcpClient(args: ClientArgs): Promise<Client> {
     sideChannelFetch: config.oAuthChannelFetch,
     allowInsecureRequests: config.allowHttp
   });
+  return new StreamableHTTPClientTransport(new URL(args.mcpServer), {fetch: fetcher.fetch});
+}
+
+export async function payMcpClient(args: ClientArgs): Promise<Client> {
+  const transport = buildStreamableTransport(args);
+  const config = buildClientConfig(args);
 
   const client = new Client(config.clientInfo, config.clientOptions);
-  const transport = new StreamableHTTPClientTransport(new URL(args.mcpServer), {fetch: fetcher.fetch});
   await client.connect(transport);
 
   return client;
