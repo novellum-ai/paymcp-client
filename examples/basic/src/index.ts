@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+import 'dotenv/config'
 import { payMcpClient } from '../../../dist/client/payMcpClient.js';
 import { SolanaPaymentMaker } from '../../../dist/client/solanaPaymentMaker.js';
 
