@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { payMcpClient } from '../../dist/client/payMcpClient.js';
-import { SolanaPaymentMaker } from '../../dist/client/solanaPaymentMaker.js';
+import { payMcpClient } from '../../../dist/client/payMcpClient.js';
+import { SolanaPaymentMaker } from '../../../dist/client/solanaPaymentMaker.js';
 
 // Debug function that only prints when DEBUG environment variable is set
 function debug(...args: any[]) {
