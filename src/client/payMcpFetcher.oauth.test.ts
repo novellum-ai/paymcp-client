@@ -2,7 +2,7 @@ import { SqliteOAuthDb } from '../common/oAuthDb';
 import { OAuthAuthenticationRequiredError } from './oAuth.js';
 import { describe, it, expect, vi } from 'vitest';
 import fetchMock from 'fetch-mock';
-import { mockResourceServer, mockAuthorizationServer } from '../testHelpers.js';
+import { mockResourceServer, mockAuthorizationServer } from './clientTestHelpers.js';
 import { PayMcpFetcher } from './payMcpFetcher.js';
 import { OAuthDb, FetchLike } from '../common/types.js';
 import { PaymentMaker } from './types.js';

@@ -23,7 +23,7 @@ describe('PayMcpPaymentServer', () => {
     });
 
     // Create server instance with real database
-    const server = new PayMcpPaymentServer('https://auth.paymcp.com', oAuthDb, mock.fetchHandler);
+    const server = new PayMcpPaymentServer('https://auth.paymcp.com', oAuthDb, TH.logger(), mock.fetchHandler);
     
     const chargeParams = TH.charge({
       source: 'test-source',
@@ -68,7 +68,7 @@ describe('PayMcpPaymentServer', () => {
       body: { success: true }
     });
 
-    const server = new PayMcpPaymentServer('https://auth.paymcp.com', oAuthDb, mock.fetchHandler);
+    const server = new PayMcpPaymentServer('https://auth.paymcp.com', oAuthDb, TH.logger(), mock.fetchHandler);
     
     await server.charge(TH.charge({
       source: 'test-source',
@@ -85,7 +85,7 @@ describe('PayMcpPaymentServer', () => {
     // No credentials saved to database (empty database)
 
     const mock = fetchMock.createInstance();
-    const server = new PayMcpPaymentServer('https://auth.paymcp.com', oAuthDb, mock.fetchHandler);
+    const server = new PayMcpPaymentServer('https://auth.paymcp.com', oAuthDb, TH.logger(), mock.fetchHandler);
     
     await expect(server.charge(TH.charge({
       source: 'test-source',
@@ -113,7 +113,7 @@ describe('PayMcpPaymentServer', () => {
       body: { id: 'test-payment-request-id' }
     });
 
-    const server = new PayMcpPaymentServer('https://auth.paymcp.com', oAuthDb, mock.fetchHandler);
+    const server = new PayMcpPaymentServer('https://auth.paymcp.com', oAuthDb, TH.logger(), mock.fetchHandler);
     
     const paymentRequestParams = {
       ...TH.charge({
@@ -158,7 +158,7 @@ describe('PayMcpPaymentServer', () => {
       body: { id: 'test-payment-request-id' }
     });
 
-    const server = new PayMcpPaymentServer('https://auth.paymcp.com', oAuthDb, mock.fetchHandler);
+    const server = new PayMcpPaymentServer('https://auth.paymcp.com', oAuthDb, TH.logger(), mock.fetchHandler);
     
     await server.createPaymentRequest({
       ...TH.charge({
@@ -177,7 +177,7 @@ describe('PayMcpPaymentServer', () => {
     // No credentials saved to database (empty database)
 
     const mock = fetchMock.createInstance();
-    const server = new PayMcpPaymentServer('https://auth.paymcp.com', oAuthDb, mock.fetchHandler);
+    const server = new PayMcpPaymentServer('https://auth.paymcp.com', oAuthDb, TH.logger(), mock.fetchHandler);
     
     await expect(server.createPaymentRequest({
       ...TH.charge({
@@ -210,7 +210,7 @@ describe('PayMcpPaymentServer', () => {
       }
     });
 
-    const server = new PayMcpPaymentServer('https://auth.paymcp.com', oAuthDb, mock.fetchHandler);
+    const server = new PayMcpPaymentServer('https://auth.paymcp.com', oAuthDb, TH.logger(), mock.fetchHandler);
     
     const result = await server.charge(TH.charge({
       source: 'test-source',
@@ -243,7 +243,7 @@ describe('PayMcpPaymentServer', () => {
       body: { error: 'server error' }
     });
 
-    const server = new PayMcpPaymentServer('https://auth.paymcp.com', oAuthDb, mock.fetchHandler);
+    const server = new PayMcpPaymentServer('https://auth.paymcp.com', oAuthDb, TH.logger(), mock.fetchHandler);
     
     await expect(server.charge(TH.charge({
       source: 'test-source',
@@ -267,7 +267,7 @@ describe('PayMcpPaymentServer', () => {
       body: { error: 'bad request' }
     });
 
-    const server = new PayMcpPaymentServer('https://auth.paymcp.com', oAuthDb, mock.fetchHandler);
+    const server = new PayMcpPaymentServer('https://auth.paymcp.com', oAuthDb, TH.logger(), mock.fetchHandler);
     
     await expect(server.createPaymentRequest({
       ...TH.charge({
@@ -293,7 +293,7 @@ describe('PayMcpPaymentServer', () => {
       body: { success: true } // Missing 'id' field
     });
 
-    const server = new PayMcpPaymentServer('https://auth.paymcp.com', oAuthDb, mock.fetchHandler);
+    const server = new PayMcpPaymentServer('https://auth.paymcp.com', oAuthDb, TH.logger(), mock.fetchHandler);
     
     await expect(server.createPaymentRequest({
       ...TH.charge({

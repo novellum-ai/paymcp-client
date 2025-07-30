@@ -4,12 +4,8 @@ import { PaymentRequestError } from "../common/paymentRequestError.js";
 
 export async function requirePayment(paymentConfig: RequirePaymentConfig): Promise<void> {
   const config = getPayMcpConfig();
-  const resource = getPayMcpResource();
   if (!config) {
     throw new Error('No config found');
-  }
-  if (!resource) {
-    throw new Error('No resource found');
   }
   const user = payMcpUser();
   if (!user) {
@@ -25,7 +21,7 @@ export async function requirePayment(paymentConfig: RequirePaymentConfig): Promi
     source: user
   };
 
-  config.logger.debug(`Charging ${charge.amount} for source ${charge.source}`);
+  config.logger.debug(`Charging amount ${charge.amount}, destination ${charge.destination}, source ${charge.source}`);
   const chargeResponse = await config.paymentServer.charge(charge);
   if (chargeResponse.success) {
     config.logger.info(`Charged ${charge.amount} for source ${charge.source}`);

@@ -28,7 +28,6 @@ export type PaymentRequestData = {
   resourceName: string;
 }
 
-
 export type CustomJWTPayload = {
   // TODO: Change to codeChallenge - we'll also need to update the validation in 
   // paymcp's payment-request-put handler

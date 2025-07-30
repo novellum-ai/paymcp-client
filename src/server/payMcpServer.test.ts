@@ -1,98 +1,92 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { payMcpServer } from './payMcpServer.js';
-import httpMocks from 'node-mocks-http';
 import * as TH from './serverTestHelpers.js';
-import { EventEmitter } from 'events';
 import { SqliteOAuthDb } from '../common/oAuthDb.js';
+import express from 'express';
+import request from 'supertest';
+import { PaymentRequestError } from '../common/paymentRequestError.js';
 
 describe('paymcp', () => {
   it('should run code at request start and finish', async () => {
-    const { req, res } = httpMocks.createMocks(
-      {
-        method: 'POST',
-        url: 'https://example.com/',
-        body: TH.mcpToolRequest(),
-        headers: {
-          'content-type': 'application/json',
-          'authorization': 'Bearer test-access-token'
-        }
-      },
-      { eventEmitter: EventEmitter }
-    );
-    const next = vi.fn();
-
     const logger = TH.logger();
-    const middleware = payMcpServer(TH.config({
+    const router = payMcpServer(TH.config({
       logger, 
       oAuthClient: TH.oAuthClient({introspectResult: TH.tokenData({active: true})})
     }));
 
-    await middleware(req as any, res, next);
+    const app = express();
+    app.use(express.json());
+    app.use(router);
+    
+    // Add a test endpoint
+    app.post('/', (req, res) => {
+      res.json({ success: true });
+    });
 
+    const response = await request(app)
+      .post('/')
+      .set('Content-Type', 'application/json')
+      .set('Authorization', 'Bearer test-access-token')
+      .send(TH.mcpToolRequest());
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({ success: true });
     expect(logger.debug).toHaveBeenCalledWith('Request started - POST /');
-    expect(next).toHaveBeenCalled();
-
-    // Simulate the response finishing by calling end() which triggers the 'finish' event
-    res.end();
-
     expect(logger.debug).toHaveBeenCalledWith('Request finished for user test-user - POST /');
   });
 
   it('should run code at start and finish if sending an OAuth challenge', async () => {
-    const { req, res } = httpMocks.createMocks(
-      {
-        method: 'POST',
-        url: 'https://example.com/',
-        body: TH.mcpToolRequest(),
-        headers: {
-          'content-type': 'application/json',
-          'authorization': 'Bearer test-access-token'
-        }
-      },
-      { eventEmitter: EventEmitter }
-    );
-    const next = vi.fn();
-
     const badToken = TH.tokenData({active: false});
     const logger = TH.logger();
-    const middleware = payMcpServer(TH.config({
+    const router = payMcpServer(TH.config({
       logger, 
       oAuthClient: TH.oAuthClient({introspectResult: badToken})
     }));
 
-    await middleware(req as any, res, next);
+    const app = express();
+    app.use(express.json());
+    app.use(router);
+    
+    // Add a test endpoint
+    app.post('/', (req, res) => {
+      res.json({ success: true });
+    });
 
+    const response = await request(app)
+      .post('/')
+      .set('Content-Type', 'application/json')
+      .set('Authorization', 'Bearer test-access-token')
+      .send(TH.mcpToolRequest());
+
+    expect(response.status).toBe(401);
     expect(logger.debug).toHaveBeenCalledWith('Request started - POST /');
-    expect(next).not.toHaveBeenCalled();
-
     expect(logger.debug).toHaveBeenCalledWith('Request finished - POST /');
   });
 
   it('should save the oAuth token in the DB if it is active', async () => {
-    const { req, res } = httpMocks.createMocks(
-      {
-        method: 'POST',
-        url: 'https://example.com/',
-        body: TH.mcpToolRequest(),
-        headers: {
-          'content-type': 'application/json',
-          'authorization': 'Bearer self-access-token'
-        }
-      },
-      { eventEmitter: EventEmitter }
-    );
-    const next = vi.fn();
-
     const goodToken = TH.tokenData({active: true, sub: 'test-user'});
     const oAuthDb = new SqliteOAuthDb({ db: ':memory:' });
-    const middleware = payMcpServer(TH.config({
+    const router = payMcpServer(TH.config({
       oAuthClient: TH.oAuthClient({introspectResult: goodToken}),
       oAuthDb
     }));
 
-    await middleware(req as any, res, next);
+    const app = express();
+    app.use(express.json());
+    app.use(router);
+    
+    // Add a test endpoint
+    app.post('/', (req, res) => {
+      res.json({ success: true });
+    });
 
-    expect(res.statusCode).toEqual(200);
+    const response = await request(app)
+      .post('/')
+      .set('Content-Type', 'application/json')
+      .set('Authorization', 'Bearer self-access-token')
+      .send(TH.mcpToolRequest());
+
+    expect(response.status).toBe(200);
     // payMcpServer stores the oAuth token that was used to auth to ITSELF under the url ''
     const tokenFromDb = await oAuthDb.getAccessToken('test-user', '');
     expect(tokenFromDb).toMatchObject({
@@ -102,62 +96,68 @@ describe('paymcp', () => {
   });
   
   it('should return an OAuth challenge if token not active', async () => {
-    const { req, res } = httpMocks.createMocks(
-      {
-        method: 'POST',
-        url: 'https://example.com/',
-        body: TH.mcpToolRequest(),
-        headers: {
-          'content-type': 'application/json',
-          'authorization': 'Bearer test-access-token'
-        }
-      },
-      { eventEmitter: EventEmitter }
-    );
-    const next = vi.fn();
-
     const badToken = TH.tokenData({active: false});
-    const middleware = payMcpServer(TH.config({
+    const router = payMcpServer(TH.config({
       oAuthClient: TH.oAuthClient({introspectResult: badToken})
     }));
 
-    await middleware(req as any, res, next);
+    const app = express();
+    app.use(express.json());
+    app.use(router);
+    
+    // Add a test endpoint
+    app.post('/', (req, res) => {
+      res.json({ success: true });
+    });
 
-    expect(res.statusCode).toEqual(401);
-    expect(res.getHeader('www-authenticate')).toEqual('Bearer resource_metadata="https://example.com/.well-known/oauth-protected-resource/"');
+    const response = await request(app)
+      .post('/')
+      .set('Content-Type', 'application/json')
+      .set('Authorization', 'Bearer test-access-token')
+      .send(TH.mcpToolRequest());
+
+    expect(response.status).toBe(401);
+    expect(response.headers['www-authenticate']).toMatch(/Bearer resource_metadata="http:\/\/127\.0\.0\.1:\d+\/.well-known\/oauth-protected-resource\/"/);
   });
 
   it('should not intercept non-MCP requests', async () => {
-    const { req, res } = httpMocks.createMocks({ url: 'https://example.com/non-mcp' });
-    const next = vi.fn();
-
-    const middleware = payMcpServer({
+    const router = payMcpServer({
       destination: 'test-destination',
     });
 
-    await middleware(req as any, res, next);
-
-    // The middleware should call next() for non-MCP routes, allowing other handlers to process
-    expect(next).toHaveBeenCalled();
+    const app = express();
+    app.use(express.json());
+    app.use(router);
     
-    expect(res.statusCode).toEqual(200);
+    // Add a test endpoint
+    app.get('/non-mcp', (req, res) => {
+      res.json({ success: true });
+    });
+
+    const response = await request(app)
+      .get('/non-mcp');
+
+    // The middleware should allow the request to pass through to the endpoint
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({ success: true });
   });
 
   it('serves PRM endpoint', async () => {
-    const { req, res } = httpMocks.createMocks({ url: 'https://example.com/.well-known/oauth-protected-resource' });
-    const next = vi.fn();
-
-    const middleware = payMcpServer({
+    const router = payMcpServer({
       destination: 'test-destination',
     });
 
-    await middleware(req as any, res, next);
+    const app = express();
+    app.use(express.json());
+    app.use(router);
 
-    expect(res.statusCode).toEqual(200);
-    // Check the response data that was written - parse the raw data
-    const responseData = JSON.parse(res._getData());
-    expect(responseData).toMatchObject({
-      resource: 'https://example.com/',
+    const response = await request(app)
+      .get('/.well-known/oauth-protected-resource');
+
+    expect(response.status).toBe(200);
+    // Check the response data
+    expect(response.body).toMatchObject({
+      resource: expect.stringMatching(/^http:\/\/127\.0\.0\.1:\d+\/$/),
       resource_name: 'A PayMcp Server',
       authorization_servers: ['https://auth.paymcp.com'],
       bearer_methods_supported: ['header'],

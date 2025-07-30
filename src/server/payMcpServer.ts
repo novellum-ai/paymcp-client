@@ -5,7 +5,7 @@ import { checkToken } from "./token.js";
 import { sendOAuthChallenge } from "./oAuthChallenge.js";
 import { withPayMcpContext } from "./payMcpContext.js";
 import { parseMcpRequests } from "./http.js";
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction, Router } from "express";
 import { getProtectedResourceMetadata as getPRMResponse, sendProtectedResourceMetadata } from "./protectedResourceMetadata.js";
 import { getResource } from "./getResource.js";
 import { PayMcpPaymentServer } from "./paymentServer.js";
@@ -26,10 +26,13 @@ export const DEFAULT_CONFIG: Required<Omit<OptionalPayMcpConfig, BuildablePayMcp
   payeeName: 'A PayMcp Server',
   allowHttp: process.env.NODE_ENV === 'development',
   resource: null, // Set dynamically from the request URL
-  //refundErrors: true,
 };
 
 export function buildServerConfig(args: PayMcpArgs): PayMcpConfig {
+  if(!args.destination) {
+    throw new Error('destination is required');
+  }
+
   const withDefaults = { ...DEFAULT_CONFIG, ...args };
   const oAuthDb = withDefaults.oAuthDb ?? new SqliteOAuthDb({db: ':memory:'});
   const oAuthClient = withDefaults.oAuthClient ?? new OAuthResourceClient({
@@ -37,16 +40,18 @@ export function buildServerConfig(args: PayMcpArgs): PayMcpConfig {
     allowInsecureRequests: withDefaults.allowHttp,
     clientName: withDefaults.payeeName,
   });
-  const paymentServer = withDefaults.paymentServer ?? new PayMcpPaymentServer(withDefaults.server, oAuthDb);
   const logger = withDefaults.logger ?? new ConsoleLogger();
+  const paymentServer = withDefaults.paymentServer ?? new PayMcpPaymentServer(withDefaults.server, oAuthDb, logger);
   const built = { oAuthDb, oAuthClient, paymentServer, logger};
   return Object.freeze({ ...withDefaults, ...built });
 };
 
-export function payMcpServer(args: PayMcpArgs): (req: Request, res: Response, next: NextFunction) => Promise<void> {
+export function payMcpServer(args: PayMcpArgs): Router {
   const config = buildServerConfig(args);
+  const router = Router();
 
-  return async (req: Request, res: Response, next: NextFunction) => {
+  // Regular middleware
+  const payMcpMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const logger = config.logger;  // Capture logger in closure
       const requestUrl = new URL(req.url, req.protocol + '://' + req.host);
@@ -88,9 +93,14 @@ export function payMcpServer(args: PayMcpArgs): (req: Request, res: Response, ne
 
       return withPayMcpContext(config, resource, tokenCheck, next);
     } catch (error) {
-      config.logger.error(`Critical error in paymcp middleware - return HTTP 500. Error: ${error instanceof Error ? error.message : String(error)}`);
+      config.logger.error(`Critical error in paymcp middleware - returning HTTP 500. Error: ${error instanceof Error ? error.message : String(error)}`);
       config.logger.debug(JSON.stringify(error, null, 2));
       res.status(500).json({ error: 'server_error', error_description: 'An internal server error occurred' });
     }
   };
+
+  // Add middleware to the router
+  router.use(payMcpMiddleware);
+
+  return router;
 }

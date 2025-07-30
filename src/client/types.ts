@@ -22,7 +22,7 @@ export type ProspectivePayment = {
 }
 
 export type ClientConfig = {
-  mcpServer: UrlString;
+  mcpServer: string;
   account: Account;
   allowedAuthorizationServers: AuthorizationServerUrl[];
   approvePayment: (payment: ProspectivePayment) => Promise<boolean>;
