@@ -3,7 +3,7 @@ import { requirePayment } from './index.js';
 import * as TH from './serverTestHelpers.js';
 import { BigNumber } from 'bignumber.js';
 import { withPayMcpContext } from './payMcpContext.js';
-import { PaymentRequestError } from '../common/paymentRequestError.js';
+import { McpError } from '@modelcontextprotocol/sdk/dist/esm/types.js';
 
 describe('requirePayment', () => {
   it('should pass if there is money', async () => {
@@ -36,7 +36,7 @@ describe('requirePayment', () => {
       try {
         await requirePayment({price: BigNumber(0.01)});
       } catch (err: any) {
-        expect(err).toBeInstanceOf(PaymentRequestError);
+        expect(err).toBeInstanceOf(McpError);
       }
     });
   });
@@ -48,7 +48,7 @@ describe('requirePayment', () => {
       try {
         await requirePayment({price: BigNumber(0.01)});
       } catch (err: any) {
-        expect(err).toBeInstanceOf(PaymentRequestError);
+        expect(err).toBeInstanceOf(McpError);
         expect(paymentServer.createPaymentRequest).toHaveBeenCalledWith({
           amount: BigNumber(0.01),
           currency: config.currency,
@@ -67,7 +67,7 @@ describe('requirePayment', () => {
       try {
         await requirePayment({price: BigNumber(0.01)});
       } catch (err: any) {
-        expect(err).not.toBeInstanceOf(PaymentRequestError);
+        expect(err).not.toBeInstanceOf(McpError);
         expect(err.message).toContain('No user found');
       }
     });
@@ -80,7 +80,7 @@ describe('requirePayment', () => {
       try {
         await requirePayment({price: BigNumber(0.01)});
       } catch (err: any) {
-        expect(err).toBeInstanceOf(PaymentRequestError);
+        expect(err).toBeInstanceOf(McpError);
         expect(err.paymentRequestId).toBe('test-payment-request-id');
         expect(err.paymentRequestUrl).toBe('https://example.com/payment-request/test-payment-request-id');
       }
@@ -94,7 +94,7 @@ describe('requirePayment', () => {
       try {
         await requirePayment({price: BigNumber(0.01), getExistingPaymentId: async () => 'some-other-payment-id'});
       } catch (err: any) {
-        expect(err).toBeInstanceOf(PaymentRequestError);
+        expect(err).toBeInstanceOf(McpError);
         expect(err.paymentRequestId).toBe('some-other-payment-id');
         expect(err.paymentRequestUrl).toBe('https://auth.paymcp.com/payment-request/some-other-payment-id');
         expect(paymentServer.createPaymentRequest).not.toHaveBeenCalled();
@@ -112,7 +112,7 @@ describe('requirePayment', () => {
       try {
         await requirePayment({price: BigNumber(0.01)});
       } catch (err: any) {
-        expect(err).not.toBeInstanceOf(PaymentRequestError);
+        expect(err).not.toBeInstanceOf(McpError);
         expect(err.message).toContain('Payment request failed');
       }
     });

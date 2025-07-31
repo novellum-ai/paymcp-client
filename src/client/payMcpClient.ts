@@ -5,6 +5,7 @@ import { PayMcpFetcher } from "./payMcpFetcher.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { DEFAULT_AUTHORIZATION_SERVER } from "../common/types.js";
+import { McpError } from "@modelcontextprotocol/sdk/types.js";
 
 type RequiredClientConfigFields = 'mcpServer' | 'account';
 type RequiredClientConfig = Pick<ClientConfig, RequiredClientConfigFields>;
@@ -48,7 +49,8 @@ export function buildStreamableTransport(args: ClientArgs): StreamableHTTPClient
     allowedAuthorizationServers: config.allowedAuthorizationServers,
     approvePayment: config.approvePayment
   });
-  return new StreamableHTTPClientTransport(new URL(args.mcpServer), {fetch: fetcher.fetch});
+  const transport = new StreamableHTTPClientTransport(new URL(args.mcpServer), {fetch: fetcher.fetch});
+  return transport;
 }
 
 export async function payMcpClient(args: ClientArgs): Promise<Client> {

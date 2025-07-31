@@ -1,9 +1,9 @@
 import { IncomingMessage } from "node:http";
 import getRawBody from "raw-body";
 import contentType from "content-type";
-import { JSONRPCMessage, JSONRPCMessageSchema, JSONRPCRequest, isJSONRPCRequest } from "@modelcontextprotocol/sdk/types.js";
-import { ZodError } from "zod";
+import { JSONRPCRequest, isJSONRPCRequest } from "@modelcontextprotocol/sdk/types.js";
 import { PayMcpConfig } from "./types.js";
+import { parseMcpMessages } from "../common/mcpJson.js";
 
 // Useful reference for dealing with low-level http requests:
 // https://github.com/modelcontextprotocol/typescript-sdk/blob/c6ac083b1b37b222b5bfba5563822daa5d03372e/src/server/streamableHttp.ts#L375
@@ -29,26 +29,8 @@ export async function parseMcpRequests(config: PayMcpConfig, requestUrl: URL, re
   }
 
   parsedBody = parsedBody ?? await parseBody(req);
-  let messages: JSONRPCMessage[];
-
-  try {
-    // handle batch and single messages
-    if (Array.isArray(parsedBody)) {
-      messages = parsedBody.map(msg => JSONRPCMessageSchema.parse(msg));
-    } else {
-      messages = [JSONRPCMessageSchema.parse(parsedBody)];
-    }
-  } catch (error) {
-    // If Zod validation fails, log the error and return empty array
-    if (error instanceof ZodError) {
-      config.logger.warn(`Invalid JSON-RPC message format`);
-      config.logger.debug(error.message);
-    } else {
-      config.logger.error(`Unexpected error parsing JSON-RPC messages: ${error}`);
-    }
-    return [];
-  }
-
+  const messages = await parseMcpMessages(parsedBody, config.logger);
+  
   const requests = messages.filter(msg => isJSONRPCRequest(msg));
   if (requests.length !== messages.length) {
     config.logger.debug(`Dropped ${messages.length - requests.length} MCP messages that were not MCP requests`);

@@ -5,8 +5,8 @@ import { mockResourceServer, mockAuthorizationServer, payMcpErrorResponse, elici
 import { PayMcpFetcher } from './payMcpFetcher.js';
 import { OAuthDb, FetchLike, AuthorizationServerUrl, DEFAULT_AUTHORIZATION_SERVER } from '../common/types.js';
 import { PaymentMaker, ProspectivePayment } from './types.js';
+import { McpError } from '@modelcontextprotocol/sdk/dist/esm/types.js';
 import BigNumber from 'bignumber.js';
-import { PaymentRequestError } from '../common/paymentRequestError.js';
 
 function mockPaymentMakers(solanaPaymentMaker?: PaymentMaker) {
   solanaPaymentMaker = solanaPaymentMaker ?? {
@@ -171,7 +171,7 @@ describe('payMcpClient.fetch payment', () => {
 
     const resJson = await res.json();
     expect(resJson.content[0].type).toBe('text');
-    expect(resJson.content[0].text).to.include(PaymentRequestError.MESSAGE_PREAMBLE);
+    expect(resJson.content[0].text).to.include('Payment via PayMcp is required');
     expect(resJson.content[0].text).to.include(paymentRequestUrl);
   });
 
@@ -191,7 +191,7 @@ describe('payMcpClient.fetch payment', () => {
       await fetcher.fetch('https://example.com/mcp');
     } catch (e: any) {
       threw = true;
-      expect(e).not.toBeInstanceOf(PaymentRequestError);
+      expect(e).not.toBeInstanceOf(McpError);
     }
     expect(threw).toBe(true);
   });
@@ -216,7 +216,7 @@ describe('payMcpClient.fetch payment', () => {
     expect(res.status).toBe(200);
     const resJson = await res.json();
     expect(resJson.content[0].type).toBe('text');
-    expect(resJson.content[0].text).to.include(PaymentRequestError.MESSAGE_PREAMBLE);
+    expect(resJson.content[0].text).to.include('Payment via PayMcp is required');
     expect(resJson.content[0].text).to.include(paymentRequestUrl);
   });
 
@@ -240,7 +240,7 @@ describe('payMcpClient.fetch payment', () => {
     expect(res.status).toBe(200);
     const resJson = await res.json();
     expect(resJson.content[0].type).toBe('text');
-    expect(resJson.content[0].text).to.include(PaymentRequestError.MESSAGE_PREAMBLE);
+    expect(resJson.content[0].text).to.include('Payment via PayMcp is required');
     expect(resJson.content[0].text).to.include(paymentRequestUrl);
   });
 
@@ -263,7 +263,7 @@ describe('payMcpClient.fetch payment', () => {
       await fetcher.fetch('https://example.com/mcp');
     } catch (e: any) {
       threw = true;
-      expect(e).not.toBeInstanceOf(PaymentRequestError);
+      expect(e).not.toBeInstanceOf(McpError);
     }
     expect(threw).toBe(true);
   });
@@ -288,7 +288,7 @@ describe('payMcpClient.fetch payment', () => {
       await fetcher.fetch('https://example.com/mcp');
     } catch (e: any) {
       threw = true;
-      expect(e).not.toBeInstanceOf(PaymentRequestError);
+      expect(e).not.toBeInstanceOf(McpError);
     }
     expect(threw).toBe(true);
   });

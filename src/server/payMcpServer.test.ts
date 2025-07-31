@@ -4,7 +4,6 @@ import * as TH from './serverTestHelpers.js';
 import { SqliteOAuthDb } from '../common/oAuthDb.js';
 import express from 'express';
 import request from 'supertest';
-import { PaymentRequestError } from '../common/paymentRequestError.js';
 
 describe('paymcp', () => {
   it('should run code at request start and finish', async () => {

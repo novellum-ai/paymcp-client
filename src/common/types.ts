@@ -28,6 +28,7 @@ export type PaymentRequestData = {
   source: string;
   resource: URL;
   resourceName: string;
+  iss: string;
 }
 
 export type CustomJWTPayload = {

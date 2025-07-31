@@ -1,5 +1,4 @@
 import { FetchMock } from 'fetch-mock';
-import { PaymentRequestError } from '../common/paymentRequestError.js';
 import { DEFAULT_AUTHORIZATION_SERVER } from '../common/types.js';
 
 export function mockResourceServer(mock: FetchMock, baseUrl: string = 'https://example.com', resourcePath: string = '/mcp', authServerUrl: string = DEFAULT_AUTHORIZATION_SERVER) {
@@ -25,7 +24,7 @@ export function payMcpErrorResponse(paymentRequestUrl: string) {
       content: [
         {
           type: 'text',
-          text: `${PaymentRequestError.MESSAGE_PREAMBLE} Please pay at: ${paymentRequestUrl}`
+          text: `Payment via PayMcp is required. Please pay at: ${paymentRequestUrl}`
         }
       ],
       isError: true
