@@ -130,7 +130,7 @@ export class OAuthClient extends OAuthResourceClient {
         }
         const token = await this.getAccessToken(calledUrl);
         console.log(`Throwing OAuthAuthenticationRequiredError for ${calledUrl}, resource: ${resourceUrl}`);
-        throw await OAuthAuthenticationRequiredError.create(calledUrl, resourceUrl);//, token?.accessToken);
+        throw await OAuthAuthenticationRequiredError.create(calledUrl, resourceUrl, token?.accessToken);
       }
     }
   
@@ -367,14 +367,18 @@ export class OAuthClient extends OAuthResourceClient {
       console.log(`No access token found for resource server ${stringUrl}. Passing no authorization header.`);
     }
 
+    // Create a new init object to avoid mutating the original
+    const requestInit: RequestInit = { ...init };
+    
     if (tokenData) {
-      init = init || {};
-      const headers = new Headers(init.headers);
+      // Create a new Headers object from existing headers (if any)
+      const headers = new Headers(requestInit.headers);
       headers.set('Authorization', `Bearer ${tokenData.accessToken}`);
-      init.headers = headers;
+      requestInit.headers = headers;
     }
+    
     // Make the request with the access token
-    const response = await this.fetchFn(url, init);
+    const response = await this.fetchFn(url, requestInit);
     console.log(`Response status: ${response.status} ${response.statusText}`);
     return response;
   }

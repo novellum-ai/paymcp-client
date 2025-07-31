@@ -1,87 +1,295 @@
 import { SqliteOAuthDb } from '../common/oAuthDb';
-import { OAuthAuthenticationRequiredError } from './oAuth.js';
 import { describe, it, expect, vi } from 'vitest';
 import fetchMock from 'fetch-mock';
-import { mockResourceServer, mockAuthorizationServer } from './clientTestHelpers.js';
+import { mockResourceServer, mockAuthorizationServer, payMcpErrorResponse, elicitationResponse } from './clientTestHelpers.js';
 import { PayMcpFetcher } from './payMcpFetcher.js';
-import { OAuthDb, FetchLike } from '../common/types.js';
-import { PaymentMaker } from './types.js';
+import { OAuthDb, FetchLike, AuthorizationServerUrl, DEFAULT_AUTHORIZATION_SERVER } from '../common/types.js';
+import { PaymentMaker, ProspectivePayment } from './types.js';
+import BigNumber from 'bignumber.js';
+import { PaymentRequestError } from '../common/paymentRequestError.js';
 
-function payMcpFetcher(fetchFn: FetchLike, solanaPaymentMaker?: PaymentMaker, db?: OAuthDb, isPublic: boolean = false, strict: boolean = true) {
+function mockPaymentMakers(solanaPaymentMaker?: PaymentMaker) {
   solanaPaymentMaker = solanaPaymentMaker ?? {
     makePayment: vi.fn().mockResolvedValue('testPaymentId'),
     generateJWT: vi.fn().mockResolvedValue('testJWT')
   };
+  return {'solana': solanaPaymentMaker };
+}
+
+function payMcpFetcher(
+  fetchFn: FetchLike, 
+  paymentMakers?: {[key: string]: PaymentMaker}, 
+  db?: OAuthDb, 
+  allowedAuthorizationServers?: AuthorizationServerUrl[],
+  approvePayment?: (payment: ProspectivePayment) => Promise<boolean>
+) {
   return new PayMcpFetcher({
     userId: "bdj",
     db: db ?? new SqliteOAuthDb({db: ':memory:'}),
-    paymentMakers: {'solana': solanaPaymentMaker},
+    paymentMakers: paymentMakers ?? mockPaymentMakers(),
     fetchFn,
-    strict,
+    allowedAuthorizationServers,
+    approvePayment
   });
 }
+
 describe('payMcpClient.fetch payment', () => {
-  it.skip('should throw an error if amount isnt specified', async () => {
-    const f = fetchMock.createInstance().getOnce('https://example.com/mcp', 401);
-    mockResourceServer(f, 'https://example.com', '/mcp', 'https://paymcp.com?payMcp=1&network=solana&destination=testDestination&currency=USDC');
-    mockAuthorizationServer(f, 'https://paymcp.com')
+  it('should make a payment if the server response is a paymcp payment request error', async () => {
+    const f = fetchMock.createInstance();
+    const paymentRequestUrl = `${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`;
+
+    mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
+      .getOnce('https://example.com/mcp', payMcpErrorResponse(paymentRequestUrl))
+      .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
+    mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(0.01)});
+
     const paymentMaker = {
       makePayment: vi.fn().mockResolvedValue('testPaymentId'),
       generateJWT: vi.fn().mockResolvedValue('testJWT')
     };
-    const client = payMcpFetcher(f.fetchHandler, paymentMaker);
-
-    await expect(client.fetch('https://example.com/mcp')).rejects.toThrow(/amount not provided/);
-  });
-
-  it.skip('should make a payment and post it to the authorization server for PayMcp challenge', async () => {
-    const f = fetchMock.createInstance()
-      // 401, then succeed
-      .getOnce('https://example.com/mcp', 401)
-      .getOnce('https://example.com/mcp', {data: 'data'});
-    mockResourceServer(f, 'https://example.com', '/mcp', 'https://paymcp.com?payMcp=1&network=solana&destination=testDestination&currency=USDC&amount=0.01');
-    mockAuthorizationServer(f, 'https://paymcp.com')
-      // Respond to /authorize call 
-      .get('begin:https://paymcp.com/authorize', (req) => {
-        return {
-          status: 301,
-          headers: {location: `paymcp://paymcp?code=testCode&state=${new URL(req.args[0] as any).searchParams.get('state')}`}
-        };
-      });
-    const paymentMaker = {
-      makePayment: vi.fn().mockResolvedValue('testPaymentId'),
-      generateJWT: vi.fn().mockResolvedValue('testJWT')
-    };
-    const client = payMcpFetcher(f.fetchHandler, paymentMaker);
-
-    await client.fetch('https://example.com/mcp');
-    // Ensure we make a payment and sign it
+    const fetcher = payMcpFetcher(f.fetchHandler, {'solana': paymentMaker});
+    await fetcher.fetch('https://example.com/mcp');
+    // Ensure we make a payment 
     expect(paymentMaker.makePayment).toHaveBeenCalled();
-
-    // Ensure we call the authorization endpoint
-    const authCall = f.callHistory.lastCall('begin:https://paymcp.com/authorize');
-    expect(authCall).toBeDefined();
-
+    // Ensure we call the payment request endpoint
+    const payCall = f.callHistory.lastCall(`begin:${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`);
+    expect(payCall).toBeDefined();
     // Ensure there was an auth header with the payment id and signature
-    const authHeader = (authCall!.args[1] as any).headers['Authorization'];
+    const authHeader = (payCall!.args[1] as any).headers['Authorization'];
     expect(authHeader).toBeDefined();
     expect(authHeader).toContain('Bearer ');
     const jwtToken = authHeader.split(' ')[1];
-    // const decodedPayment = Buffer.from(encodedPayment, 'base64').toString('utf-8');
     expect(jwtToken).toBe('testJWT');
   });
 
-  it.skip('should throw if PayMcp payment-request endpoint response is not successful', async () => {
-    const f = fetchMock.createInstance()
-      // 401, then succeed
-      .getOnce('https://example.com/mcp', 401)
-      .getOnce('https://example.com/mcp', {data: 'data'});
-    mockResourceServer(f, 'https://example.com', '/mcp', 'https://paymcp.com?payMcp=1&network=solana&destination=testDestination&currency=USDC&amount=0.01');
-    mockAuthorizationServer(f, 'https://paymcp.com')
-      // Respond to /authorize call 
-      .get('begin:https://paymcp.com/authorize', 401, {});
-    const client = payMcpFetcher(f.fetchHandler);
+  it('should make a payment if the server response is an elicitation request error', async () => {
+    const f = fetchMock.createInstance();
+    const paymentRequestUrl = `${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`;
 
-    await expect(client.fetch('https://example.com/mcp')).rejects.toThrow('Expected redirect response from authorization URL, got 401');
+    mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
+      .getOnce('https://example.com/mcp', elicitationResponse(paymentRequestUrl))
+      .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
+    mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(0.01)});
+
+    const paymentMaker = {
+      makePayment: vi.fn().mockResolvedValue('testPaymentId'),
+      generateJWT: vi.fn().mockResolvedValue('testJWT')
+    };
+    const fetcher = payMcpFetcher(f.fetchHandler, {'solana': paymentMaker});
+    await fetcher.fetch('https://example.com/mcp');
+    // Ensure we make a payment 
+    expect(paymentMaker.makePayment).toHaveBeenCalled();
+    // Ensure we call the payment request endpoint
+    const payCall = f.callHistory.lastCall(`begin:${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`);
+    expect(payCall).toBeDefined();
+    // Ensure there was an auth header with the payment id and signature
+    const authHeader = (payCall!.args[1] as any).headers['Authorization'];
+    expect(authHeader).toBeDefined();
+    expect(authHeader).toContain('Bearer ');
+    const jwtToken = authHeader.split(' ')[1];
+    expect(jwtToken).toBe('testJWT');
+  });
+
+  it('should pass through an elicitation request error that is not paymcp', async () => {
+    const f = fetchMock.createInstance();
+
+    mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
+      .getOnce('https://example.com/mcp', elicitationResponse('https://slack.com/give-me-api-key'))
+      .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
+    mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(0.01)});
+
+    const paymentMaker = {
+      makePayment: vi.fn().mockResolvedValue('testPaymentId'),
+      generateJWT: vi.fn().mockResolvedValue('testJWT')
+    };
+    const fetcher = payMcpFetcher(f.fetchHandler, {'solana': paymentMaker});
+    const res = await fetcher.fetch('https://example.com/mcp');
+    const resJson = await res.json();
+    expect(resJson).toMatchObject({
+      jsonrpc: '2.0',
+      id: 1,
+      error: {
+        code: -32604,
+        message: 'This request requires more information.',
+      }
+    });
+  });
+
+  it('should allow consuming the body of the response', async () => {
+    const f = fetchMock.createInstance();
+    const responseJson = {content: [{type: 'text', text: 'hello world'}]};
+
+    mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
+      .getOnce('https://example.com/mcp', responseJson);
+    mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER);
+
+    const paymentMaker = {
+      makePayment: vi.fn().mockResolvedValue('testPaymentId'),
+      generateJWT: vi.fn().mockResolvedValue('testJWT')
+    };
+    const fetcher = payMcpFetcher(f.fetchHandler, {'solana': paymentMaker});
+    const res = await fetcher.fetch('https://example.com/mcp');
+    expect(await res.json()).toEqual(responseJson);
+  });
+
+  it('should retry the request if a payment was required and made successfully', async () => {
+    const f = fetchMock.createInstance();
+    const paymentRequestUrl = `${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`;
+
+    mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
+      .getOnce('https://example.com/mcp', payMcpErrorResponse(paymentRequestUrl))
+      .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
+    mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(0.01)});
+
+    const paymentMaker = {
+      makePayment: vi.fn().mockResolvedValue('testPaymentId'),
+      generateJWT: vi.fn().mockResolvedValue('testJWT')
+    };
+    const fetcher = payMcpFetcher(f.fetchHandler, {'solana': paymentMaker});
+    const res = await fetcher.fetch('https://example.com/mcp');
+    expect(res.status).toBe(200);
+    const resJson = await res.json();
+    expect(resJson).toEqual({content: [{type: 'text', text: 'hello world'}]});
+    const mcpCalls = f.callHistory.callLogs.filter(call => call.url.startsWith('https://example.com/mcp'));
+    expect(mcpCalls.length).toBe(2);
+    expect(mcpCalls[0].args[0]).toBe('https://example.com/mcp');
+    expect(mcpCalls[1].args[0]).toBe('https://example.com/mcp');
+  });
+
+  it('should pass through a payment request response if there is no matching payment maker', async () => {
+    const f = fetchMock.createInstance();
+    const paymentRequestUrl = `${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`;
+
+    mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
+      .getOnce('https://example.com/mcp', payMcpErrorResponse(paymentRequestUrl))
+      .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
+    mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(0.01)});
+    let threw = false;
+
+    const fetcher = payMcpFetcher(f.fetchHandler, {});
+    const res = await fetcher.fetch('https://example.com/mcp');
+
+    const resJson = await res.json();
+    expect(resJson.content[0].type).toBe('text');
+    expect(resJson.content[0].text).to.include(PaymentRequestError.MESSAGE_PREAMBLE);
+    expect(resJson.content[0].text).to.include(paymentRequestUrl);
+  });
+
+  it('should throw an error if the server does not have the payment request', async() => {
+    const f = fetchMock.createInstance();
+    const paymentRequestUrl = `${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`;
+
+    mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
+      .getOnce('https://example.com/mcp', payMcpErrorResponse(paymentRequestUrl))
+      .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
+    mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {})
+      .getOnce(`${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`, 404);
+    let threw = false;
+
+    const fetcher = payMcpFetcher(f.fetchHandler, {});
+    try {
+      await fetcher.fetch('https://example.com/mcp');
+    } catch (e: any) {
+      threw = true;
+      expect(e).not.toBeInstanceOf(PaymentRequestError);
+    }
+    expect(threw).toBe(true);
+  });
+
+  it('should pass through payment request response if the payment request server is not allowed', async () => {
+    const f = fetchMock.createInstance();
+    const paymentRequestUrl = `${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`;
+
+    mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
+      .getOnce('https://example.com/mcp', payMcpErrorResponse(paymentRequestUrl))
+      .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
+    mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(0.01)});
+    let threw = false;
+
+    const paymentMaker = {
+      makePayment: vi.fn().mockResolvedValue('testPaymentId'),
+      generateJWT: vi.fn().mockResolvedValue('testJWT')
+    };
+    const fetcher = payMcpFetcher(f.fetchHandler, {'solana': paymentMaker}, undefined, ['https://not-paymcp.com']);
+    const res = await fetcher.fetch('https://example.com/mcp');
+
+    expect(res.status).toBe(200);
+    const resJson = await res.json();
+    expect(resJson.content[0].type).toBe('text');
+    expect(resJson.content[0].text).to.include(PaymentRequestError.MESSAGE_PREAMBLE);
+    expect(resJson.content[0].text).to.include(paymentRequestUrl);
+  });
+
+  it('should not make a payment if the payment request is denied by the callback function', async () => {
+    const f = fetchMock.createInstance();
+    const paymentRequestUrl = `${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`;
+
+    mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
+      .getOnce('https://example.com/mcp', payMcpErrorResponse(paymentRequestUrl))
+      .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
+    mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(0.01)});
+    let threw = false;
+
+    const paymentMaker = {
+      makePayment: vi.fn().mockResolvedValue('testPaymentId'),
+      generateJWT: vi.fn().mockResolvedValue('testJWT')
+    };
+    const fetcher = payMcpFetcher(f.fetchHandler, {'solana': paymentMaker}, undefined, undefined, async (p) => false);
+    const res = await fetcher.fetch('https://example.com/mcp');
+
+    expect(res.status).toBe(200);
+    const resJson = await res.json();
+    expect(resJson.content[0].type).toBe('text');
+    expect(resJson.content[0].text).to.include(PaymentRequestError.MESSAGE_PREAMBLE);
+    expect(resJson.content[0].text).to.include(paymentRequestUrl);
+  });
+
+  it('should throw an error if amount is negative', async () => {
+    const f = fetchMock.createInstance();
+    const paymentRequestUrl = `${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`;
+
+    mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
+      .getOnce('https://example.com/mcp', payMcpErrorResponse(paymentRequestUrl))
+      .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
+    mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(-0.01)});
+    let threw = false;
+
+    const paymentMaker = {
+      makePayment: vi.fn().mockResolvedValue('testPaymentId'),
+      generateJWT: vi.fn().mockResolvedValue('testJWT')
+    };
+    const fetcher = payMcpFetcher(f.fetchHandler, {'solana': paymentMaker});
+    try {
+      await fetcher.fetch('https://example.com/mcp');
+    } catch (e: any) {
+      threw = true;
+      expect(e).not.toBeInstanceOf(PaymentRequestError);
+    }
+    expect(threw).toBe(true);
+  });
+
+  it('should throw an error if PUTing to the payment-request endpoint fails', async () => {
+    const f = fetchMock.createInstance();
+    const paymentRequestUrl = `${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`;
+
+    mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
+      .getOnce('https://example.com/mcp', payMcpErrorResponse(paymentRequestUrl))
+      .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
+    mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {})
+      .putOnce(`${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`, 500);
+    let threw = false;
+
+    const paymentMaker = {
+      makePayment: vi.fn().mockResolvedValue('testPaymentId'),
+      generateJWT: vi.fn().mockResolvedValue('testJWT')
+    };
+    const fetcher = payMcpFetcher(f.fetchHandler, {'solana': paymentMaker});
+    try {
+      await fetcher.fetch('https://example.com/mcp');
+    } catch (e: any) {
+      threw = true;
+      expect(e).not.toBeInstanceOf(PaymentRequestError);
+    }
+    expect(threw).toBe(true);
   });
 });

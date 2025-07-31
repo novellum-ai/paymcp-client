@@ -2,7 +2,7 @@
 // Only include tests relevant to cross-platform or Expo/React Native logic
 
 import { describe, it, expect } from '@jest/globals';
-import { sqlite } from './platform';
+import { sqlite } from '.';
 
 describe('Platform SQLite (Expo)', () => {
   it('should handle SQL queries correctly', async () => {

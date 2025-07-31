@@ -1,3 +1,5 @@
+export const DEFAULT_AUTHORIZATION_SERVER = 'https://auth.paymcp.com';
+
 export enum LogLevel {
   DEBUG = 0,
   INFO = 1,

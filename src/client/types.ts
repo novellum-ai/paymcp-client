@@ -15,7 +15,7 @@ export type Account = {
 export type ProspectivePayment = {
   accountId: string;
   resourceUrl: string;
-  toolName: string;
+  resourceName: string;
   network: Network;
   currency: Currency;
   amount: BigNumber;

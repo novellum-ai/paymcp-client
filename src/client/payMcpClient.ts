@@ -4,6 +4,7 @@ import { ConsoleLogger } from "../common/logger.js";
 import { PayMcpFetcher } from "./payMcpFetcher.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { DEFAULT_AUTHORIZATION_SERVER } from "../common/types.js";
 
 type RequiredClientConfigFields = 'mcpServer' | 'account';
 type RequiredClientConfig = Pick<ClientConfig, RequiredClientConfigFields>;
@@ -12,8 +13,8 @@ export type ClientArgs = RequiredClientConfig & Partial<OptionalClientConfig>;
 type BuildableClientConfigFields = 'oAuthDb' | 'logger';
 
 export const DEFAULT_CLIENT_CONFIG: Required<Omit<OptionalClientConfig, BuildableClientConfigFields>> = {
-  allowedAuthorizationServers: ['https://auth.paymcp.com'],
-  approvePayment: async (p) => true,
+  allowedAuthorizationServers: [DEFAULT_AUTHORIZATION_SERVER],
+  approvePayment: async (p) => p.amount.lte(BigNumber(1)),
   fetchFn: fetch,
   oAuthChannelFetch: fetch,
   allowHttp: process.env.NODE_ENV === 'development',
@@ -43,7 +44,9 @@ export function buildStreamableTransport(args: ClientArgs): StreamableHTTPClient
     paymentMakers: args.account.paymentMakers,
     fetchFn: config.fetchFn,
     sideChannelFetch: config.oAuthChannelFetch,
-    allowInsecureRequests: config.allowHttp
+    allowInsecureRequests: config.allowHttp,
+    allowedAuthorizationServers: config.allowedAuthorizationServers,
+    approvePayment: config.approvePayment
   });
   return new StreamableHTTPClientTransport(new URL(args.mcpServer), {fetch: fetcher.fetch});
 }
