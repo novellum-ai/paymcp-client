@@ -380,6 +380,8 @@ export class OAuthClient extends OAuthResourceClient {
     // Make the request with the access token
     const response = await this.fetchFn(url, requestInit);
     console.log(`Response status: ${response.status} ${response.statusText}`);
+    const echo = response.clone();
+    console.log(await echo.text());
     return response;
   }
 }

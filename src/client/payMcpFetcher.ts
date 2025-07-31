@@ -4,6 +4,8 @@ import { PaymentRequestError } from '../common/paymentRequestError.js';
 import { AccessToken, AuthorizationServerUrl, FetchLike, OAuthDb, PaymentRequestData, DEFAULT_AUTHORIZATION_SERVER } from '../common/types.js';
 import type { PaymentMaker, ProspectivePayment } from './types.js';
 import { getIsReactNative, createReactNativeSafeFetch } from './platform/index.js';
+import { JSONRPCMessage, JSONRPCMessageSchema } from '@modelcontextprotocol/sdk/dist/esm/types.js';
+import { ZodError } from 'zod';
 
 export interface PayMcpFetcherConfig {
   // TODO: Take an Account instead of userId and paymentMakers
@@ -36,7 +38,7 @@ export class PayMcpFetcher {
     strict = true,
     allowInsecureRequests = process.env.NODE_ENV === 'development',
     allowedAuthorizationServers = [DEFAULT_AUTHORIZATION_SERVER],
-    approvePayment = async (payment: ProspectivePayment): Promise<boolean> => { return payment.amount.lte(BigNumber(1)) }
+    approvePayment = async (payment: ProspectivePayment): Promise<boolean> => true
   }: PayMcpFetcherConfig) {
     // Use React Native safe fetch if in React Native environment
     const safeFetchFn = getIsReactNative() ? createReactNativeSafeFetch(fetchFn) : fetchFn;
@@ -272,23 +274,48 @@ export class PayMcpFetcher {
 
   protected checkForPayMcpError = async (response: Response): Promise<void> => {
     const clonedResponse = response.clone();
-    const body = await clonedResponse.json();
-
-    // Handle PaymentRequestError
-    if (body.isError && body.content.length > 0 && body.content[0].type === 'text') {
-      const text = body.content[0].text;
-      if (text.startsWith(PaymentRequestError.MESSAGE_PREAMBLE)) {
-        this.checkForPayMcpUrl(text);
-      }
-    }
-    // Handle Elicitations
-    if (body.error && body.error.code === -32604 && body.error.data && body.error.data.elicitations) {
-      const elicitations = body.error.data.elicitations;
-      for (const elicitation of elicitations) {
-        if (elicitation.mode === 'url') {
-          this.checkForPayMcpUrl(elicitation.url);
+    try {
+      const txt = await clonedResponse.clone().text();
+      let messages: JSONRPCMessage[] = [];
+      try {
+        // handle batch and single messages
+        if (Array.isArray(txt)) {
+          messages = txt.map(msg => JSONRPCMessageSchema.parse(msg));
+        } else {
+          messages = [JSONRPCMessageSchema.parse(txt)];
+        }
+      } catch (error) {
+        // If Zod validation fails, log the error and return empty array
+        if (error instanceof ZodError) {
+          console.warn(`Invalid JSON-RPC message format`);
+          //console.debug(error.message);
+        } else {
+          console.error(`Unexpected error parsing JSON-RPC messages: ${error}`);
         }
       }
+      console.log('PayMCP: messages:', messages);
+      console.log('PayMCP: response text:', await clonedResponse.clone().text());
+      const body = await clonedResponse.json();
+      console.log('PayMCP: response json:', JSON.stringify(body, null, 2));
+
+      // Handle PaymentRequestError
+      if (body.isError && body.content.length > 0 && body.content[0].type === 'text') {
+        const text = body.content[0].text;
+        if (text.startsWith(PaymentRequestError.MESSAGE_PREAMBLE)) {
+          this.checkForPayMcpUrl(text);
+        }
+      }
+      // Handle Elicitations
+      if (body.error && body.error.code === -32604 && body.error.data && body.error.data.elicitations) {
+        const elicitations = body.error.data.elicitations;
+        for (const elicitation of elicitations) {
+          if (elicitation.mode === 'url') {
+            this.checkForPayMcpUrl(elicitation.url);
+          }
+        }
+      }
+    } catch (e: any) {
+      console.debug('Error when parsing response to check for an MCP error (this is common and not necessarily an error)', e.message);
     }
   }
 

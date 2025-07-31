@@ -14,7 +14,7 @@ type BuildableClientConfigFields = 'oAuthDb' | 'logger';
 
 export const DEFAULT_CLIENT_CONFIG: Required<Omit<OptionalClientConfig, BuildableClientConfigFields>> = {
   allowedAuthorizationServers: [DEFAULT_AUTHORIZATION_SERVER],
-  approvePayment: async (p) => p.amount.lte(BigNumber(1)),
+  approvePayment: async (p) => true,
   fetchFn: fetch,
   oAuthChannelFetch: fetch,
   allowHttp: process.env.NODE_ENV === 'development',
