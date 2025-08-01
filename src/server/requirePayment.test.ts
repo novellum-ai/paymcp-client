@@ -3,7 +3,7 @@ import { requirePayment } from './index.js';
 import * as TH from './serverTestHelpers.js';
 import { BigNumber } from 'bignumber.js';
 import { withPayMcpContext } from './payMcpContext.js';
-import { McpError } from '@modelcontextprotocol/sdk/dist/esm/types.js';
+import { McpError } from '@modelcontextprotocol/sdk/types.js';
 
 describe('requirePayment', () => {
   it('should pass if there is money', async () => {

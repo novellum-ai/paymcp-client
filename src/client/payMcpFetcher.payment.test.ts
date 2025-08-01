@@ -5,7 +5,7 @@ import { mockResourceServer, mockAuthorizationServer, payMcpErrorResponse, elici
 import { PayMcpFetcher } from './payMcpFetcher.js';
 import { OAuthDb, FetchLike, AuthorizationServerUrl, DEFAULT_AUTHORIZATION_SERVER } from '../common/types.js';
 import { PaymentMaker, ProspectivePayment } from './types.js';
-import { McpError } from '@modelcontextprotocol/sdk/dist/esm/types.js';
+import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import BigNumber from 'bignumber.js';
 
 function mockPaymentMakers(solanaPaymentMaker?: PaymentMaker) {
