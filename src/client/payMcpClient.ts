@@ -6,7 +6,6 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { DEFAULT_AUTHORIZATION_SERVER } from "../common/types.js";
 
-
 type RequiredClientConfigFields = 'mcpServer' | 'account';
 type RequiredClientConfig = Pick<ClientConfig, RequiredClientConfigFields>;
 type OptionalClientConfig = Omit<ClientConfig, RequiredClientConfigFields>;
@@ -29,6 +28,10 @@ export const DEFAULT_CLIENT_CONFIG: Required<Omit<OptionalClientConfig, Buildabl
 };
 
 export function buildClientConfig(args: ClientArgs): ClientConfig {
+  // Use fetchFn for oAuthChannelFetch if the latter isn't explicitly set
+  if (args.fetchFn && !args.oAuthChannelFetch) {
+    args.oAuthChannelFetch = args.fetchFn;
+  }
   const withDefaults = { ...DEFAULT_CLIENT_CONFIG, ...args };
   const oAuthDb = withDefaults.oAuthDb ?? new SqliteOAuthDb({db: ':memory:'});
   const logger = withDefaults.logger ?? new ConsoleLogger();
@@ -55,8 +58,8 @@ export function buildStreamableTransport(args: ClientArgs): StreamableHTTPClient
 }
 
 export async function payMcpClient(args: ClientArgs): Promise<Client> {
-  const transport = buildStreamableTransport(args);
   const config = buildClientConfig(args);
+  const transport = buildStreamableTransport(config);
 
   const client = new Client(config.clientInfo, config.clientOptions);
   await client.connect(transport);
