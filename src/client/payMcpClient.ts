@@ -5,7 +5,7 @@ import { PayMcpFetcher } from "./payMcpFetcher.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { DEFAULT_AUTHORIZATION_SERVER } from "../common/types.js";
-import { McpError } from "@modelcontextprotocol/sdk/types.js";
+
 
 type RequiredClientConfigFields = 'mcpServer' | 'account';
 type RequiredClientConfig = Pick<ClientConfig, RequiredClientConfigFields>;
@@ -15,7 +15,7 @@ type BuildableClientConfigFields = 'oAuthDb' | 'logger';
 
 export const DEFAULT_CLIENT_CONFIG: Required<Omit<OptionalClientConfig, BuildableClientConfigFields>> = {
   allowedAuthorizationServers: [DEFAULT_AUTHORIZATION_SERVER],
-  approvePayment: async (p) => true,
+  approvePayment: async (_p) => true,
   fetchFn: fetch,
   oAuthChannelFetch: fetch,
   allowHttp: process.env.NODE_ENV === 'development',

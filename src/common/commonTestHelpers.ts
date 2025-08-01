@@ -1,8 +1,7 @@
-import { Readable } from 'stream';
-import { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'http';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { UrlString } from './types.js';
-import { JSONRPCRequest, JSONRPCResponse, Result, CallToolResult, ContentBlock, JSONRPCError } from '@modelcontextprotocol/sdk/types.js';
-import { PAYMENT_REQUIRED_ERROR_CODE, paymentRequiredError } from './paymentRequiredError';
+import { JSONRPCResponse, Result, CallToolResult, ContentBlock, JSONRPCError } from '@modelcontextprotocol/sdk/types.js';
+import { paymentRequiredError } from './paymentRequiredError';
 
 export const DESTINATION = 'testDestination';
 export const SOURCE = 'testSource';

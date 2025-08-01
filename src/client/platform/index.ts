@@ -1,4 +1,6 @@
-import * as nodeCrypto from 'crypto';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-require-imports */
+
 import type { FetchLike } from '../../common/types.js';
 
 // Platform abstraction layer
@@ -60,7 +62,7 @@ export const createReactNativeSafeFetch = (originalFetch: FetchLike): FetchLike 
           statusText: response.statusText,
           headers: response.headers
         });
-      } catch (error) {
+      } catch {
         // If reading fails, return original response
         return response;
       }
@@ -75,7 +77,7 @@ function createReactNativeCrypto(): PlatformCrypto {
   let expoCrypto: any;
   try {
     expoCrypto = require('expo-crypto');
-  } catch (error) {
+  } catch {
     throw new Error(
       'React Native detected but expo-crypto package is required. ' +
       'Please install it: npm install expo-crypto'
@@ -99,7 +101,7 @@ function createReactNativeSQLite(): PlatformSQLite {
   let expoSqlite: any;
   try {
     expoSqlite = require('expo-sqlite');
-  } catch (error) {
+  } catch {
     throw new Error(
       'React Native detected but expo-sqlite package is required. ' +
       'Please install it: npm install expo-sqlite'
@@ -116,7 +118,7 @@ function createNodeCrypto(): PlatformCrypto {
   const getCrypto = () => {
     try {
       return require('crypto');
-    } catch (error) {
+    } catch {
       throw new Error('Node.js crypto module not available');
     }
   };
@@ -144,7 +146,7 @@ function createNodeSQLite(): PlatformSQLite {
       // Use eval to prevent bundlers from statically analyzing this require
       // This ensures better-sqlite3 is only loaded at runtime in Node.js
       return eval('require')('better-sqlite3');
-    } catch (error) {
+    } catch {
       throw new Error('better-sqlite3 not available. Please install it: npm install better-sqlite3');
     }
   };
@@ -175,11 +177,10 @@ function createNodeSQLite(): PlatformSQLite {
               // Use .all() for SELECT, .run() for others
               const isSelect = /^\s*select/i.test(sql);
               let resultRows: T[] = [];
-              let runResult: any = null;
               if (isSelect) {
                 resultRows = stmt.all(...params);
               } else {
-                runResult = stmt.run(...params);
+                stmt.run(...params);
               }
               return {
                 getFirstAsync: async () => {

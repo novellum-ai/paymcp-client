@@ -11,6 +11,7 @@ Object.defineProperty(global.navigator, 'product', {
 
 // Polyfill TextEncoder for Jest environment
 if (typeof global.TextEncoder === 'undefined') {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
   const { TextEncoder, TextDecoder } = require('util');
   global.TextEncoder = TextEncoder;
   global.TextDecoder = TextDecoder;

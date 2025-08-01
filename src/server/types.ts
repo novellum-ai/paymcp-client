@@ -1,4 +1,3 @@
-import { BigNumber } from "bignumber.js";
 import { AuthorizationServerUrl, Currency, Logger, PaymentRequestData, Network, UrlString, OAuthDb, TokenData } from "../common/types.js";
 import { OAuthResourceClient } from "../common/oAuthResource.js";
 

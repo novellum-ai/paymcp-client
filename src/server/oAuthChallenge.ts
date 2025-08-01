@@ -8,7 +8,7 @@ export function sendOAuthChallenge(res: ServerResponse, tokenCheck: TokenCheck):
   }
 
   let status = 401;
-  let body: any = {};
+  let body: {status?: number, error?: string, error_description?: string} = {};
   // https://datatracker.ietf.org/doc/html/rfc6750#section-3.1
   switch (tokenCheck.problem) {
     case TokenProblem.NO_TOKEN:

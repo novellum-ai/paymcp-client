@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import { getProtectedResourceMetadata } from './protectedResourceMetadata.js';
 import * as TH from './serverTestHelpers.js';
 import { getResource } from './getResource.js';
 

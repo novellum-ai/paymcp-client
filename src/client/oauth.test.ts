@@ -1,6 +1,6 @@
 import { SqliteOAuthDb } from '../common/oAuthDb';
 import { OAuthClient } from './oAuth.js';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, assert } from 'vitest';
 import fetchMock from 'fetch-mock';
 import { DEFAULT_AUTHORIZATION_SERVER, FetchLike, OAuthDb } from '../common/types.js';
 import { mockResourceServer, mockAuthorizationServer } from './clientTestHelpers.js';
@@ -260,7 +260,7 @@ describe('oauthClient', () => {
       mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER);
 
       const client = oauthClient(f.fetchHandler);
-      const res = await client.getAuthorizationServer('https://example.com/mcp?test=1');
+      await client.getAuthorizationServer('https://example.com/mcp?test=1');
       
       const prmCall = f.callHistory.lastCall('https://example.com/.well-known/oauth-protected-resource/mcp?test=1');
       expect(prmCall).toBeDefined();
@@ -284,7 +284,7 @@ describe('oauthClient', () => {
 
       const client = oauthClient(f.fetchHandler, new SqliteOAuthDb({db: ':memory:'}), true, false); // strict = false
       
-      const res = await client.getAuthorizationServer('https://example.com/mcp');
+      await client.getAuthorizationServer('https://example.com/mcp');
       const prmCall = f.callHistory.lastCall('https://example.com/.well-known/oauth-protected-resource/mcp');
       expect(prmCall).toBeDefined();
       expect(prmCall?.response?.status).toBe(404);
@@ -314,7 +314,7 @@ describe('oauthClient', () => {
 
       const client = oauthClient(f.fetchHandler, new SqliteOAuthDb({db: ':memory:'}), true);
       
-      const res = await client.makeAuthorizationUrl('https://example.com/mcp', 'https://example.com/mcp');
+      await client.makeAuthorizationUrl('https://example.com/mcp', 'https://example.com/mcp');
       const registerCall = f.callHistory.lastCall(`${DEFAULT_AUTHORIZATION_SERVER}/register`);
       expect(registerCall).toBeDefined();
       const body = JSON.parse((registerCall?.args?.[1] as any).body);
@@ -331,7 +331,7 @@ describe('oauthClient', () => {
 
       const client = oauthClient(f.fetchHandler, new SqliteOAuthDb({db: ':memory:'}), false);
       
-      const res = await client.makeAuthorizationUrl('https://example.com/mcp', 'https://example.com/mcp');
+      await client.makeAuthorizationUrl('https://example.com/mcp', 'https://example.com/mcp');
       const registerCall = f.callHistory.lastCall(`${DEFAULT_AUTHORIZATION_SERVER}/register`);
       expect(registerCall).toBeDefined();
       const body = JSON.parse((registerCall?.args?.[1] as any).body);
@@ -426,13 +426,13 @@ describe('oauthClient', () => {
       mockResourceServer(f, 'https://example.com', '/mcp');
       mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER);
 
-      let oauthError: OAuthAuthenticationRequiredError | undefined;
       const client = oauthClient(f.fetchHandler);
       try {
         await client.fetch('https://example.com/mcp');
+        assert.fail('Expected OAuthAuthenticationRequiredError');
       }
-      catch (e: any) {
-        oauthError = e as OAuthAuthenticationRequiredError;
+      catch (e: unknown) {
+        expect(e).instanceOf(OAuthAuthenticationRequiredError);
       }
 
       const authCallbackUrl = `https://example.com/callback?code=test-code&state=invalid-state`;

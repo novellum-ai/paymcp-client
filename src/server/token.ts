@@ -1,4 +1,3 @@
-import { BigNumber } from "bignumber.js";
 import { IncomingMessage } from "http";
 import { PayMcpConfig, TokenCheck, TokenProblem } from "./types.js";
 

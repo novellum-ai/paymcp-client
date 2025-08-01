@@ -38,7 +38,7 @@ export class PayMcpFetcher {
     strict = true,
     allowInsecureRequests = process.env.NODE_ENV === 'development',
     allowedAuthorizationServers = [DEFAULT_AUTHORIZATION_SERVER],
-    approvePayment = async (payment: ProspectivePayment): Promise<boolean> => true
+    approvePayment = async (): Promise<boolean> => true
   }: PayMcpFetcherConfig) {
     // Use React Native safe fetch if in React Native environment
     const safeFetchFn = getIsReactNative() ? createReactNativeSafeFetch(fetchFn) : fetchFn;
@@ -69,11 +69,11 @@ export class PayMcpFetcher {
     if (paymentRequestError.code !== PAYMENT_REQUIRED_ERROR_CODE) {
       throw new Error(`PayMCP: expected payment required error (code ${PAYMENT_REQUIRED_ERROR_CODE}); got code ${paymentRequestError.code}`);
     }
-    const paymentRequestUrl = (paymentRequestError.data as any)?.paymentRequestUrl;
+    const paymentRequestUrl = (paymentRequestError.data as {paymentRequestUrl: string}|undefined)?.paymentRequestUrl;
     if (!paymentRequestUrl) {
       throw new Error(`PayMCP: payment requirement error does not contain a payment requirement URL`);
     }
-    const paymentRequestId = (paymentRequestError.data as any)?.paymentRequestId;
+    const paymentRequestId = (paymentRequestError.data as {paymentRequestId: string}|undefined)?.paymentRequestId;
     if (!paymentRequestId) {
       throw new Error(`PayMCP: payment requirement error does not contain a payment request ID`);
     }
@@ -104,7 +104,7 @@ export class PayMcpFetcher {
     }
     try{
       amount = new BigNumber(paymentRequest.amount);
-    } catch (e) {
+    } catch {
       throw new Error(`Invalid amount ${paymentRequest.amount}`);
     }
     if(amount.lte(0)) {
@@ -315,16 +315,10 @@ export class PayMcpFetcher {
         console.log(`OAuth authentication required - PayMCP client starting oauth flow for resource metadata ${error.resourceServerUrl}`);
         await this.authToService(error); 
 
-        try {
-          // Retry the request once - we should be auth'd now
-          response = await this.oauthClient.fetch(url, init);
-          await this.checkForPayMcpResponse(response);
-          return response;
-        } catch (authRetryError: unknown) {
-          // If the retry throws, it might be because we needed to auth AND make a payment
-          // In this case, we should still try to make a payment if the retry fails
-          error = authRetryError;
-        }
+        // Retry the request once - we should be auth'd now
+        response = await this.oauthClient.fetch(url, init);
+        await this.checkForPayMcpResponse(response);
+        return response;
       }
 
       const mcpError = error instanceof McpError ? error : null;

@@ -1,5 +1,5 @@
 import { BigNumber } from "bignumber.js";
-import { AuthorizationServerUrl, Currency, Logger, Network, UrlString } from "../common/types.js";
+import { AuthorizationServerUrl, Currency, Logger, Network } from "../common/types.js";
 import { OAuthDb, FetchLike } from "../common/types.js";
 import { ClientOptions } from "@modelcontextprotocol/sdk/client/index.js";
 import { Implementation } from "@modelcontextprotocol/sdk/types.js";

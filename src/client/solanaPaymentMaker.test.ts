@@ -3,7 +3,6 @@ import { SolanaPaymentMaker } from './solanaPaymentMaker';
 import { Keypair } from "@solana/web3.js";
 import bs58 from "bs58";
 import nacl from "tweetnacl";
-import naclUtil from "tweetnacl-util";
 
 describe('solanaPaymentMaker.generateJWT', () => {
   it('should generate a valid JWT with default payload', async () => {
