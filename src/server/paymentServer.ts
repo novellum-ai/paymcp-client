@@ -1,5 +1,5 @@
 import { PaymentServer, ChargeResponse } from "./types.js";
-import { Network, Currency, AuthorizationServerUrl, FetchLike, OAuthDb, Logger } from "../common/types.js";
+import { Network, Currency, AuthorizationServerUrl, FetchLike, OAuthDb, Logger, PaymentRequestData } from "../common/types.js";
 import BigNumber from "bignumber.js";
 
 export class PayMcpPaymentServer implements PaymentServer {
@@ -14,7 +14,7 @@ export class PayMcpPaymentServer implements PaymentServer {
     {source: string, destination: string, network: Network, currency: Currency, amount: BigNumber}): Promise<ChargeResponse> => {
     const body = {source, destination, network, currency, amount};
     const chargeResponse = await this.makeRequest('POST', '/charge', body);
-    const json = await chargeResponse.json() as any;
+    const json = await chargeResponse.json() as PaymentRequestData | null;
     if (chargeResponse.status === 200) {
       return {success: true, requiredPayment: null};
     } else if (chargeResponse.status === 402) {
@@ -31,7 +31,7 @@ export class PayMcpPaymentServer implements PaymentServer {
     {source: string, destination: string, network: Network, currency: Currency, amount: BigNumber}): Promise<string> => {
     const body = {source, destination, network, currency, amount};
     const response = await this.makeRequest('POST', '/payment-request', body);
-    const json = await response.json() as any;
+    const json = await response.json() as {id?: string};
     if (response.status !== 200) {
       this.logger.warn(`POST /payment-request responded with unexpected HTTP status ${response.status}`);
       this.logger.debug(`Response body: ${JSON.stringify(json)}`);
@@ -43,7 +43,7 @@ export class PayMcpPaymentServer implements PaymentServer {
     return json.id; 
   }
 
-  protected makeRequest = async(method: 'GET' | 'POST', path: string, body: any): Promise<Response> => {
+  protected makeRequest = async(method: 'GET' | 'POST', path: string, body: unknown): Promise<Response> => {
     const url = new URL(path, this.server);
     const credentials = await this.oAuthDb.getClientCredentials(this.server);
     if(!credentials) {

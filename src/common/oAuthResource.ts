@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as oauth from 'oauth4webapi';
 import { ClientCredentials, FetchLike, OAuthResourceDb, OAuthDb, TokenData } from './types.js';
 
@@ -175,9 +176,9 @@ export class OAuthResourceClient {
       const authServerUrl = new URL(authServer);
       const res = await this.authorizationServerFromUrl(authServerUrl);
       return res;
-    } catch (error: any) {
+    } catch (error) {
       console.log(`Error fetching authorization server configuration: ${error}`);
-      console.log(error.stack);
+      console.log((error as Error).stack);
       console.trace();
       throw error;
     }

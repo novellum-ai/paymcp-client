@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect} from 'vitest';
 import { payMcpServer } from './payMcpServer.js';
 import * as TH from './serverTestHelpers.js';
 import { SqliteOAuthDb } from '../common/oAuthDb.js';

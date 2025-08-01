@@ -11,7 +11,7 @@ import { parseMcpMessages } from "../common/mcpJson.js";
 // Using the same value as MCP SDK
 const MAXIMUM_MESSAGE_SIZE = "4mb";
 
-export async function parseMcpRequests(config: PayMcpConfig, requestUrl: URL, req: IncomingMessage, parsedBody?: any): Promise<JSONRPCRequest[]> {
+export async function parseMcpRequests(config: PayMcpConfig, requestUrl: URL, req: IncomingMessage, parsedBody?: unknown): Promise<JSONRPCRequest[]> {
   if (!req.method) {
     return [];
   }

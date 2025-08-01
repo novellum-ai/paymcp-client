@@ -1,6 +1,6 @@
 import { PAYMENT_REQUIRED_ERROR_CODE, PAYMENT_REQUIRED_PREAMBLE } from './paymentRequiredError.js';
 import { AuthorizationServerUrl } from './types.js';
-import { CallToolResult, isJSONRPCError, isJSONRPCResponse, JSONRPCError, JSONRPCMessage, JSONRPCMessageSchema, JSONRPCResponse } from '@modelcontextprotocol/sdk/types.js';
+import { CallToolResult, isJSONRPCError, isJSONRPCResponse, JSONRPCError, JSONRPCMessage, JSONRPCMessageSchema } from '@modelcontextprotocol/sdk/types.js';
 import { Logger } from './types.js';
 import { ZodError } from 'zod';
 
@@ -11,7 +11,7 @@ export function parsePaymentRequests(message: JSONRPCMessage): {url: Authorizati
     // Explicitly throw payment required errors that result in MCP protocol-level errors
     const rpcError = message as JSONRPCError;
     if (rpcError.error.code === PAYMENT_REQUIRED_ERROR_CODE) {
-      const paymentRequestUrl = (rpcError.error.data as any)?.paymentRequestUrl;
+      const paymentRequestUrl = (rpcError.error.data as {paymentRequestUrl: string})?.paymentRequestUrl;
       const dataPr = _parsePaymentRequestFromString(paymentRequestUrl);
       if(dataPr) {
         res.push(dataPr);
@@ -26,7 +26,7 @@ export function parsePaymentRequests(message: JSONRPCMessage): {url: Authorizati
     // Current draft of elicitation-required error code as per
     // https://github.com/modelcontextprotocol/modelcontextprotocol/pull/887
     if (rpcError.error.code === -32604) {
-      const elicitations = (rpcError.error.data as any)?.elicitations || [];
+      const elicitations = (rpcError.error.data as {elicitations: {mode: string, url: string}[]}|undefined)?.elicitations || [];
       for(const elicitation of elicitations) {
         if(elicitation?.mode === 'url') {
           const pr = _parsePaymentRequestFromString(elicitation?.url);
@@ -73,7 +73,7 @@ function _parsePaymentRequestFromString(text: string | null): {url: Authorizatio
   return null;
 }
 
-export async function parseMcpMessages(json: any, logger?: Logger): Promise<JSONRPCMessage[]> {
+export async function parseMcpMessages(json: unknown, logger?: Logger): Promise<JSONRPCMessage[]> {
   let messages: JSONRPCMessage[] = [];
 
   try {

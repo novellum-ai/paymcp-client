@@ -227,13 +227,12 @@ describe('payMcpClient.fetch payment', () => {
       .getOnce('https://example.com/mcp', errMsg)
       .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(0.01)});
-    const threw = false;
 
     const paymentMaker = {
       makePayment: vi.fn().mockResolvedValue('testPaymentId'),
       generateJWT: vi.fn().mockResolvedValue('testJWT')
     };
-    const fetcher = payMcpFetcher(f.fetchHandler, {'solana': paymentMaker}, undefined, undefined, async (p) => false);
+    const fetcher = payMcpFetcher(f.fetchHandler, {'solana': paymentMaker}, undefined, undefined, async () => false);
     const res = await fetcher.fetch('https://example.com/mcp');
 
     expect(res.status).toBe(200);

@@ -14,6 +14,7 @@ describe('SqliteOAuthDb (Expo)', () => {
   it('platform detection should work in test environment', () => {
     // Even though we're in a test environment, we can verify the platform
     // detection logic exists and is being used
+    // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
     const { getIsReactNative } = require('../client/platform/index');
     expect(typeof getIsReactNative).toBe('function');
     

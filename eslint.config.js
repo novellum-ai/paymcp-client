@@ -45,7 +45,7 @@ export default [
       // General rules
       'prefer-const': 'error',
       'no-var': 'error',
-      'no-console': 'warn',
+      'no-console': 'off', // Allow console statements
       'no-debugger': 'error',
       'no-undef': 'off', // TypeScript handles this
       'no-ex-assign': 'error',
@@ -55,7 +55,8 @@ export default [
     files: ['**/*.test.ts', '**/*.spec.ts', '**/*.test.tsx', '**/*.spec.tsx'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
-      'no-console': 'off',
+      '@typescript-eslint/no-non-null-asserted-optional-chain': 'off',
+      'no-console': 'off'
     },
   },
   {

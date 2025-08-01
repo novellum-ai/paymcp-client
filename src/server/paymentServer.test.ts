@@ -1,7 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import * as TH from './serverTestHelpers.js';
 import { PayMcpPaymentServer } from './paymentServer.js';
-import { BigNumber } from 'bignumber.js';
 import fetchMock from 'fetch-mock';
 import { SqliteOAuthDb } from '../common/oAuthDb.js';
 

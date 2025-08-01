@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Readable } from 'stream';
 import { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'http';
 import { JSONRPCRequest } from '@modelcontextprotocol/sdk/types.js';

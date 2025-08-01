@@ -33,7 +33,7 @@ function encodeBase64Url(input: Uint8Array | ArrayBuffer) {
 
   const arr = []
   for (let i = 0; i < input.byteLength; i += CHUNK_SIZE) {
-    // @ts-expect-error
+    // @ts-expect-error - subarray is not defined on ArrayBuffer
     arr.push(String.fromCharCode.apply(null, input.subarray(i, i + CHUNK_SIZE)))
   }
   return btoa(arr.join('')).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
@@ -226,8 +226,7 @@ export class OAuthClient extends OAuthResourceClient {
     const codeVerifier = oauth.generateRandomCodeVerifier();
     // Calculate the code challenge
     // Use our platform-agnostic crypto implementation
-    let codeChallenge: string | undefined;
-    codeChallenge = encodeBase64Url(await crypto.digest(
+    const codeChallenge = encodeBase64Url(await crypto.digest(
       new TextEncoder().encode(codeVerifier)
     ));
     // Generate a random state
@@ -256,8 +255,8 @@ export class OAuthClient extends OAuthResourceClient {
       [oauth.customFetch]: this.sideChannelFetch,
       [oauth.allowInsecureRequests]: this.allowInsecureRequests
     };
-    let response: Response | undefined;
-    response = await oauth.authorizationCodeGrantRequest(
+
+    const response = await oauth.authorizationCodeGrantRequest(
       authorizationServer,
       client,
       clientAuth,
