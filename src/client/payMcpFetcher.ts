@@ -178,8 +178,8 @@ export class PayMcpFetcher {
     return true;
   }
 
-  protected isAllowedAuthServer = (url: string): boolean => {
-    const urlObj = new URL(url);
+  protected isAllowedAuthServer = (url: string | URL): boolean => {
+    const urlObj = typeof url === 'string' ? new URL(url) : url;
     const baseUrl = urlObj.origin as AuthorizationServerUrl;
     return this.allowedAuthorizationServers.includes(baseUrl);
   }
@@ -195,8 +195,8 @@ export class PayMcpFetcher {
       throw new Error(`Code challenge not provided`);
     }
 
-    if (!this.isAllowedAuthServer(authorizationUrl.toString())) {
-      throw new Error(`PayMCP: authorization server ${oauthError.url} is not allowed`);
+    if (!this.isAllowedAuthServer(authorizationUrl)) {
+      throw new Error(`PayMCP: authorization server ${oauthError.url} is requesting to use ${authorizationUrl} which is not in the allowed list of authorization servers ${this.allowedAuthorizationServers.join(', ')}`);
     }
 
     const authToken = await paymentMaker.generateJWT({paymentRequestId: '', codeChallenge: codeChallenge});
