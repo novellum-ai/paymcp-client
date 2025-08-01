@@ -59,6 +59,7 @@ app.post('/', async (req: Request, res: Response) => {
   try {
     const transport: StreamableHTTPServerTransport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
+      enableJsonResponse: true
     });
     await server.connect(transport);
     await transport.handleRequest(req, res, req.body);

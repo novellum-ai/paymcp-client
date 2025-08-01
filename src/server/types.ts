@@ -21,7 +21,7 @@ export type RefundErrors = boolean | 'nonMcpOnly';
 // When the server is talking to the paymcp AS, it doesn't need to provide
 // the resource or resourceName - those are already known by the AS, and 
 // we shouldn't trust the RS to self-report them
-export type Charge = Omit<PaymentRequestData, 'resource' | 'resourceName'>;
+export type Charge = Omit<PaymentRequestData, 'resource' | 'resourceName' | 'iss'>;
 
 export type ChargeResponse = {
   success: boolean;

@@ -1,6 +1,7 @@
 import type { CustomJWTPayload } from "./types.js";
 import { SignJWT } from 'jose';
 
+// TODO: revisit this
 const ISSUER = 'paymcp.com';
 const AUDIENCE = 'https://api.paymcp.com';
 

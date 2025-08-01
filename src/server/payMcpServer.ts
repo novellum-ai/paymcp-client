@@ -11,6 +11,7 @@ import { getResource } from "./getResource.js";
 import { PayMcpPaymentServer } from "./paymentServer.js";
 import { OAuthResourceClient } from "../common/oAuthResource.js";
 import { getOAuthMetadata, sendOAuthMetadata } from "./oAuthMetadata.js";
+import { DEFAULT_AUTHORIZATION_SERVER } from "../common/types.js";
 
 type RequiredPayMcpConfigFields = 'destination';
 type RequiredPayMcpConfig = Pick<PayMcpConfig, RequiredPayMcpConfigFields>;
@@ -22,7 +23,7 @@ export const DEFAULT_CONFIG: Required<Omit<OptionalPayMcpConfig, BuildablePayMcp
   mountPath: '/',
   currency: 'USDC' as const,
   network: 'solana' as const,
-  server: 'https://auth.paymcp.com' as const,
+  server: DEFAULT_AUTHORIZATION_SERVER,
   payeeName: 'A PayMcp Server',
   allowHttp: process.env.NODE_ENV === 'development',
   resource: null, // Set dynamically from the request URL

@@ -2,7 +2,7 @@ import { SqliteOAuthDb } from '../common/oAuthDb';
 import { OAuthClient } from './oAuth.js';
 import { describe, it, expect } from 'vitest';
 import fetchMock from 'fetch-mock';
-import { FetchLike, OAuthDb } from '../common/types.js';
+import { DEFAULT_AUTHORIZATION_SERVER, FetchLike, OAuthDb } from '../common/types.js';
 import { mockResourceServer, mockAuthorizationServer } from './clientTestHelpers.js';
 import { OAuthAuthenticationRequiredError } from './oAuth.js';
 
@@ -39,7 +39,7 @@ describe('oauthClient', () => {
     it('should throw OAuthAuthenticationRequiredError with authorization url on OAuth challenge', async () => {
       const f = fetchMock.createInstance().getOnce('https://example.com/mcp', 401);
       mockResourceServer(f, 'https://example.com', '/mcp');
-      mockAuthorizationServer(f, 'https://paymcp.com');
+      mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER);
 
       const client = oauthClient(f.fetchHandler);
       await expect(client.fetch('https://example.com/mcp')).rejects.toThrow(OAuthAuthenticationRequiredError);
@@ -53,7 +53,7 @@ describe('oauthClient', () => {
       const f = fetchMock.createInstance().getOnce('https://example.com/mcp', 
         {status: 401, headers: {'www-authenticate': 'https://something.else/.well-known/oauth-protected-resource/mcp'}});
       mockResourceServer(f, 'https://example.com', '/mcp');
-      mockAuthorizationServer(f, 'https://paymcp.com');
+      mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER);
 
       const client = oauthClient(f.fetchHandler);
       await expect(client.fetch('https://example.com/mcp')).rejects.toThrow('OAuth authentication required. Resource server url: https://something.else/mcp');
@@ -63,7 +63,7 @@ describe('oauthClient', () => {
       const f = fetchMock.createInstance().getOnce('https://example.com/mcp', 
         {status: 401, headers: {'www-authenticate': 'Bearer resource_metadata="https://something.else/.well-known/oauth-protected-resource/mcp"'}});
       mockResourceServer(f, 'https://example.com', '/mcp');
-      mockAuthorizationServer(f, 'https://paymcp.com');
+      mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER);
 
       const client = oauthClient(f.fetchHandler);
       await expect(client.fetch('https://example.com/mcp')).rejects
@@ -75,7 +75,7 @@ describe('oauthClient', () => {
         {status: 401, headers: {'www-authenticate': 'Bearer resource_metadata="https://something.else/.well-known/oauth-protected-resource/mcp"'}});
       mockResourceServer(f, 'https://example.com', '/mcp');
       mockResourceServer(f, 'https://something.else', '/mcp');
-      mockAuthorizationServer(f, 'https://paymcp.com');
+      mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER);
 
       const db = new SqliteOAuthDb({db: ':memory:'});
       const client = oauthClient(f.fetchHandler, db);
@@ -104,7 +104,7 @@ describe('oauthClient', () => {
       });
       const f = fetchMock.createInstance().getOnce('https://example.com/mcp', 401);
       mockResourceServer(f, 'https://example.com', '/mcp');
-      mockAuthorizationServer(f, 'https://paymcp.com');
+      mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER);
 
       const client = oauthClient(f.fetchHandler, db)
       await expect(client.fetch('https://example.com/mcp')).rejects.toThrow(OAuthAuthenticationRequiredError);
@@ -125,7 +125,7 @@ describe('oauthClient', () => {
       });
       const f = fetchMock.createInstance().getOnce('https://example.com/mcp', 401);
       mockResourceServer(f, 'https://example.com', '/mcp');
-      mockAuthorizationServer(f, 'https://paymcp.com');
+      mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER);
 
       const client = oauthClient(f.fetchHandler, db);
       await expect(client.fetch('https://example.com/mcp')).rejects.toThrow(OAuthAuthenticationRequiredError);
@@ -137,7 +137,7 @@ describe('oauthClient', () => {
     it('should return resource server url in error', async () => {
       const f = fetchMock.createInstance().getOnce('https://example.com/mcp', 401);
       mockResourceServer(f, 'https://example.com', '/mcp');
-      mockAuthorizationServer(f, 'https://paymcp.com');
+      mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER);
 
       const client = oauthClient(f.fetchHandler);
       try {
@@ -173,8 +173,8 @@ describe('oauthClient', () => {
         .getOnce('https://example.com/mcp', 200);
 
       mockResourceServer(f, 'https://example.com', '/mcp');
-      mockAuthorizationServer(f, 'https://paymcp.com')
-        .modifyRoute('https://paymcp.com/token', {
+      mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER)
+        .modifyRoute(`${DEFAULT_AUTHORIZATION_SERVER}/token`, {
           method: 'post',
           response: {
             status: 200,
@@ -189,7 +189,7 @@ describe('oauthClient', () => {
       const client = oauthClient(f.fetchHandler, db);
       const res = await client.fetch('https://example.com/mcp');
       expect(res.status).toBe(200);
-      const tokenCall = f.callHistory.lastCall('https://paymcp.com/token');
+      const tokenCall = f.callHistory.lastCall(`${DEFAULT_AUTHORIZATION_SERVER}/token`);
       expect(tokenCall).toBeDefined();
       const body = (tokenCall?.args?.[1] as any).body as URLSearchParams;
       // The request to refresh should have used the old refresh token
@@ -226,8 +226,8 @@ describe('oauthClient', () => {
         .getOnce('https://example.com/mcp', 200);
 
       mockResourceServer(f, 'https://example.com', '/mcp');
-      mockAuthorizationServer(f, 'https://paymcp.com')
-        .modifyRoute('https://paymcp.com/token', {
+      mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER)
+        .modifyRoute(`${DEFAULT_AUTHORIZATION_SERVER}/token`, {
           method: 'post',
           response: { status: 400, body: {}}
         });
@@ -241,14 +241,14 @@ describe('oauthClient', () => {
     it('should make resource server PRM request', async () => {
       const f = fetchMock.createInstance().getOnce('https://example.com/mcp', 401);
       mockResourceServer(f, 'https://example.com', '/mcp');
-      mockAuthorizationServer(f, 'https://paymcp.com');
+      mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER);
 
       const client = oauthClient(f.fetchHandler);
       const res = await client.getAuthorizationServer('https://example.com/mcp');
       expect(res).toBeDefined();
-      expect(res.issuer).toBe('https://paymcp.com');
-      expect(res.authorization_endpoint).toBe('https://paymcp.com/authorize');
-      expect(res.registration_endpoint).toBe('https://paymcp.com/register');
+      expect(res.issuer).toBe(DEFAULT_AUTHORIZATION_SERVER);
+      expect(res.authorization_endpoint).toBe(`${DEFAULT_AUTHORIZATION_SERVER}/authorize`);
+      expect(res.registration_endpoint).toBe(`${DEFAULT_AUTHORIZATION_SERVER}/register`);
       
       const prmCall = f.callHistory.lastCall('https://example.com/.well-known/oauth-protected-resource/mcp');
       expect(prmCall).toBeDefined();
@@ -257,7 +257,7 @@ describe('oauthClient', () => {
     it('should not strip querystring for PRM request URL', async () => {
       const f = fetchMock.createInstance();
       mockResourceServer(f, 'https://example.com', '/mcp?test=1');
-      mockAuthorizationServer(f, 'https://paymcp.com');
+      mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER);
 
       const client = oauthClient(f.fetchHandler);
       const res = await client.getAuthorizationServer('https://example.com/mcp?test=1');
@@ -276,11 +276,11 @@ describe('oauthClient', () => {
         .modifyRoute('https://example.com/.well-known/oauth-protected-resource/mcp', {response: {status: 404}})
         // Emulate the resource server serving AS metadata
         .get('https://example.com/.well-known/oauth-authorization-server', {
-          issuer: 'https://paymcp.com',
-          authorization_endpoint: 'https://paymcp.com/authorize',
-          registration_endpoint: 'https://paymcp.com/register'
+          issuer: DEFAULT_AUTHORIZATION_SERVER,
+          authorization_endpoint: `${DEFAULT_AUTHORIZATION_SERVER}/authorize`,
+          registration_endpoint: `${DEFAULT_AUTHORIZATION_SERVER}/register`
         });
-      mockAuthorizationServer(f, 'https://paymcp.com');
+      mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER);
 
       const client = oauthClient(f.fetchHandler, new SqliteOAuthDb({db: ':memory:'}), true, false); // strict = false
       
@@ -310,12 +310,12 @@ describe('oauthClient', () => {
     it('should configure safe metadata for public clients', async () => {
       const f = fetchMock.createInstance().getOnce('https://example.com/mcp', 401);
       mockResourceServer(f, 'https://example.com', '/mcp');
-      mockAuthorizationServer(f, 'https://paymcp.com');
+      mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER);
 
       const client = oauthClient(f.fetchHandler, new SqliteOAuthDb({db: ':memory:'}), true);
       
       const res = await client.makeAuthorizationUrl('https://example.com/mcp', 'https://example.com/mcp');
-      const registerCall = f.callHistory.lastCall('https://paymcp.com/register');
+      const registerCall = f.callHistory.lastCall(`${DEFAULT_AUTHORIZATION_SERVER}/register`);
       expect(registerCall).toBeDefined();
       const body = JSON.parse((registerCall?.args?.[1] as any).body);
       expect(body.response_types).toEqual(["code"]);
@@ -327,12 +327,12 @@ describe('oauthClient', () => {
     it('should configure metadata for private clients', async () => {
       const f = fetchMock.createInstance().getOnce('https://example.com/mcp', 401);
       mockResourceServer(f, 'https://example.com', '/mcp');
-      mockAuthorizationServer(f, 'https://paymcp.com');
+      mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER);
 
       const client = oauthClient(f.fetchHandler, new SqliteOAuthDb({db: ':memory:'}), false);
       
       const res = await client.makeAuthorizationUrl('https://example.com/mcp', 'https://example.com/mcp');
-      const registerCall = f.callHistory.lastCall('https://paymcp.com/register');
+      const registerCall = f.callHistory.lastCall(`${DEFAULT_AUTHORIZATION_SERVER}/register`);
       expect(registerCall).toBeDefined();
       const body = JSON.parse((registerCall?.args?.[1] as any).body);
       expect(body.response_types).toEqual(["code"]);
@@ -346,7 +346,7 @@ describe('oauthClient', () => {
     it('should make an authorization url', async () => {
       const f = fetchMock.createInstance();
       mockResourceServer(f, 'https://example.com', '/mcp');
-      mockAuthorizationServer(f, 'https://paymcp.com');
+      mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER);
 
       const client = oauthClient(f.fetchHandler);
       const authUrl = await client.makeAuthorizationUrl('https://example.com/mcp', 'https://example.com/mcp');
@@ -365,7 +365,7 @@ describe('oauthClient', () => {
       const f = fetchMock.createInstance().getOnce('https://example.com/mcp', 
         {status: 401, headers: {'www-authenticate': 'Bearer resource_metadata="https://example.com/.well-known/oauth-protected-resource/mcp"'}});
       mockResourceServer(f, 'https://example.com', '/mcp');
-      mockAuthorizationServer(f, 'https://paymcp.com');
+      mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER);
 
       let oauthError: OAuthAuthenticationRequiredError | undefined;
       const client = oauthClient(f.fetchHandler, db);
@@ -386,7 +386,7 @@ describe('oauthClient', () => {
 
       const callbackUrl = `https://example.com/callback?code=test-code&state=${state}`;
       await client.handleCallback(callbackUrl);
-      const tokenCall = f.callHistory.lastCall('https://paymcp.com/token');
+      const tokenCall = f.callHistory.lastCall(`${DEFAULT_AUTHORIZATION_SERVER}/token`);
       expect(tokenCall).toBeDefined();
       const body = (tokenCall?.args?.[1] as any).body as URLSearchParams;
       expect(body.get('code')).toEqual('test-code');
@@ -398,7 +398,7 @@ describe('oauthClient', () => {
       const db = new SqliteOAuthDb({db: ':memory:'});
       const f = fetchMock.createInstance().getOnce('https://example.com/mcp', 401);
       mockResourceServer(f, 'https://example.com', '/mcp');
-      mockAuthorizationServer(f, 'https://paymcp.com');
+      mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER);
 
       let oauthError: OAuthAuthenticationRequiredError | undefined;
       const client = oauthClient(f.fetchHandler, db);
@@ -424,7 +424,7 @@ describe('oauthClient', () => {
       // There's no saving this - if we don't have PKCE values anymore, we can't exchange code for token
       const f = fetchMock.createInstance().getOnce('https://example.com/mcp', 401);
       mockResourceServer(f, 'https://example.com', '/mcp');
-      mockAuthorizationServer(f, 'https://paymcp.com');
+      mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER);
 
       let oauthError: OAuthAuthenticationRequiredError | undefined;
       const client = oauthClient(f.fetchHandler);
@@ -442,7 +442,7 @@ describe('oauthClient', () => {
     it('should re-register client if no client credentials are found', async () => {
       const f = fetchMock.createInstance();
       mockResourceServer(f, 'https://example.com', '/mcp');
-      mockAuthorizationServer(f, 'https://paymcp.com');
+      mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER);
 
       const db = new SqliteOAuthDb({db: ':memory:'});
       db.savePKCEValues('bdj', 'test-state', {
@@ -457,16 +457,16 @@ describe('oauthClient', () => {
 
       const authCallbackUrl = `https://example.com/callback?code=test-code&state=test-state`;
       await client.handleCallback(authCallbackUrl);
-      const registerCall = f.callHistory.lastCall('https://paymcp.com/register');
+      const registerCall = f.callHistory.lastCall(`${DEFAULT_AUTHORIZATION_SERVER}/register`);
       expect(registerCall).toBeDefined();
     });
 
     it('should re-register client if code exchange fails with bad credentials', async () => {
       const f = fetchMock.createInstance();
       mockResourceServer(f, 'https://example.com', '/mcp');
-      mockAuthorizationServer(f, 'https://paymcp.com')
-        .modifyRoute('https://paymcp.com/token', {method: 'post', response: {status: 401, body: {}}})
-        .postOnce('https://paymcp.com/token', 
+      mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER)
+        .modifyRoute(`${DEFAULT_AUTHORIZATION_SERVER}/token`, {method: 'post', response: {status: 401, body: {}}})
+        .postOnce(`${DEFAULT_AUTHORIZATION_SERVER}/token`, 
           {
             access_token: 'test-access-token',
             refresh_token: 'test-refresh-token',
@@ -507,7 +507,7 @@ describe('oauthClient', () => {
       });
       const f = fetchMock.createInstance();
       mockResourceServer(f, 'https://example.com', '/mcp');
-      mockAuthorizationServer(f, 'https://paymcp.com')
+      mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER)
   
       // This is how the AS responds to a bad request, as per RFC 6749
       // It just redirects back to the client without a code and with an error

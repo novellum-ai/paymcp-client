@@ -1,3 +1,5 @@
+export const DEFAULT_AUTHORIZATION_SERVER = 'https://auth.paymcp.com';
+
 export enum LogLevel {
   DEBUG = 0,
   INFO = 1,
@@ -26,6 +28,7 @@ export type PaymentRequestData = {
   source: string;
   resource: URL;
   resourceName: string;
+  iss: string;
 }
 
 export type CustomJWTPayload = {

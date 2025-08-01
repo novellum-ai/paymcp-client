@@ -15,7 +15,7 @@ export type Account = {
 export type ProspectivePayment = {
   accountId: string;
   resourceUrl: string;
-  toolName: string;
+  resourceName: string;
   network: Network;
   currency: Currency;
   amount: BigNumber;
@@ -36,6 +36,6 @@ export type ClientConfig = {
 }
 
 export interface PaymentMaker {
-  makePayment: (amount: BigNumber, currency: string, receiver: string, resourceName?: string) => Promise<string>;
-  generateJWT: (params: {paymentIds?: string[], codeChallenge?: string}) => Promise<string>;
+  makePayment: (amount: BigNumber, currency: string, receiver: string, memo: string) => Promise<string>;
+  generateJWT: (params: {paymentRequestId: string, codeChallenge: string}) => Promise<string>;
 }
