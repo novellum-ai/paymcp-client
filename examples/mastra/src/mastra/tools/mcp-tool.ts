@@ -45,7 +45,7 @@ const createServerConfigs = async (account: SolanaAccount) => {
       logger: (logMessage: LogMessage) => {
         console.log(chalk.gray(`[${logMessage.serverName}] ${logMessage.level}: ${logMessage.message}`));
       },
-      timeout: 10000,
+      timeout: 60000,
     };
   }
 

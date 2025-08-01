@@ -20,6 +20,7 @@ export const weatherAgent = new Agent({
       - Keep responses concise but informative
       - If the user asks for activities and provides the weather forecast, suggest activities based on the weather forecast.
       - If the user asks for activities, respond in the format they request.
+      - If the user asks for a picture describing the weather, use the image tool to generate a picture based on a description of the weather.
 
       Use the weatherTool to fetch current weather data.
 `,

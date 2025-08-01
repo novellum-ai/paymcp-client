@@ -16,8 +16,5 @@ export const mastra = new Mastra({
   logger: new PinoLogger({
     name: 'Mastra',
     level: 'info',
-  }),
-  bundler: {
-    // externals: ['@mastra/mcp', '@longrun/paymcp-client'],
-  },
+  })
 });
