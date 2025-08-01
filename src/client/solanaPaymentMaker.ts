@@ -58,7 +58,7 @@ export class SolanaPaymentMaker implements PaymentMaker {
 
     console.log(`Making payment of ${amount} ${currency} to ${receiver}`);
   
-    let transaction = await createTransfer(
+    const transaction = await createTransfer(
       this.connection,
       this.source.publicKey,
       {

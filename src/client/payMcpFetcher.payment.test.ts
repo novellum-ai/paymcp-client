@@ -227,7 +227,7 @@ describe('payMcpClient.fetch payment', () => {
       .getOnce('https://example.com/mcp', errMsg)
       .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(0.01)});
-    let threw = false;
+    const threw = false;
 
     const paymentMaker = {
       makePayment: vi.fn().mockResolvedValue('testPaymentId'),

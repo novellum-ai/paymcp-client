@@ -5,7 +5,7 @@ import { Logger } from './types.js';
 import { ZodError } from 'zod';
 
 export function parsePaymentRequests(message: JSONRPCMessage): {url: AuthorizationServerUrl, id: string}[] {
-  let res = [];
+  const res = [];
   // Handle MCP protocol-level errors. These have an explicit error code that we can check for
   if (isJSONRPCError(message)){
     // Explicitly throw payment required errors that result in MCP protocol-level errors

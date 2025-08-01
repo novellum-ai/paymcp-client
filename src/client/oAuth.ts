@@ -193,7 +193,7 @@ export class OAuthClient extends OAuthResourceClient {
   }
 
   override getRegistrationMetadata = async (): Promise<Partial<oauth.OmitSymbolProperties<oauth.Client>>> => {
-    let grantTypes = ['authorization_code', 'refresh_token'];
+    const grantTypes = ['authorization_code', 'refresh_token'];
     if (!this.isPublic) {
       grantTypes.push('client_credentials');
     }
@@ -321,7 +321,7 @@ export class OAuthClient extends OAuthResourceClient {
 
   protected tryRefreshToken = async (url: string): Promise<AccessToken | null> => {
     url = OAuthClient.trimToPath(url);
-    let token = await this.getAccessToken(url);
+    const token = await this.getAccessToken(url);
     if (!token) {
       console.log('No token found, cannot refresh');
       return null;
