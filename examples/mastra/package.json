@@ -18,12 +18,14 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.3.23",
+    "@longrun/paymcp": "file:../../dist",
+    "@longrun/paymcp-client": "file:../../dist/client",
     "@mastra/core": "^0.12.1",
     "@mastra/libsql": "^0.12.0",
     "@mastra/loggers": "^0.10.5",
-    "@mastra/memory": "^0.12.0",
     "@mastra/mcp": "file:../../../mastra/packages/mcp",
-    "@longform/paymcp": "file:../../",
+    "@mastra/memory": "^0.12.0",
+    "dotenv": "^17.2.1",
     "zod": "^3.25.76"
   },
   "devDependencies": {

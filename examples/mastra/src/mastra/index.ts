@@ -1,3 +1,4 @@
+import 'dotenv/config';
 
 import { Mastra } from '@mastra/core/mastra';
 import { PinoLogger } from '@mastra/loggers';
@@ -16,4 +17,7 @@ export const mastra = new Mastra({
     name: 'Mastra',
     level: 'info',
   }),
+  bundler: {
+    // externals: ['@mastra/mcp', '@longrun/paymcp-client'],
+  },
 });
