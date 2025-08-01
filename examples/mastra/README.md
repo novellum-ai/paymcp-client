@@ -11,8 +11,9 @@ This example shows how to use the forked Mastra MCP client with PayMCP integrati
 - **PayMCP Integration**: Automatic payment processing and OAuth authentication
 - **Forked Mastra API**: Uses the enhanced Mastra MCP client with custom transport support
 - **Multiple Service Support**: Connect to image generation and search services
-- **Custom Headers**: Add custom authentication and identification headers
+- **Single MCPClient**: Uses one MCPClient instance with multiple server configurations
 - **Tool Discovery**: Automatically discover and list available tools from MCP servers
+- **Manual Tool Execution**: Demonstrate tool execution with proper argument handling
 - **Error Handling**: Comprehensive error handling and logging
 
 ## Prerequisites
@@ -47,7 +48,7 @@ npm run dev "create an image of a beautiful sunset over mountains"
 
 **Search for information:**
 ```bash
-npm run dev "find me the latest news about artificial intelligence"
+npm run dev "search for latest AI news"
 ```
 
 **Complex requests:**
@@ -81,11 +82,13 @@ The system automatically connects to:
 - **Server**: `https://image.corp.novellum.ai`
 - **Tool**: `image_create_image`
 - **Capability**: Generate images from text descriptions
+- **Arguments**: `{ prompt: string }`
 
 **Search Service**
 - **Server**: `https://search.corp.novellum.ai`
 - **Tool**: `search_search`
 - **Capability**: Search for information on any topic
+- **Arguments**: `{ query: string }`
 
 ## Development
 
@@ -184,7 +187,7 @@ DEBUG=1 npm run dev "your request"
 
 - **Forked Mastra API**: Uses enhanced Mastra MCP client with custom transport
 - **PayMCP Integration**: Automatic payment processing and OAuth handling
-- **Custom Transport**: Full control over transport layer configuration
+- **Single MCPClient**: Uses one client instance with multiple server configurations
 - **Advanced Logging**: Detailed logging with custom handlers
 - **Multiple Server Support**: Connect to multiple MCP servers simultaneously
 
@@ -204,4 +207,13 @@ DEBUG=1 npm run dev "your request"
 
 ## Contributing
 
-This example demonstrates the integration between PayMCP and the forked Mastra API. For more information about the custom transport functionality, see the Mastra fork documentation. 
+This example demonstrates the integration between PayMCP and the forked Mastra API. For more information about the custom transport functionality, see the Mastra fork documentation.
+
+## Success Indicators
+
+When the example runs successfully, you should see:
+- ✅ Successful OAuth authentication flow
+- ✅ Connection to multiple MCP servers
+- ✅ Tool discovery and listing
+- ✅ Proper error handling for tool execution
+- ✅ Clean disconnection and cleanup 
