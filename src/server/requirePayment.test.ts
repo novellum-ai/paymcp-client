@@ -81,8 +81,8 @@ describe('requirePayment', () => {
         await requirePayment({price: BigNumber(0.01)});
       } catch (err: any) {
         expect(err).toBeInstanceOf(McpError);
-        expect(err.paymentRequestId).toBe('test-payment-request-id');
-        expect(err.paymentRequestUrl).toBe('https://example.com/payment-request/test-payment-request-id');
+        expect(err.data.paymentRequestId).toBe('test-payment-request-id');
+        expect(err.data.paymentRequestUrl).toBe('https://example.com/payment-request/test-payment-request-id');
       }
     });
   });
@@ -95,8 +95,8 @@ describe('requirePayment', () => {
         await requirePayment({price: BigNumber(0.01), getExistingPaymentId: async () => 'some-other-payment-id'});
       } catch (err: any) {
         expect(err).toBeInstanceOf(McpError);
-        expect(err.paymentRequestId).toBe('some-other-payment-id');
-        expect(err.paymentRequestUrl).toBe('https://auth.paymcp.com/payment-request/some-other-payment-id');
+        expect(err.data.paymentRequestId).toBe('some-other-payment-id');
+        expect(err.data.paymentRequestUrl).toBe('https://auth.paymcp.com/payment-request/some-other-payment-id');
         expect(paymentServer.createPaymentRequest).not.toHaveBeenCalled();
       }
     });

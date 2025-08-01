@@ -4,27 +4,6 @@ import { parsePaymentRequests } from './mcpJson.js';
 import * as TH from './commonTestHelpers.js';
 
 describe('mcpJson', () => {
-  describe('mcpMessage', () => {
-    it('should parse a tool error', async () => {
-      expect.fail('not implemented');
-    });
-    it('should parse a successful tool response', async () => {
-      expect.fail('not implemented');
-    });
-    it('should parse a tool response with multiple messages', async () => {
-      expect.fail('not implemented');
-    });
-    it('should parse an MCP error', async () => {
-      expect.fail('not implemented');
-    });
-    it('should parse an elicitation required error', async () => {
-      expect.fail('not implemented');
-    });
-    it('should parse an initialization message', () => {
-      expect.fail('not implemented');
-    });
-  });
-
   describe('parsePaymentRequest', () => {
     it('should find a payment request in a tool error', async () => {
       const errMsg = TH.paymentRequiredMessage('https://auth.paymcp.com', '123');

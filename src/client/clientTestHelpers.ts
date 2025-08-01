@@ -15,45 +15,6 @@ export function mockResourceServer(mock: FetchMock, baseUrl: string = 'https://e
   return mock;
 }
 
-export function payMcpErrorResponse(paymentRequestUrl: string) {
-  return {
-    status: 200,
-    body: { 
-      jsonrpc: "2.0",
-      id: 1,
-      content: [
-        {
-          type: 'text',
-          text: `Payment via PayMcp is required. Please pay at: ${paymentRequestUrl}`
-        }
-      ],
-      isError: true
-    }
-  }
-}
-
-export function elicitationResponse(paymentRequestUrl: string) {
-  // Based on the (still-unmerged) proposal in https://github.com/modelcontextprotocol/modelcontextprotocol/pull/887
-  return { 
-    jsonrpc: "2.0",
-    id: 1,
-    error: {
-      code: -32604, // ELICITATION_REQUIRED
-      message: "This request requires more information.",
-      data: {
-        elicitations: [
-          {
-            mode: "url",
-            elicitionId: "test-payment-request-id",
-            url: paymentRequestUrl,
-            message: "This request requires more information."
-          }
-        ]
-      }
-    }
-  };
-}
-
 export function mockAuthorizationServer(mock: FetchMock, baseUrl: string = DEFAULT_AUTHORIZATION_SERVER, paymentRequests: {[key: string]: BigNumber} = {}) {
   mock.get(`${baseUrl}/.well-known/oauth-authorization-server`, {
     issuer: `${baseUrl}`,

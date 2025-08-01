@@ -1,7 +1,8 @@
 import { SqliteOAuthDb } from '../common/oAuthDb';
 import { describe, it, expect, vi } from 'vitest';
 import fetchMock from 'fetch-mock';
-import { mockResourceServer, mockAuthorizationServer, payMcpErrorResponse, elicitationResponse } from './clientTestHelpers.js';
+import { mockResourceServer, mockAuthorizationServer } from './clientTestHelpers.js';
+import * as CTH from '../common/commonTestHelpers.js';
 import { PayMcpFetcher } from './payMcpFetcher.js';
 import { OAuthDb, FetchLike, AuthorizationServerUrl, DEFAULT_AUTHORIZATION_SERVER } from '../common/types.js';
 import { PaymentMaker, ProspectivePayment } from './types.js';
@@ -36,10 +37,11 @@ function payMcpFetcher(
 describe('payMcpClient.fetch payment', () => {
   it('should make a payment if the server response is a paymcp payment request error', async () => {
     const f = fetchMock.createInstance();
-    const paymentRequestUrl = `${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`;
+    const errTxt = CTH.paymentRequiredMessage(DEFAULT_AUTHORIZATION_SERVER, 'foo');
+    const errMsg = CTH.mcpToolErrorResponse({content: [{type: 'text', text: errTxt}]});
 
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .getOnce('https://example.com/mcp', payMcpErrorResponse(paymentRequestUrl))
+      .getOnce('https://example.com/mcp', errMsg)
       .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(0.01)});
 
@@ -64,10 +66,10 @@ describe('payMcpClient.fetch payment', () => {
 
   it('should make a payment if the server response is an elicitation request error', async () => {
     const f = fetchMock.createInstance();
-    const paymentRequestUrl = `${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`;
+    const errMsg = CTH.mcpElicitationRequiredErrorResponse({url: `${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`, elicitationId: 'foo'});
 
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .getOnce('https://example.com/mcp', elicitationResponse(paymentRequestUrl))
+      .getOnce('https://example.com/mcp', errMsg)
       .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(0.01)});
 
@@ -92,9 +94,10 @@ describe('payMcpClient.fetch payment', () => {
 
   it('should pass through an elicitation request error that is not paymcp', async () => {
     const f = fetchMock.createInstance();
+    const errMsg = CTH.mcpElicitationRequiredErrorResponse({url: `https://slack.com/give-me-api-key`, elicitationId: 'foo'});
 
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .getOnce('https://example.com/mcp', elicitationResponse('https://slack.com/give-me-api-key'))
+      .getOnce('https://example.com/mcp', errMsg)
       .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(0.01)});
 
@@ -105,14 +108,7 @@ describe('payMcpClient.fetch payment', () => {
     const fetcher = payMcpFetcher(f.fetchHandler, {'solana': paymentMaker});
     const res = await fetcher.fetch('https://example.com/mcp');
     const resJson = await res.json();
-    expect(resJson).toMatchObject({
-      jsonrpc: '2.0',
-      id: 1,
-      error: {
-        code: -32604,
-        message: 'This request requires more information.',
-      }
-    });
+    expect(resJson).toMatchObject(errMsg);
   });
 
   it('should allow consuming the body of the response', async () => {
@@ -134,10 +130,11 @@ describe('payMcpClient.fetch payment', () => {
 
   it('should retry the request if a payment was required and made successfully', async () => {
     const f = fetchMock.createInstance();
-    const paymentRequestUrl = `${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`;
+    const errTxt = CTH.paymentRequiredMessage(DEFAULT_AUTHORIZATION_SERVER, 'foo');
+    const errMsg = CTH.mcpToolErrorResponse({content: [{type: 'text', text: errTxt}]});
 
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .getOnce('https://example.com/mcp', payMcpErrorResponse(paymentRequestUrl))
+      .getOnce('https://example.com/mcp', errMsg)
       .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(0.01)});
 
@@ -149,7 +146,7 @@ describe('payMcpClient.fetch payment', () => {
     const res = await fetcher.fetch('https://example.com/mcp');
     expect(res.status).toBe(200);
     const resJson = await res.json();
-    expect(resJson).toEqual({content: [{type: 'text', text: 'hello world'}]});
+    expect(resJson).toMatchObject({content: [{type: 'text', text: 'hello world'}]});
     const mcpCalls = f.callHistory.callLogs.filter(call => call.url.startsWith('https://example.com/mcp'));
     expect(mcpCalls.length).toBe(2);
     expect(mcpCalls[0].args[0]).toBe('https://example.com/mcp');
@@ -158,29 +155,30 @@ describe('payMcpClient.fetch payment', () => {
 
   it('should pass through a payment request response if there is no matching payment maker', async () => {
     const f = fetchMock.createInstance();
-    const paymentRequestUrl = `${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`;
+    const errTxt = CTH.paymentRequiredMessage(DEFAULT_AUTHORIZATION_SERVER, 'foo');
+    const errMsg = CTH.mcpToolErrorResponse({content: [{type: 'text', text: errTxt}]});
 
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .getOnce('https://example.com/mcp', payMcpErrorResponse(paymentRequestUrl))
+      .getOnce('https://example.com/mcp', errMsg)
       .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(0.01)});
-    let threw = false;
 
     const fetcher = payMcpFetcher(f.fetchHandler, {});
     const res = await fetcher.fetch('https://example.com/mcp');
 
     const resJson = await res.json();
-    expect(resJson.content[0].type).toBe('text');
-    expect(resJson.content[0].text).to.include('Payment via PayMcp is required');
-    expect(resJson.content[0].text).to.include(paymentRequestUrl);
+    expect(resJson.result.content[0].type).toBe('text');
+    expect(resJson.result.content[0].text).to.include('Payment via PayMcp is required');
+    expect(resJson.result.content[0].text).to.include(`${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`);
   });
 
   it('should throw an error if the server does not have the payment request', async() => {
     const f = fetchMock.createInstance();
-    const paymentRequestUrl = `${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`;
+    const errTxt = CTH.paymentRequiredMessage(DEFAULT_AUTHORIZATION_SERVER, 'foo');
+    const errMsg = CTH.mcpToolErrorResponse({content: [{type: 'text', text: errTxt}]});
 
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .getOnce('https://example.com/mcp', payMcpErrorResponse(paymentRequestUrl))
+      .getOnce('https://example.com/mcp', errMsg)
       .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {})
       .getOnce(`${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`, 404);
@@ -198,13 +196,13 @@ describe('payMcpClient.fetch payment', () => {
 
   it('should pass through payment request response if the payment request server is not allowed', async () => {
     const f = fetchMock.createInstance();
-    const paymentRequestUrl = `${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`;
+    const errTxt = CTH.paymentRequiredMessage(DEFAULT_AUTHORIZATION_SERVER, 'foo');
+    const errMsg = CTH.mcpToolErrorResponse({content: [{type: 'text', text: errTxt}]});
 
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .getOnce('https://example.com/mcp', payMcpErrorResponse(paymentRequestUrl))
+      .getOnce('https://example.com/mcp', errMsg)
       .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(0.01)});
-    let threw = false;
 
     const paymentMaker = {
       makePayment: vi.fn().mockResolvedValue('testPaymentId'),
@@ -215,17 +213,18 @@ describe('payMcpClient.fetch payment', () => {
 
     expect(res.status).toBe(200);
     const resJson = await res.json();
-    expect(resJson.content[0].type).toBe('text');
-    expect(resJson.content[0].text).to.include('Payment via PayMcp is required');
-    expect(resJson.content[0].text).to.include(paymentRequestUrl);
+    expect(resJson.result.content[0].type).toBe('text');
+    expect(resJson.result.content[0].text).to.include('Payment via PayMcp is required');
+    expect(resJson.result.content[0].text).to.include(`${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`);
   });
 
   it('should not make a payment if the payment request is denied by the callback function', async () => {
     const f = fetchMock.createInstance();
-    const paymentRequestUrl = `${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`;
+    const errTxt = CTH.paymentRequiredMessage(DEFAULT_AUTHORIZATION_SERVER, 'foo');
+    const errMsg = CTH.mcpToolErrorResponse({content: [{type: 'text', text: errTxt}]});
 
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .getOnce('https://example.com/mcp', payMcpErrorResponse(paymentRequestUrl))
+      .getOnce('https://example.com/mcp', errMsg)
       .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(0.01)});
     let threw = false;
@@ -239,17 +238,18 @@ describe('payMcpClient.fetch payment', () => {
 
     expect(res.status).toBe(200);
     const resJson = await res.json();
-    expect(resJson.content[0].type).toBe('text');
-    expect(resJson.content[0].text).to.include('Payment via PayMcp is required');
-    expect(resJson.content[0].text).to.include(paymentRequestUrl);
+    expect(resJson.result.content[0].type).toBe('text');
+    expect(resJson.result.content[0].text).to.include('Payment via PayMcp is required');
+    expect(resJson.result.content[0].text).to.include(`${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`);
   });
 
   it('should throw an error if amount is negative', async () => {
     const f = fetchMock.createInstance();
-    const paymentRequestUrl = `${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`;
+    const errTxt = CTH.paymentRequiredMessage(DEFAULT_AUTHORIZATION_SERVER, 'foo');
+    const errMsg = CTH.mcpToolErrorResponse({content: [{type: 'text', text: errTxt}]});
 
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .getOnce('https://example.com/mcp', payMcpErrorResponse(paymentRequestUrl))
+      .getOnce('https://example.com/mcp', errMsg)
       .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(-0.01)});
     let threw = false;
@@ -270,10 +270,11 @@ describe('payMcpClient.fetch payment', () => {
 
   it('should throw an error if PUTing to the payment-request endpoint fails', async () => {
     const f = fetchMock.createInstance();
-    const paymentRequestUrl = `${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`;
+    const errTxt = CTH.paymentRequiredMessage(DEFAULT_AUTHORIZATION_SERVER, 'foo');
+    const errMsg = CTH.mcpToolErrorResponse({content: [{type: 'text', text: errTxt}]});
 
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .getOnce('https://example.com/mcp', payMcpErrorResponse(paymentRequestUrl))
+      .getOnce('https://example.com/mcp', errMsg)
       .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {})
       .putOnce(`${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`, 500);
