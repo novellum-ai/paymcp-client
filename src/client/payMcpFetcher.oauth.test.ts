@@ -24,7 +24,7 @@ function payMcpFetcher(fetchFn: FetchLike, paymentMakers?: {[key: string]: Payme
   });
 }
 
-describe('payMcpClient.fetch oauth', () => {
+describe('payMcpFetcher.fetch oauth', () => {
   it('should auth using the payment maker if one is available', async () => {
     const f = fetchMock.createInstance();
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)

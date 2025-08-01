@@ -34,7 +34,7 @@ function payMcpFetcher(
   });
 }
 
-describe('payMcpClient.fetch payment', () => {
+describe('payMcpFetcher.fetch payment', () => {
   it('should make a payment if the server response is a paymcp payment request error', async () => {
     const f = fetchMock.createInstance();
     const errTxt = CTH.paymentRequiredMessage(DEFAULT_AUTHORIZATION_SERVER, 'foo');
