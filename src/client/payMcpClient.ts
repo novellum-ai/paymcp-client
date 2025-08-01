@@ -25,6 +25,10 @@ export const DEFAULT_CLIENT_CONFIG: Required<Omit<OptionalClientConfig, Buildabl
   clientOptions: {
     capabilities: {}
   },
+  onAuthorize: async () => {},
+  onAuthorizeFailure: async () => {},
+  onPayment: async () => {},
+  onPaymentFailure: async () => {}
 };
 
 export function buildClientConfig(args: ClientArgs): ClientConfig {

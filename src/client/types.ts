@@ -33,6 +33,10 @@ export type ClientConfig = {
   logger: Logger;
   clientInfo: Implementation;
   clientOptions: ClientOptions;
+  onAuthorize: (authorizationServer: AuthorizationServerUrl) => Promise<void>;
+  onAuthorizeFailure: (authorizationServer: AuthorizationServerUrl) => Promise<void>;
+  onPayment: (payment: ProspectivePayment) => Promise<void>;
+  onPaymentFailure: (payment: ProspectivePayment) => Promise<void>;
 }
 
 export interface PaymentMaker {
