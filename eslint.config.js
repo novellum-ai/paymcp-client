@@ -45,10 +45,10 @@ module.exports = [
       // General rules
       'prefer-const': 'error',
       'no-var': 'error',
-      'no-console': 'off', // Allow console statements
       'no-debugger': 'error',
       'no-undef': 'off', // TypeScript handles this
       'no-ex-assign': 'error',
+      'no-console': 'warn',
     },
   },
   {

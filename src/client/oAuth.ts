@@ -1,7 +1,8 @@
 import * as oauth from 'oauth4webapi';
 import { OAuthResourceClient } from '../common/oAuthResource.js';
 import { crypto } from './platform/index.js';
-import { AccessToken, ClientCredentials, FetchLike, OAuthDb, PKCEValues } from '../common/types.js';
+import { AccessToken, ClientCredentials, FetchLike, Logger, OAuthDb, PKCEValues } from '../common/types.js';
+import { ConsoleLogger } from '../common/logger.js';
 
 export class OAuthAuthenticationRequiredError extends Error {
   constructor(
@@ -49,6 +50,7 @@ export interface OAuthClientConfig {
   strict?: boolean;
   allowInsecureRequests?: boolean;
   clientName?: string;
+  logger?: Logger;
 }
 
 export class OAuthClient extends OAuthResourceClient {
@@ -66,6 +68,7 @@ export class OAuthClient extends OAuthResourceClient {
     sideChannelFetch = fetchFn,
     strict = false,
     allowInsecureRequests = process.env.NODE_ENV === 'development',
+    logger = new ConsoleLogger()
   }: OAuthClientConfig) {
     super({
       db: db,
@@ -74,7 +77,8 @@ export class OAuthClient extends OAuthResourceClient {
       sideChannelFetch,
       strict,
       allowInsecureRequests,
-      clientName
+      clientName,
+      logger
     });
     this.db = db;
     this.userId = userId;
@@ -103,16 +107,16 @@ export class OAuthClient extends OAuthResourceClient {
     let response = await this._doFetch(url, init);
     
     if (response.status === 401) {
-      console.log('Received 401 Unauthorized status');
+      this.logger.info('Received 401 Unauthorized status');
 
       let resourceUrl = this.extractResourceUrl(response);
       const calledUrl = OAuthClient.trimToPath(url instanceof URL ? url.toString() : url);
       // If the response indicates an expired token, try to refresh it
       if (response.headers.get('www-authenticate')?.includes('error="invalid_grant"')) {
-        console.log(`Response includes invalid_grant error, attempting to refresh token for ${resourceUrl}`);
+        this.logger.info(`Response includes invalid_grant error, attempting to refresh token for ${resourceUrl}`);
         let refreshUrl = resourceUrl;
         if (!refreshUrl) {
-          console.log(`Refresh: No resource url found in response www-authenticate header, falling back to the called url ${calledUrl} (this could be incorrect if the called server is just proxying back an oauth failure)`);
+          this.logger.info(`Refresh: No resource url found in response www-authenticate header, falling back to the called url ${calledUrl} (this could be incorrect if the called server is just proxying back an oauth failure)`);
           refreshUrl = calledUrl;
         }
         const newToken = await this.tryRefreshToken(refreshUrl);
@@ -125,11 +129,11 @@ export class OAuthClient extends OAuthResourceClient {
       if (response.status === 401) /* still */ {
         // If we couldn't get a valid resourceServerUrl from wwwAuthenticate, use the original URL
         if (!resourceUrl) {
-          console.log(`No resource url found in response www-authenticate header, falling back to the called url ${calledUrl} (this could be incorrect if the called server is just proxying back an oauth failure)`);
+          this.logger.info(`No resource url found in response www-authenticate header, falling back to the called url ${calledUrl} (this could be incorrect if the called server is just proxying back an oauth failure)`);
           resourceUrl = calledUrl;
         }
         const token = await this.getAccessToken(calledUrl);
-        console.log(`Throwing OAuthAuthenticationRequiredError for ${calledUrl}, resource: ${resourceUrl}`);
+        this.logger.info(`Throwing OAuthAuthenticationRequiredError for ${calledUrl}, resource: ${resourceUrl}`);
         throw await OAuthAuthenticationRequiredError.create(calledUrl, resourceUrl, token?.accessToken);
       }
     }
@@ -153,7 +157,7 @@ export class OAuthClient extends OAuthResourceClient {
   }
 
   handleCallback = async (url: string): Promise<void> => {
-    console.log(`Handling authorization code callback: ${url}`);
+    this.logger.info(`Handling authorization code callback: ${url}`);
 
     const callbackUrl = new URL(url);
     const state = callbackUrl.searchParams.get('state');
@@ -279,7 +283,7 @@ export class OAuthClient extends OAuthResourceClient {
     let credentials = await this.getClientCredentials(authorizationServer);
     let [response, client] = await this.makeTokenRequestAndClient(authorizationServer, credentials, codeVerifier, authResponse);
     if(response.status === 403 || response.status === 401) {
-      console.log(`Bad response status exchanging code for token: ${response.statusText}. Could be due to bad client credentials - trying to re-register`);
+      this.logger.info(`Bad response status exchanging code for token: ${response.statusText}. Could be due to bad client credentials - trying to re-register`);
       credentials = await this.registerClient(authorizationServer);
       [response, client] = await this.makeTokenRequestAndClient(authorizationServer, credentials, codeVerifier, authResponse);
     }
@@ -322,11 +326,11 @@ export class OAuthClient extends OAuthResourceClient {
     url = OAuthClient.trimToPath(url);
     const token = await this.getAccessToken(url);
     if (!token) {
-      console.log('No token found, cannot refresh');
+      this.logger.info('No token found, cannot refresh');
       return null;
     }
     if (!token.refreshToken) {
-      console.log('No refresh token found, cannot refresh');
+      this.logger.info('No refresh token found, cannot refresh');
       return null;
     }
     const authorizationServer = await this.getAuthorizationServer(token.resourceUrl);
@@ -359,11 +363,11 @@ export class OAuthClient extends OAuthResourceClient {
 
   protected _doFetch: FetchLike = async (url, init) => {
     const stringUrl = url instanceof URL ? url.toString() : url;
-    console.log(`Making ${init?.method || 'GET'} request to ${stringUrl}`);
+    this.logger.info(`Making ${init?.method || 'GET'} request to ${stringUrl}`);
     
     const tokenData = await this.getAccessToken(stringUrl);
     if (!tokenData) {
-      console.log(`No access token found for resource server ${stringUrl}. Passing no authorization header.`);
+      this.logger.info(`No access token found for resource server ${stringUrl}. Passing no authorization header.`);
     }
 
     // Create a new init object to avoid mutating the original

@@ -1,10 +1,12 @@
 import { sqlite, SQLiteDatabase } from '../client/platform/index';
-import type { AccessToken, ClientCredentials, OAuthDb, PKCEValues } from './types.js';
+import { ConsoleLogger } from './logger';
+import type { AccessToken, ClientCredentials, Logger, OAuthDb, PKCEValues } from './types.js';
 
 export interface OAuthDbConfig {
   db?: string | SQLiteDatabase;
   encrypt?: (data: string) => string;
   decrypt?: (data: string) => string;
+  logger?: Logger;
 }
 
 export class SqliteOAuthDb implements OAuthDb {
@@ -12,6 +14,7 @@ export class SqliteOAuthDb implements OAuthDb {
   private initialized = false;
   private encrypt: (data: string) => string;
   private decrypt: (data: string) => string;
+  private logger: Logger;
 
   static getDefaultDbPath(): string {
     return 'oauthClient.db';
@@ -20,11 +23,13 @@ export class SqliteOAuthDb implements OAuthDb {
   constructor({
     db = SqliteOAuthDb.getDefaultDbPath(),
     encrypt = (data: string) => data,
-    decrypt = (data: string) => data
+    decrypt = (data: string) => data,
+    logger = new ConsoleLogger()
   }: OAuthDbConfig = {}) {
     this.db = typeof db === 'string' ? sqlite.openDatabaseSync(db) : db;
     this.encrypt = encrypt;
     this.decrypt = decrypt;
+    this.logger = logger;
   }
 
   ensureInitialized = async (): Promise<void> => {
@@ -195,7 +200,7 @@ export class SqliteOAuthDb implements OAuthDb {
     } catch (error) {
       // If database is already closed, just log and continue
       if (error && typeof error === 'object' && 'code' in error && error.code === 'SQLITE_MISUSE') {
-        console.log('Database already closed');
+        this.logger.warn('Database already closed');
       } else {
         throw error;
       }

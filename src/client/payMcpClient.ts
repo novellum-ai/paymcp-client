@@ -47,7 +47,8 @@ export function buildStreamableTransport(args: ClientArgs): StreamableHTTPClient
     sideChannelFetch: config.oAuthChannelFetch,
     allowInsecureRequests: config.allowHttp,
     allowedAuthorizationServers: config.allowedAuthorizationServers,
-    approvePayment: config.approvePayment
+    approvePayment: config.approvePayment,
+    logger: config.logger
   });
   const transport = new StreamableHTTPClientTransport(new URL(args.mcpServer), {fetch: fetcher.fetch});
   return transport;

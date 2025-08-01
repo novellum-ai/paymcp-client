@@ -5,6 +5,8 @@ import bs58 from "bs58";
 import BigNumber from "bignumber.js";
 import { generateJWT } from '../common/jwt.js';
 import { importJWK } from 'jose';
+import { Logger } from '../common/types.js';
+import { ConsoleLogger } from '../common/logger.js';
 
 // this is a global public key for USDC on the solana mainnet
 const USDC_MINT = new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
@@ -14,8 +16,9 @@ export const ValidateTransferError = _ValidateTransferError;
 export class SolanaPaymentMaker implements PaymentMaker {
   private connection: Connection;
   private source: Keypair;
+  private logger: Logger;
 
-  constructor(solanaEndpoint: string, sourceSecretKey: string) {
+  constructor(solanaEndpoint: string, sourceSecretKey: string, logger?: Logger) {
     if (!solanaEndpoint) {
       throw new Error('Solana endpoint is required');
     }
@@ -24,6 +27,7 @@ export class SolanaPaymentMaker implements PaymentMaker {
     }
     this.connection = new Connection(solanaEndpoint, { commitment: 'confirmed' });
     this.source = Keypair.fromSecretKey(bs58.decode(sourceSecretKey));
+    this.logger = logger ?? new ConsoleLogger();
   }
   
   generateJWT = async({paymentRequestId, codeChallenge}: {paymentRequestId: string, codeChallenge: string}): Promise<string> => {
@@ -56,7 +60,7 @@ export class SolanaPaymentMaker implements PaymentMaker {
       microLamports: 20000,
     });
 
-    console.log(`Making payment of ${amount} ${currency} to ${receiver}`);
+    this.logger.info(`Making payment of ${amount} ${currency} to ${receiver}`);
   
     const transaction = await createTransfer(
       this.connection,

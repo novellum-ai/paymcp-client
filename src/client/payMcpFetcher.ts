@@ -1,11 +1,12 @@
 import { BigNumber } from 'bignumber.js';
 import { OAuthAuthenticationRequiredError, OAuthClient } from './oAuth.js';
 import { PAYMENT_REQUIRED_ERROR_CODE, paymentRequiredError } from '../common/paymentRequiredError.js';
-import { AccessToken, AuthorizationServerUrl, FetchLike, OAuthDb, PaymentRequestData, DEFAULT_AUTHORIZATION_SERVER } from '../common/types.js';
+import { AccessToken, AuthorizationServerUrl, FetchLike, OAuthDb, PaymentRequestData, DEFAULT_AUTHORIZATION_SERVER, Logger } from '../common/types.js';
 import type { PaymentMaker, ProspectivePayment } from './types.js';
 import { getIsReactNative, createReactNativeSafeFetch } from './platform/index.js';
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import { parsePaymentRequests, parseMcpMessages } from '../common/mcpJson.js';
+import { ConsoleLogger } from '../common/logger.js';
 
 export interface PayMcpFetcherConfig {
   // TODO: Take an Account instead of userId and paymentMakers
@@ -18,6 +19,7 @@ export interface PayMcpFetcherConfig {
   allowInsecureRequests?: boolean;
   allowedAuthorizationServers?: AuthorizationServerUrl[];
   approvePayment?: (payment: ProspectivePayment) => Promise<boolean>;
+  logger?: Logger;
 }
 
 export class PayMcpFetcher {
@@ -28,7 +30,7 @@ export class PayMcpFetcher {
   protected userId: string;
   protected allowedAuthorizationServers: AuthorizationServerUrl[];
   protected approvePayment: (payment: ProspectivePayment) => Promise<boolean>;
-
+  protected logger: Logger;
   constructor({
     userId,
     db,
@@ -38,7 +40,8 @@ export class PayMcpFetcher {
     strict = true,
     allowInsecureRequests = process.env.NODE_ENV === 'development',
     allowedAuthorizationServers = [DEFAULT_AUTHORIZATION_SERVER],
-    approvePayment = async (): Promise<boolean> => true
+    approvePayment = async (): Promise<boolean> => true,
+    logger = new ConsoleLogger()
   }: PayMcpFetcherConfig) {
     // Use React Native safe fetch if in React Native environment
     const safeFetchFn = getIsReactNative() ? createReactNativeSafeFetch(fetchFn) : fetchFn;
@@ -55,7 +58,8 @@ export class PayMcpFetcher {
       fetchFn: safeFetchFn,
       sideChannelFetch: safeSideChannelFetch,
       strict,
-      allowInsecureRequests
+      allowInsecureRequests,
+      logger: logger
     });
     this.paymentMakers = new Map(Object.entries(paymentMakers));
     this.sideChannelFetch = safeSideChannelFetch;
@@ -63,6 +67,7 @@ export class PayMcpFetcher {
     this.userId = userId;
     this.allowedAuthorizationServers = allowedAuthorizationServers;
     this.approvePayment = approvePayment;
+    this.logger = logger;
   }
 
   protected handlePaymentRequestError = async (paymentRequestError: McpError): Promise<boolean> => {
@@ -78,7 +83,7 @@ export class PayMcpFetcher {
       throw new Error(`PayMCP: payment requirement error does not contain a payment request ID`);
     }
     if (!this.isAllowedAuthServer(paymentRequestUrl)) {
-      console.log(`PayMCP: payment requirement is not allowed on this server`);
+      this.logger.info(`PayMCP: payment requirement is not allowed on this server`);
       return false;
     }
 
@@ -118,8 +123,7 @@ export class PayMcpFetcher {
 
     const paymentMaker = this.paymentMakers.get(requestedNetwork);
     if (!paymentMaker) {
-      // TODO: replace console.log with logger throughout /client
-      console.log(`PayMCP: payment network ${requestedNetwork} not set up for this server (available networks: ${Array.from(this.paymentMakers.keys()).join(', ')})`);
+      this.logger.info(`PayMCP: payment network ${requestedNetwork} not set up for this server (available networks: ${Array.from(this.paymentMakers.keys()).join(', ')})`);
       return false;
     }
 
@@ -133,12 +137,12 @@ export class PayMcpFetcher {
       iss: paymentRequest.iss ?? '',
     };
     if (!await this.approvePayment(prospectivePayment)){
-      console.log(`PayMCP: payment request denied by callback function`);
+      this.logger.info(`PayMCP: payment request denied by callback function`);
       return false;
     }
 
     const paymentId = await paymentMaker.makePayment(amount, currency, destination, paymentRequest.iss);
-    console.log(`PayMCP: made payment of ${amount} ${currency} on ${requestedNetwork}: ${paymentId}`);
+    this.logger.info(`PayMCP: made payment of ${amount} ${currency} on ${requestedNetwork}: ${paymentId}`);
 
     const jwt = await paymentMaker.generateJWT({paymentRequestId, codeChallenge: ''});
 
@@ -163,11 +167,11 @@ export class PayMcpFetcher {
       })
     });
 
-    console.debug(`PayMCP: payment was ${response.ok ? 'successfully' : 'not successfully'} PUT to ${paymentRequestUrl} : status ${response.status} ${response.statusText}`);
+    this.logger.debug(`PayMCP: payment was ${response.ok ? 'successfully' : 'not successfully'} PUT to ${paymentRequestUrl} : status ${response.status} ${response.statusText}`);
 
     if(!response.ok) {
       const msg = `PayMCP: payment to ${paymentRequestUrl} failed: HTTP ${response.status} ${await response.text()}`;
-      console.log(msg);
+      this.logger.info(msg);
       throw new Error(msg);
     }
 
@@ -218,10 +222,10 @@ export class PayMcpFetcher {
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get('Location');
       if (location) {
-        console.log(`PayMCP: got redirect authorization code response - redirect to ${location}`);
+        this.logger.info(`PayMCP: got redirect authorization code response - redirect to ${location}`);
         return location;
       } else {
-        console.log(`PayMCP: got redirect authorization code response, but no redirect URL in Location header`);
+        this.logger.info(`PayMCP: got redirect authorization code response, but no redirect URL in Location header`);
       }
     }
     // Handle the non-standard paymcp redirect=false hack
@@ -230,10 +234,10 @@ export class PayMcpFetcher {
       const body = await response.json();
       const redirectUrl = body.redirect;
       if (redirectUrl) {
-        console.log(`PayMCP: got response.ok authorization code response - redirect to ${redirectUrl}`);
+        this.logger.info(`PayMCP: got response.ok authorization code response - redirect to ${redirectUrl}`);
         return redirectUrl;
       } else {
-        console.log(`PayMCP: got authorization code response with response.ok, but no redirect URL in body`);
+        this.logger.info(`PayMCP: got authorization code response with response.ok, but no redirect URL in body`);
       }
     }
 
@@ -261,7 +265,7 @@ export class PayMcpFetcher {
       // token in the DB under the '' resource URL).
       const existingToken = await this.db.getAccessToken(this.userId, '');
       if (!existingToken) {
-        console.log(`PayMCP: no token found for the current server - we can't exchange a token if we don't have one`);
+        this.logger.info(`PayMCP: no token found for the current server - we can't exchange a token if we don't have one`);
         throw error;
       }
       const newToken = await this.exchangeToken(existingToken, error.resourceServerUrl);
@@ -289,15 +293,15 @@ export class PayMcpFetcher {
       const messages = await parseMcpMessages(json);
       paymentRequests = messages.flatMap(message => parsePaymentRequests(message)).filter(pr => pr !== null);
     } catch (error) {
-      console.error(`PayMCP: error checking for payment requirements in MCP response: ${error}`);
-      console.debug(body);
+      this.logger.error(`PayMCP: error checking for payment requirements in MCP response: ${error}`);
+      this.logger.debug(body);
     }
 
     if(paymentRequests.length > 1) {
       throw new Error(`PayMCP: multiple payment requirements found in MCP response. The client does not support multiple payment requirements. ${paymentRequests.map(pr => pr.url).join(', ')}`);
     }
     for (const {url, id} of paymentRequests) {
-      console.log(`PayMCP: payment requirement found in MCP response - ${url} - throwing payment required error`);
+      this.logger.info(`PayMCP: payment requirement found in MCP response - ${url} - throwing payment required error`);
       throw paymentRequiredError(url, id);
     }
   }
@@ -312,7 +316,7 @@ export class PayMcpFetcher {
     } catch (error: unknown) {
       // If we get an OAuth authentication required error, handle it
       if (error instanceof OAuthAuthenticationRequiredError) {
-        console.log(`OAuth authentication required - PayMCP client starting oauth flow for resource metadata ${error.resourceServerUrl}`);
+        this.logger.info(`OAuth authentication required - PayMCP client starting oauth flow for resource metadata ${error.resourceServerUrl}`);
         await this.authToService(error); 
 
         // Retry the request once - we should be auth'd now
@@ -328,7 +332,7 @@ export class PayMcpFetcher {
           response = await this.oauthClient.fetch(url, init);
           await this.checkForPayMcpResponse(response);
         } else {
-          console.log(`PayMCP: payment request was not completed successfully`);
+          this.logger.info(`PayMCP: payment request was not completed successfully`);
         }
         if(response) {
           return response;
