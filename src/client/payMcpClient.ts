@@ -3,40 +3,43 @@ import { SqliteOAuthDb } from "../common/oAuthDb.js";
 import { ConsoleLogger } from "../common/logger.js";
 import { PayMcpFetcher } from "./payMcpFetcher.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { DEFAULT_AUTHORIZATION_SERVER } from "../common/types.js";
 
-
-type RequiredClientConfigFields = 'mcpServer' | 'account';
+type RequiredClientConfigFields = "mcpServer" | "account";
 type RequiredClientConfig = Pick<ClientConfig, RequiredClientConfigFields>;
 type OptionalClientConfig = Omit<ClientConfig, RequiredClientConfigFields>;
 export type ClientArgs = RequiredClientConfig & Partial<OptionalClientConfig>;
-type BuildableClientConfigFields = 'oAuthDb' | 'logger';
+type BuildableClientConfigFields = "oAuthDb" | "logger";
 
-export const DEFAULT_CLIENT_CONFIG: Required<Omit<OptionalClientConfig, BuildableClientConfigFields>> = {
+export const DEFAULT_CLIENT_CONFIG: Required<
+  Omit<OptionalClientConfig, BuildableClientConfigFields>
+> = {
   allowedAuthorizationServers: [DEFAULT_AUTHORIZATION_SERVER],
   approvePayment: async (_p) => true,
   fetchFn: fetch,
   oAuthChannelFetch: fetch,
-  allowHttp: process.env.NODE_ENV === 'development',
+  allowHttp: process.env.NODE_ENV === "development",
   clientInfo: {
-    name: 'PayMcpClient',
-    version: '0.0.1'
+    name: "PayMcpClient",
+    version: "0.0.1",
   },
   clientOptions: {
-    capabilities: {}
+    capabilities: {},
   },
 };
 
 export function buildClientConfig(args: ClientArgs): ClientConfig {
   const withDefaults = { ...DEFAULT_CLIENT_CONFIG, ...args };
-  const oAuthDb = withDefaults.oAuthDb ?? new SqliteOAuthDb({db: ':memory:'});
+  const oAuthDb = withDefaults.oAuthDb ?? new SqliteOAuthDb({ db: ":memory:" });
   const logger = withDefaults.logger ?? new ConsoleLogger();
-  const built = { oAuthDb, logger};
+  const built = { oAuthDb, logger };
   return Object.freeze({ ...withDefaults, ...built });
-};
+}
 
-export function buildStreamableTransport(args: ClientArgs): StreamableHTTPClientTransport {
+export function buildStreamableTransport(
+  args: ClientArgs,
+): StreamableHTTPClientTransport {
   const config = buildClientConfig(args);
 
   const fetcher = new PayMcpFetcher({
@@ -48,9 +51,11 @@ export function buildStreamableTransport(args: ClientArgs): StreamableHTTPClient
     allowInsecureRequests: config.allowHttp,
     allowedAuthorizationServers: config.allowedAuthorizationServers,
     approvePayment: config.approvePayment,
-    logger: config.logger
+    logger: config.logger,
   });
-  const transport = new StreamableHTTPClientTransport(new URL(args.mcpServer), {fetch: fetcher.fetch});
+  const transport = new StreamableHTTPClientTransport(new URL(args.mcpServer), {
+    fetch: fetcher.fetch,
+  });
   return transport;
 }
 

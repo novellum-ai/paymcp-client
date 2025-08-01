@@ -1,9 +1,9 @@
 import type { CustomJWTPayload } from "./types.js";
-import { SignJWT } from 'jose';
+import { SignJWT } from "jose";
 
 // TODO: revisit this
-const ISSUER = 'paymcp.com';
-const AUDIENCE = 'https://api.paymcp.com';
+const ISSUER = "paymcp.com";
+const AUDIENCE = "https://api.paymcp.com";
 
 /**
  * Generate a JWT using the jose library and EdDSA (Ed25519) private key.
@@ -16,7 +16,7 @@ export const generateJWT = async (
   walletId: string,
   privateKey: CryptoKey | Uint8Array,
   paymentRequestId: string,
-  codeChallenge: string
+  codeChallenge: string,
 ): Promise<string> => {
   const payload: CustomJWTPayload = {
     code_challenge: codeChallenge,
@@ -25,11 +25,11 @@ export const generateJWT = async (
   if (codeChallenge) payload.code_challenge = codeChallenge;
 
   return await new SignJWT(payload)
-    .setProtectedHeader({ alg: 'EdDSA', typ: 'JWT' })
+    .setProtectedHeader({ alg: "EdDSA", typ: "JWT" })
     .setIssuedAt()
     .setIssuer(ISSUER)
     .setAudience(AUDIENCE)
     .setSubject(walletId)
-    .setExpirationTime('2m')
+    .setExpirationTime("2m")
     .sign(privateKey);
 };

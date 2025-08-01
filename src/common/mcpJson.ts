@@ -1,23 +1,37 @@
-import { PAYMENT_REQUIRED_ERROR_CODE, PAYMENT_REQUIRED_PREAMBLE } from './paymentRequiredError.js';
-import { AuthorizationServerUrl } from './types.js';
-import { CallToolResult, isJSONRPCError, isJSONRPCResponse, JSONRPCError, JSONRPCMessage, JSONRPCMessageSchema } from '@modelcontextprotocol/sdk/types.js';
-import { Logger } from './types.js';
-import { ZodError } from 'zod';
+import {
+  PAYMENT_REQUIRED_ERROR_CODE,
+  PAYMENT_REQUIRED_PREAMBLE,
+} from "./paymentRequiredError.js";
+import { AuthorizationServerUrl } from "./types.js";
+import {
+  CallToolResult,
+  isJSONRPCError,
+  isJSONRPCResponse,
+  JSONRPCError,
+  JSONRPCMessage,
+  JSONRPCMessageSchema,
+} from "@modelcontextprotocol/sdk/types.js";
+import { Logger } from "./types.js";
+import { ZodError } from "zod";
 
-export function parsePaymentRequests(message: JSONRPCMessage): {url: AuthorizationServerUrl, id: string}[] {
+export function parsePaymentRequests(
+  message: JSONRPCMessage,
+): { url: AuthorizationServerUrl; id: string }[] {
   const res = [];
   // Handle MCP protocol-level errors. These have an explicit error code that we can check for
-  if (isJSONRPCError(message)){
+  if (isJSONRPCError(message)) {
     // Explicitly throw payment required errors that result in MCP protocol-level errors
     const rpcError = message as JSONRPCError;
     if (rpcError.error.code === PAYMENT_REQUIRED_ERROR_CODE) {
-      const paymentRequestUrl = (rpcError.error.data as {paymentRequestUrl: string})?.paymentRequestUrl;
+      const paymentRequestUrl = (
+        rpcError.error.data as { paymentRequestUrl: string }
+      )?.paymentRequestUrl;
       const dataPr = _parsePaymentRequestFromString(paymentRequestUrl);
-      if(dataPr) {
+      if (dataPr) {
         res.push(dataPr);
       } else {
         const pr = _parsePaymentRequestFromString(rpcError.error.message);
-        if(pr) {
+        if (pr) {
           res.push(pr);
         }
       }
@@ -26,11 +40,16 @@ export function parsePaymentRequests(message: JSONRPCMessage): {url: Authorizati
     // Current draft of elicitation-required error code as per
     // https://github.com/modelcontextprotocol/modelcontextprotocol/pull/887
     if (rpcError.error.code === -32604) {
-      const elicitations = (rpcError.error.data as {elicitations: {mode: string, url: string}[]}|undefined)?.elicitations || [];
-      for(const elicitation of elicitations) {
-        if(elicitation?.mode === 'url') {
+      const elicitations =
+        (
+          rpcError.error.data as
+            | { elicitations: { mode: string; url: string }[] }
+            | undefined
+        )?.elicitations || [];
+      for (const elicitation of elicitations) {
+        if (elicitation?.mode === "url") {
           const pr = _parsePaymentRequestFromString(elicitation?.url);
-          if(pr) {
+          if (pr) {
             res.push(pr);
           }
         }
@@ -39,17 +58,20 @@ export function parsePaymentRequests(message: JSONRPCMessage): {url: Authorizati
   }
 
   // TODO: Ensure that PayMcp errors only come back as MCP protocol-level errors.
-  // Handle MCP tool application-level errors. For these, the error message is serialized into a normal 
+  // Handle MCP tool application-level errors. For these, the error message is serialized into a normal
   // tool response with the isError flag set
-  if (isJSONRPCResponse(message)){
+  if (isJSONRPCResponse(message)) {
     const toolResult = message.result as CallToolResult;
-    if(toolResult.isError) {
-      for(const content of toolResult.content) {
-        if(content.type === 'text') {
+    if (toolResult.isError) {
+      for (const content of toolResult.content) {
+        if (content.type === "text") {
           const text = content.text;
-          if(text.includes(PAYMENT_REQUIRED_PREAMBLE) && text.includes(PAYMENT_REQUIRED_ERROR_CODE.toString())) {
+          if (
+            text.includes(PAYMENT_REQUIRED_PREAMBLE) &&
+            text.includes(PAYMENT_REQUIRED_ERROR_CODE.toString())
+          ) {
             const pr = _parsePaymentRequestFromString(text);
-            if(pr) {
+            if (pr) {
               res.push(pr);
             }
           }
@@ -60,7 +82,9 @@ export function parsePaymentRequests(message: JSONRPCMessage): {url: Authorizati
   return res;
 }
 
-function _parsePaymentRequestFromString(text: string | null): {url: AuthorizationServerUrl, id: string} | null {
+function _parsePaymentRequestFromString(
+  text: string | null,
+): { url: AuthorizationServerUrl; id: string } | null {
   if (!text) {
     return null;
   }
@@ -68,18 +92,21 @@ function _parsePaymentRequestFromString(text: string | null): {url: Authorizatio
   if (paymentRequestUrl) {
     const id = paymentRequestUrl[2];
     const url = paymentRequestUrl[0] as AuthorizationServerUrl;
-    return {url, id};
+    return { url, id };
   }
   return null;
 }
 
-export async function parseMcpMessages(json: unknown, logger?: Logger): Promise<JSONRPCMessage[]> {
+export async function parseMcpMessages(
+  json: unknown,
+  logger?: Logger,
+): Promise<JSONRPCMessage[]> {
   let messages: JSONRPCMessage[] = [];
 
   try {
     // handle batch and single messages
     if (Array.isArray(json)) {
-      messages = json.map(msg => JSONRPCMessageSchema.parse(msg));
+      messages = json.map((msg) => JSONRPCMessageSchema.parse(msg));
     } else {
       messages = [JSONRPCMessageSchema.parse(json)];
     }

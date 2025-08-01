@@ -1,67 +1,107 @@
 import { PaymentServer, ChargeResponse } from "./types.js";
-import { Network, Currency, AuthorizationServerUrl, FetchLike, OAuthDb, Logger, PaymentRequestData } from "../common/types.js";
+import {
+  Network,
+  Currency,
+  AuthorizationServerUrl,
+  FetchLike,
+  OAuthDb,
+  Logger,
+  PaymentRequestData,
+} from "../common/types.js";
 import BigNumber from "bignumber.js";
 
 export class PayMcpPaymentServer implements PaymentServer {
   constructor(
-    private readonly server: AuthorizationServerUrl, 
-    private readonly oAuthDb: OAuthDb, 
+    private readonly server: AuthorizationServerUrl,
+    private readonly oAuthDb: OAuthDb,
     private readonly logger: Logger,
-    private readonly fetchFn: FetchLike = fetch) {
-  }
+    private readonly fetchFn: FetchLike = fetch,
+  ) {}
 
-  charge = async({source, destination, network, currency, amount}: 
-    {source: string, destination: string, network: Network, currency: Currency, amount: BigNumber}): Promise<ChargeResponse> => {
-    const body = {source, destination, network, currency, amount};
-    const chargeResponse = await this.makeRequest('POST', '/charge', body);
-    const json = await chargeResponse.json() as PaymentRequestData | null;
+  charge = async ({
+    source,
+    destination,
+    network,
+    currency,
+    amount,
+  }: {
+    source: string;
+    destination: string;
+    network: Network;
+    currency: Currency;
+    amount: BigNumber;
+  }): Promise<ChargeResponse> => {
+    const body = { source, destination, network, currency, amount };
+    const chargeResponse = await this.makeRequest("POST", "/charge", body);
+    const json = (await chargeResponse.json()) as PaymentRequestData | null;
     if (chargeResponse.status === 200) {
-      return {success: true, requiredPayment: null};
+      return { success: true, requiredPayment: null };
     } else if (chargeResponse.status === 402) {
-      return {success: false, requiredPayment: json};
+      return { success: false, requiredPayment: json };
     } else {
       const msg = `Unexpected status code ${chargeResponse.status} from payment server POST /charge endpoint`;
       this.logger.warn(msg);
       this.logger.debug(`Response body: ${JSON.stringify(json)}`);
       throw new Error(msg);
     }
-  }
+  };
 
-  createPaymentRequest = async({source, destination, network, currency, amount}: 
-    {source: string, destination: string, network: Network, currency: Currency, amount: BigNumber}): Promise<string> => {
-    const body = {source, destination, network, currency, amount};
-    const response = await this.makeRequest('POST', '/payment-request', body);
-    const json = await response.json() as {id?: string};
+  createPaymentRequest = async ({
+    source,
+    destination,
+    network,
+    currency,
+    amount,
+  }: {
+    source: string;
+    destination: string;
+    network: Network;
+    currency: Currency;
+    amount: BigNumber;
+  }): Promise<string> => {
+    const body = { source, destination, network, currency, amount };
+    const response = await this.makeRequest("POST", "/payment-request", body);
+    const json = (await response.json()) as { id?: string };
     if (response.status !== 200) {
-      this.logger.warn(`POST /payment-request responded with unexpected HTTP status ${response.status}`);
+      this.logger.warn(
+        `POST /payment-request responded with unexpected HTTP status ${response.status}`,
+      );
       this.logger.debug(`Response body: ${JSON.stringify(json)}`);
-      throw new Error(`POST /payment-request responded with unexpected HTTP status ${response.status}`); 
+      throw new Error(
+        `POST /payment-request responded with unexpected HTTP status ${response.status}`,
+      );
     }
-    if(!json.id) {
+    if (!json.id) {
       throw new Error(`POST /payment-request response did not contain an id`);
     }
-    return json.id; 
-  }
+    return json.id;
+  };
 
-  protected makeRequest = async(method: 'GET' | 'POST', path: string, body: unknown): Promise<Response> => {
+  protected makeRequest = async (
+    method: "GET" | "POST",
+    path: string,
+    body: unknown,
+  ): Promise<Response> => {
     const url = new URL(path, this.server);
     const credentials = await this.oAuthDb.getClientCredentials(this.server);
-    if(!credentials) {
+    if (!credentials) {
       this.logger.warn(`No client credentials found for ${this.server}`);
-      throw new Error('No client credentials found');
+      throw new Error("No client credentials found");
     }
-    
+
     // Use Basic authentication with client credentials (client_id:client_secret base64 encoded)
-    const encodedCredentials = Buffer.from(`${credentials.clientId}:${credentials.clientSecret}`).toString('base64');
-    
+    const encodedCredentials = Buffer.from(
+      `${credentials.clientId}:${credentials.clientSecret}`,
+    ).toString("base64");
+
     const response = await this.fetchFn(url, {
       method,
       headers: {
-        'Authorization': `Basic ${encodedCredentials}`,
-        'Content-Type': 'application/json'
+        Authorization: `Basic ${encodedCredentials}`,
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
     });
     return response;
-  }
+  };
 }

@@ -8,7 +8,7 @@ type PayMcpContext = {
   tokenData: TokenData | null;
   config: PayMcpConfig;
   resource: URL;
-}
+};
 
 export function getPayMcpConfig(): PayMcpConfig | null {
   const context = contextStorage.getStore();
@@ -27,20 +27,29 @@ export function payMcpUser(): string | null {
 }
 
 // Helper function to run code within a user context
-export async function withPayMcpContext(config: PayMcpConfig, resource: URL, tokenInfo: Pick<TokenCheck, 'token' | 'data'> | null, next: () => void): Promise<void> {
-  config.logger.debug(`Setting user context to ${tokenInfo?.data?.sub ?? 'null'}`);
-  
-  if(tokenInfo && tokenInfo.data?.sub) {
-    if(tokenInfo.token) {
+export async function withPayMcpContext(
+  config: PayMcpConfig,
+  resource: URL,
+  tokenInfo: Pick<TokenCheck, "token" | "data"> | null,
+  next: () => void,
+): Promise<void> {
+  config.logger.debug(
+    `Setting user context to ${tokenInfo?.data?.sub ?? "null"}`,
+  );
+
+  if (tokenInfo && tokenInfo.data?.sub) {
+    if (tokenInfo.token) {
       const dbData = {
         accessToken: tokenInfo.token!,
-        resourceUrl: ''
+        resourceUrl: "",
       };
       // Save the token to the oAuthDB so that other users of the DB can access it
       // if needed (ie, for token-exchange for downstream services)
-      await config.oAuthDb.saveAccessToken(tokenInfo.data.sub, '', dbData);
+      await config.oAuthDb.saveAccessToken(tokenInfo.data.sub, "", dbData);
     } else {
-      config.logger.warn(`Setting user context with token data, but there was no token provided. This probably indicates a bug, since the data should be derived from the token`);
+      config.logger.warn(
+        `Setting user context with token data, but there was no token provided. This probably indicates a bug, since the data should be derived from the token`,
+      );
       config.logger.debug(`Token data: ${JSON.stringify(tokenInfo.data)}`);
     }
   }
@@ -48,7 +57,7 @@ export async function withPayMcpContext(config: PayMcpConfig, resource: URL, tok
   const ctx = {
     tokenData: tokenInfo?.data || null,
     config,
-    resource
+    resource,
   };
   return contextStorage.run(ctx, next);
-} 
+}

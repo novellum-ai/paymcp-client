@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-require-imports */
 
-import type { FetchLike } from '../../common/types.js';
+import type { FetchLike } from "../../common/types.js";
 
 // Platform abstraction layer
 export interface PlatformCrypto {
@@ -31,43 +31,50 @@ export interface SQLiteResult<T> {
 
 // Platform detection - supports both Expo and bare React Native
 export function getIsReactNative() {
-  const nav = (typeof navigator !== 'undefined' ? navigator : (typeof global !== 'undefined' ? (global as any).navigator : undefined));
-  return !!nav && nav.product === 'ReactNative';
+  const nav =
+    typeof navigator !== "undefined"
+      ? navigator
+      : typeof global !== "undefined"
+        ? (global as any).navigator
+        : undefined;
+  return !!nav && nav.product === "ReactNative";
 }
-export const isNode = typeof process !== 'undefined' && process.versions?.node;
+export const isNode = typeof process !== "undefined" && process.versions?.node;
 
 // Apply URL polyfill for React Native/Expo
 if (getIsReactNative()) {
-  require('react-native-url-polyfill/auto');
+  require("react-native-url-polyfill/auto");
 }
 
 // React Native safe fetch that prevents body consumption issues
-export const createReactNativeSafeFetch = (originalFetch: FetchLike): FetchLike => {
+export const createReactNativeSafeFetch = (
+  originalFetch: FetchLike,
+): FetchLike => {
   return async (url, init) => {
     const response = await originalFetch(url, init);
-    
+
     // For non-2xx responses or responses we know won't have JSON bodies, return as-is
     if (!response.ok || response.status === 204) {
       return response;
     }
-    
+
     // Pre-read the body to avoid consumption issues
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
       try {
         const bodyText = await response.text();
         // Create a new Response with the pre-read body
         return new Response(bodyText, {
           status: response.status,
           statusText: response.statusText,
-          headers: response.headers
+          headers: response.headers,
         });
       } catch {
         // If reading fails, return original response
         return response;
       }
     }
-    
+
     return response;
   };
 };
@@ -76,38 +83,41 @@ export const createReactNativeSafeFetch = (originalFetch: FetchLike): FetchLike 
 function createReactNativeCrypto(): PlatformCrypto {
   let expoCrypto: any;
   try {
-    expoCrypto = require('expo-crypto');
+    expoCrypto = require("expo-crypto");
   } catch {
     throw new Error(
-      'React Native detected but expo-crypto package is required. ' +
-      'Please install it: npm install expo-crypto'
+      "React Native detected but expo-crypto package is required. " +
+        "Please install it: npm install expo-crypto",
     );
   }
-  
+
   return {
     digest: async (data: Uint8Array) => {
       const hash = await expoCrypto.digestStringAsync(
         expoCrypto.CryptoDigestAlgorithm.SHA256,
-        new TextDecoder().decode(data)
+        new TextDecoder().decode(data),
       );
-      return new Uint8Array(Buffer.from(hash, 'hex'));
+      return new Uint8Array(Buffer.from(hash, "hex"));
     },
     randomUUID: () => expoCrypto.randomUUID(),
-    toHex: (data: Uint8Array) => Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(''),
+    toHex: (data: Uint8Array) =>
+      Array.from(data)
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join(""),
   };
 }
 
 function createReactNativeSQLite(): PlatformSQLite {
   let expoSqlite: any;
   try {
-    expoSqlite = require('expo-sqlite');
+    expoSqlite = require("expo-sqlite");
   } catch {
     throw new Error(
-      'React Native detected but expo-sqlite package is required. ' +
-      'Please install it: npm install expo-sqlite'
+      "React Native detected but expo-sqlite package is required. " +
+        "Please install it: npm install expo-sqlite",
     );
   }
-  
+
   return {
     openDatabaseSync: (name: string) => expoSqlite.openDatabaseSync(name),
   };
@@ -117,25 +127,25 @@ function createNodeCrypto(): PlatformCrypto {
   // Use a function that will be called only when needed
   const getCrypto = () => {
     try {
-      return require('crypto');
+      return require("crypto");
     } catch {
-      throw new Error('Node.js crypto module not available');
+      throw new Error("Node.js crypto module not available");
     }
   };
-  
+
   return {
     digest: async (data: Uint8Array) => {
       const crypto = getCrypto();
-      return new Uint8Array(crypto.createHash('sha256').update(data).digest());
+      return new Uint8Array(crypto.createHash("sha256").update(data).digest());
     },
     randomUUID: () => {
-      if (typeof process !== 'undefined' && process.versions?.node) {
+      if (typeof process !== "undefined" && process.versions?.node) {
         const crypto = getCrypto();
         return crypto.randomUUID();
       }
-      throw new Error('randomUUID not available in this environment');
+      throw new Error("randomUUID not available in this environment");
     },
-    toHex: (data: Uint8Array) => Buffer.from(data).toString('hex'),
+    toHex: (data: Uint8Array) => Buffer.from(data).toString("hex"),
   };
 }
 
@@ -145,25 +155,27 @@ function createNodeSQLite(): PlatformSQLite {
     try {
       // Use eval to prevent bundlers from statically analyzing this require
       // This ensures better-sqlite3 is only loaded at runtime in Node.js
-      return eval('require')('better-sqlite3');
+      return eval("require")("better-sqlite3");
     } catch {
-      throw new Error('better-sqlite3 not available. Please install it: npm install better-sqlite3');
+      throw new Error(
+        "better-sqlite3 not available. Please install it: npm install better-sqlite3",
+      );
     }
   };
-  
+
   return {
     openDatabaseSync: (name: string) => {
       // Initialize database lazily
       let db: any = null;
-      
+
       const getDb = () => {
         if (!db) {
           const Database = getBetterSqlite3();
-          db = new Database(name === ':memory:' ? ':memory:' : name);
+          db = new Database(name === ":memory:" ? ":memory:" : name);
         }
         return db;
       };
-      
+
       return {
         execAsync: async (sql: string) => {
           const database = getDb();
@@ -219,4 +231,4 @@ if (getIsReactNative()) {
 } else {
   crypto = createNodeCrypto();
   sqlite = createNodeSQLite();
-} 
+}
