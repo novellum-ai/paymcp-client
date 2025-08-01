@@ -1,5 +1,6 @@
-import { assertNever } from './utils.js';
-import { Logger, LogLevel } from './types.js';
+/* eslint-disable no-console */
+import { assertNever } from './utils';
+import { Logger, LogLevel } from './types';
 
 export class ConsoleLogger implements Logger {
   private readonly prefix: string;

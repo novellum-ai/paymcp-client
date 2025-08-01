@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as oauth from 'oauth4webapi';
-import { ClientCredentials, FetchLike, OAuthResourceDb, OAuthDb, TokenData } from './types.js';
+import { ClientCredentials, FetchLike, OAuthResourceDb, OAuthDb, TokenData, Logger } from './types.js';
+import { ConsoleLogger } from './logger.js';
 
 export interface OAuthResourceClientConfig {
   db: OAuthDb;
@@ -10,6 +11,7 @@ export interface OAuthResourceClientConfig {
   strict?: boolean;
   allowInsecureRequests?: boolean;
   clientName?: string;
+  logger?: Logger;
 }
 
 export class OAuthResourceClient {
@@ -26,6 +28,7 @@ export class OAuthResourceClient {
   // Whether this is a public client, which is incapable of keeping a client secret
   // safe, or a confidential client, which can.
   protected isPublic: boolean;
+  protected logger: Logger;
 
   constructor({
     db,
@@ -34,7 +37,8 @@ export class OAuthResourceClient {
     sideChannelFetch = fetch,
     strict = false,
     allowInsecureRequests = process.env.NODE_ENV === 'development',
-    clientName = 'Token Introspection Client'
+    clientName = 'Token Introspection Client',
+    logger = new ConsoleLogger()
   }: OAuthResourceClientConfig) {
     // Default values above are appropriate for a global client used directly. Subclasses should override these,
     // because things like the callbackUrl will actually be important for them
@@ -45,6 +49,7 @@ export class OAuthResourceClient {
     this.strict = strict;
     this.allowInsecureRequests = allowInsecureRequests;
     this.clientName = clientName;
+    this.logger = logger;
   }
 
   static trimToPath = (url: string): string => {
@@ -96,7 +101,7 @@ export class OAuthResourceClient {
     );
 
     if(introspectionResponse.status === 403 || introspectionResponse.status === 401) {
-      console.log(`Bad response status doing token introspection: ${introspectionResponse.statusText}. Could be due to bad client credentials - trying to re-register`);
+      this.logger.info(`Bad response status doing token introspection: ${introspectionResponse.statusText}. Could be due to bad client credentials - trying to re-register`);
       clientCredentials = await this.registerClient(authorizationServer);
       client = {
         client_id: clientCredentials.clientId,
@@ -155,7 +160,7 @@ export class OAuthResourceClient {
       } else {
         // Some older servers serve OAuth metadata from the MCP server instead of PRM data, 
         // so if the PRM data isn't found, we'll try to get the AS metadata from the MCP server
-        console.log('Protected Resource Metadata document not found, looking for OAuth metadata on resource server');
+        this.logger.info('Protected Resource Metadata document not found, looking for OAuth metadata on resource server');
         // Trim off the path - OAuth metadata is also singular for a server and served from the root
         const rsUrl = new URL(resourceServerUrl);
         const rsAsUrl = rsUrl.protocol + '//' + rsUrl.host + '/.well-known/oauth-authorization-server';
@@ -177,9 +182,8 @@ export class OAuthResourceClient {
       const res = await this.authorizationServerFromUrl(authServerUrl);
       return res;
     } catch (error) {
-      console.log(`Error fetching authorization server configuration: ${error}`);
-      console.log((error as Error).stack);
-      console.trace();
+      this.logger.warn(`Error fetching authorization server configuration: ${error}`);
+      this.logger.warn((error as Error).stack || '');
       throw error;
     }
   }
@@ -200,7 +204,7 @@ export class OAuthResourceClient {
       const authorizationServer = await oauth.processDiscoveryResponse(authServerUrl, response);
       return authorizationServer;
     } catch (error: any) {
-      console.log(`Error fetching authorization server configuration: ${error}`);
+      this.logger.warn(`Error fetching authorization server configuration: ${error}`);
       throw error;
     }
   }
@@ -230,7 +234,7 @@ export class OAuthResourceClient {
   }
 
   protected registerClient = async (authorizationServer: oauth.AuthorizationServer): Promise<ClientCredentials> => {
-    console.log(`Registering client with authorization server for ${this.callbackUrl}`);
+    this.logger.info(`Registering client with authorization server for ${this.callbackUrl}`);
     
     if (!authorizationServer.registration_endpoint) {
       throw new Error('Authorization server does not support dynamic client registration');
@@ -253,11 +257,11 @@ export class OAuthResourceClient {
       // Process the registration response
       registeredClient = await oauth.processDynamicClientRegistrationResponse(response);
     } catch (error: any) {
-      console.log('Client registration failure error_details: ', JSON.stringify(error.cause?.error_details))
+      this.logger.warn(`Client registration failure error_details: ${JSON.stringify(error.cause?.error_details)}`);
       throw error;
     }
     
-    console.log(`Successfully registered client with ID: ${registeredClient.client_id}`);
+    this.logger.info(`Successfully registered client with ID: ${registeredClient.client_id}`);
     
     // Create client credentials from the registration response
     const credentials: ClientCredentials = {

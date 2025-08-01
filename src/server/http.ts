@@ -4,6 +4,7 @@ import contentType from "content-type";
 import { JSONRPCRequest, isJSONRPCRequest } from "@modelcontextprotocol/sdk/types.js";
 import { PayMcpConfig } from "./types.js";
 import { parseMcpMessages } from "../common/mcpJson.js";
+import { Logger } from "../common/types.js";
 
 // Useful reference for dealing with low-level http requests:
 // https://github.com/modelcontextprotocol/typescript-sdk/blob/c6ac083b1b37b222b5bfba5563822daa5d03372e/src/server/streamableHttp.ts#L375
@@ -28,7 +29,7 @@ export async function parseMcpRequests(config: PayMcpConfig, requestUrl: URL, re
     return [];
   }
 
-  parsedBody = parsedBody ?? await parseBody(req);
+  parsedBody = parsedBody ?? await parseBody(req, config.logger);
   const messages = await parseMcpMessages(parsedBody, config.logger);
   
   const requests = messages.filter(msg => isJSONRPCRequest(msg));
@@ -39,7 +40,7 @@ export async function parseMcpRequests(config: PayMcpConfig, requestUrl: URL, re
   return requests;
 }
 
-export async function parseBody(req: IncomingMessage): Promise<unknown> {
+export async function parseBody(req: IncomingMessage, logger: Logger): Promise<unknown> {
   try {
     const ct = req.headers["content-type"];
 
@@ -55,7 +56,7 @@ export async function parseBody(req: IncomingMessage): Promise<unknown> {
     });
     return JSON.parse(body.toString());
   } catch (error) {
-    console.error(error);
+    logger.error((error as Error).message);
     return undefined;
   }
 }

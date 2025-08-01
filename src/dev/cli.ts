@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { payMcpClient, SolanaAccount, SqliteOAuthDb, ConsoleLogger, LogLevel } from '../index';
 import 'dotenv/config';
 
