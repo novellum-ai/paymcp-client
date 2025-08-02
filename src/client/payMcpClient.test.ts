@@ -13,13 +13,8 @@ describe('payMcpClient', () => {
   it('should call onAuthorize when authorizing', async () => {
     const f = fetchMock.createInstance();
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .postOnce('https://example.com/mcp', {
-        status: 401, 
-        headers: {
-          'www-authenticate': 'Bearer resource_metadata="https://example.com/.well-known/oauth-protected-resource/mcp"'
-        }
-      })
-      .postOnce('https://example.com/mcp', CTH.mcpResponse());
+      .postOnce('https://example.com/mcp', CTH.authRequiredResponse())
+      .post('https://example.com/mcp', CTH.mcpResponseHandler(CTH.mcpToolResponse(1, 'hello world')));
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER)
       // Respond to /authorize call 
       .get(`begin:${DEFAULT_AUTHORIZATION_SERVER}/authorize`, (req) => {
@@ -42,7 +37,7 @@ describe('payMcpClient', () => {
     const client = await payMcpClient({
       mcpServer: 'https://example.com/mcp',
       account, 
-      //onAuthorize,
+      onAuthorize,
       fetchFn: f.fetchHandler
     });
 

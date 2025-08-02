@@ -33,8 +33,8 @@ export type ClientConfig = {
   logger: Logger;
   clientInfo: Implementation;
   clientOptions: ClientOptions;
-  onAuthorize: (authorizationServer: AuthorizationServerUrl) => Promise<void>;
-  onAuthorizeFailure: (authorizationServer: AuthorizationServerUrl) => Promise<void>;
+  onAuthorize: (args: { authorizationServer: AuthorizationServerUrl, userId: string }) => Promise<void>;
+  onAuthorizeFailure: (args: { authorizationServer: AuthorizationServerUrl, userId: string }) => Promise<void>;
   onPayment: (payment: ProspectivePayment) => Promise<void>;
   onPaymentFailure: (payment: ProspectivePayment) => Promise<void>;
 }

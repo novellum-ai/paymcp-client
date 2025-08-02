@@ -20,6 +20,8 @@ export interface PayMcpFetcherConfig {
   allowedAuthorizationServers?: AuthorizationServerUrl[];
   approvePayment?: (payment: ProspectivePayment) => Promise<boolean>;
   logger?: Logger;
+  onAuthorize?: (args: { authorizationServer: AuthorizationServerUrl, userId: string }) => Promise<void>;
+  onAuthorizeFailure?: (args: { authorizationServer: AuthorizationServerUrl, userId: string }) => Promise<void>;
 }
 
 export class PayMcpFetcher {
@@ -31,6 +33,8 @@ export class PayMcpFetcher {
   protected allowedAuthorizationServers: AuthorizationServerUrl[];
   protected approvePayment: (payment: ProspectivePayment) => Promise<boolean>;
   protected logger: Logger;
+  protected onAuthorize?: (args: { authorizationServer: AuthorizationServerUrl, userId: string }) => Promise<void>;
+  protected onAuthorizeFailure?: (args: { authorizationServer: AuthorizationServerUrl, userId: string }) => Promise<void>;
   constructor({
     userId,
     db,
@@ -41,7 +45,9 @@ export class PayMcpFetcher {
     allowInsecureRequests = process.env.NODE_ENV === 'development',
     allowedAuthorizationServers = [DEFAULT_AUTHORIZATION_SERVER],
     approvePayment = async (): Promise<boolean> => true,
-    logger = new ConsoleLogger()
+    logger = new ConsoleLogger(),
+    onAuthorize,
+    onAuthorizeFailure
   }: PayMcpFetcherConfig) {
     // Use React Native safe fetch if in React Native environment
     const safeFetchFn = getIsReactNative() ? createReactNativeSafeFetch(fetchFn) : fetchFn;
@@ -68,6 +74,8 @@ export class PayMcpFetcher {
     this.allowedAuthorizationServers = allowedAuthorizationServers;
     this.approvePayment = approvePayment;
     this.logger = logger;
+    this.onAuthorize = onAuthorize;
+    this.onAuthorizeFailure = onAuthorizeFailure;
   }
 
   protected handlePaymentRequestError = async (paymentRequestError: McpError): Promise<boolean> => {
@@ -184,12 +192,7 @@ export class PayMcpFetcher {
     return this.allowedAuthorizationServers.includes(baseUrl);
   }
 
-  protected makeAuthRequestWithPaymentMaker = async (oauthError: OAuthAuthenticationRequiredError, paymentMaker: PaymentMaker): Promise<string> => {
-    const authorizationUrl = await this.oauthClient.makeAuthorizationUrl(
-      oauthError.url, 
-      oauthError.resourceServerUrl
-    );
-
+  protected makeAuthRequestWithPaymentMaker = async (authorizationUrl: URL, paymentMaker: PaymentMaker): Promise<string> => {
     const codeChallenge = authorizationUrl.searchParams.get('code_challenge');
     if (!codeChallenge) {
       throw new Error(`Code challenge not provided`);
@@ -255,9 +258,22 @@ export class PayMcpFetcher {
     if (paymentMaker) {
       // We can do the full OAuth flow - we'll generate a signed JWT and call /authorize on the
       // AS to get a code, then exchange the code for an access token
-      const redirectUrl = await this.makeAuthRequestWithPaymentMaker(error, paymentMaker);
+      const authorizationUrl = await this.oauthClient.makeAuthorizationUrl(
+        error.url, 
+        error.resourceServerUrl
+      );
+
+      const redirectUrl = await this.makeAuthRequestWithPaymentMaker(authorizationUrl, paymentMaker);
       // Handle the OAuth callback
       await this.oauthClient.handleCallback(redirectUrl);
+      
+      // Call onAuthorize callback after successful authorization
+      if (this.onAuthorize) {
+        await this.onAuthorize({ 
+          authorizationServer: authorizationUrl.origin as AuthorizationServerUrl, 
+          userId: this.userId 
+        });
+      }
     } else {
       // Else, we'll see if we've already got an OAuth token from OUR caller (if any). 
       // If we do, we'll use it to auth to the downstream resource
