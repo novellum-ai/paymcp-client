@@ -20,6 +20,10 @@ export interface PayMcpFetcherConfig {
   allowedAuthorizationServers?: AuthorizationServerUrl[];
   approvePayment?: (payment: ProspectivePayment) => Promise<boolean>;
   logger?: Logger;
+  onAuthorize?: (args: { authorizationServer: AuthorizationServerUrl, userId: string }) => Promise<void>;
+  onAuthorizeFailure?: (args: { authorizationServer: AuthorizationServerUrl, userId: string, error: Error }) => Promise<void>;
+  onPayment?: (args: { payment: ProspectivePayment }) => Promise<void>;
+  onPaymentFailure?: (args: { payment: ProspectivePayment, error: Error }) => Promise<void>;
 }
 
 export class PayMcpFetcher {
@@ -31,6 +35,10 @@ export class PayMcpFetcher {
   protected allowedAuthorizationServers: AuthorizationServerUrl[];
   protected approvePayment: (payment: ProspectivePayment) => Promise<boolean>;
   protected logger: Logger;
+  protected onAuthorize?: (args: { authorizationServer: AuthorizationServerUrl, userId: string }) => Promise<void>;
+  protected onAuthorizeFailure?: (args: { authorizationServer: AuthorizationServerUrl, userId: string, error: Error }) => Promise<void>;
+  protected onPayment?: (args: { payment: ProspectivePayment }) => Promise<void>;
+  protected onPaymentFailure?: (args: { payment: ProspectivePayment, error: Error }) => Promise<void>;
   constructor({
     userId,
     db,
@@ -41,7 +49,11 @@ export class PayMcpFetcher {
     allowInsecureRequests = process.env.NODE_ENV === 'development',
     allowedAuthorizationServers = [DEFAULT_AUTHORIZATION_SERVER],
     approvePayment = async (): Promise<boolean> => true,
-    logger = new ConsoleLogger()
+    logger = new ConsoleLogger(),
+    onAuthorize,
+    onAuthorizeFailure,
+    onPayment,
+    onPaymentFailure
   }: PayMcpFetcherConfig) {
     // Use React Native safe fetch if in React Native environment
     const safeFetchFn = getIsReactNative() ? createReactNativeSafeFetch(fetchFn) : fetchFn;
@@ -68,6 +80,10 @@ export class PayMcpFetcher {
     this.allowedAuthorizationServers = allowedAuthorizationServers;
     this.approvePayment = approvePayment;
     this.logger = logger;
+    this.onAuthorize = onAuthorize;
+    this.onAuthorizeFailure = onAuthorizeFailure;
+    this.onPayment = onPayment;
+    this.onPaymentFailure = onPaymentFailure;
   }
 
   protected handlePaymentRequestError = async (paymentRequestError: McpError): Promise<boolean> => {
@@ -141,8 +157,25 @@ export class PayMcpFetcher {
       return false;
     }
 
-    const paymentId = await paymentMaker.makePayment(amount, currency, destination, paymentRequest.iss);
-    this.logger.info(`PayMCP: made payment of ${amount} ${currency} on ${requestedNetwork}: ${paymentId}`);
+    let paymentId: string;
+    try {
+      paymentId = await paymentMaker.makePayment(amount, currency, destination, paymentRequest.iss);
+      this.logger.info(`PayMCP: made payment of ${amount} ${currency} on ${requestedNetwork}: ${paymentId}`);
+      
+      // Call onPayment callback after successful payment
+      if (this.onPayment) {
+        await this.onPayment({ payment: prospectivePayment });
+      }
+    } catch (paymentError) {
+      // Call onPaymentFailure callback if payment fails
+      if (this.onPaymentFailure) {
+        await this.onPaymentFailure({
+          payment: prospectivePayment,
+          error: paymentError as Error
+        });
+      }
+      throw paymentError;
+    }
 
     const jwt = await paymentMaker.generateJWT({paymentRequestId, codeChallenge: ''});
 
@@ -184,19 +217,10 @@ export class PayMcpFetcher {
     return this.allowedAuthorizationServers.includes(baseUrl);
   }
 
-  protected makeAuthRequestWithPaymentMaker = async (oauthError: OAuthAuthenticationRequiredError, paymentMaker: PaymentMaker): Promise<string> => {
-    const authorizationUrl = await this.oauthClient.makeAuthorizationUrl(
-      oauthError.url, 
-      oauthError.resourceServerUrl
-    );
-
+  protected makeAuthRequestWithPaymentMaker = async (authorizationUrl: URL, paymentMaker: PaymentMaker): Promise<string> => {
     const codeChallenge = authorizationUrl.searchParams.get('code_challenge');
     if (!codeChallenge) {
       throw new Error(`Code challenge not provided`);
-    }
-
-    if (!this.isAllowedAuthServer(authorizationUrl)) {
-      throw new Error(`PayMCP: authorization server ${oauthError.url} is requesting to use ${authorizationUrl} which is not in the allowed list of authorization servers ${this.allowedAuthorizationServers.join(', ')}`);
     }
 
     const authToken = await paymentMaker.generateJWT({paymentRequestId: '', codeChallenge: codeChallenge});
@@ -255,9 +279,38 @@ export class PayMcpFetcher {
     if (paymentMaker) {
       // We can do the full OAuth flow - we'll generate a signed JWT and call /authorize on the
       // AS to get a code, then exchange the code for an access token
-      const redirectUrl = await this.makeAuthRequestWithPaymentMaker(error, paymentMaker);
-      // Handle the OAuth callback
-      await this.oauthClient.handleCallback(redirectUrl);
+      const authorizationUrl = await this.oauthClient.makeAuthorizationUrl(
+        error.url, 
+        error.resourceServerUrl
+      );
+
+      if (!this.isAllowedAuthServer(authorizationUrl)) {
+        throw new Error(`PayMCP: resource server ${error.url} is requesting to use ${authorizationUrl} which is not in the allowed list of authorization servers ${this.allowedAuthorizationServers.join(', ')}`);
+      }
+
+      try {
+        const redirectUrl = await this.makeAuthRequestWithPaymentMaker(authorizationUrl, paymentMaker);
+        // Handle the OAuth callback
+        await this.oauthClient.handleCallback(redirectUrl);
+        
+        // Call onAuthorize callback after successful authorization
+        if (this.onAuthorize) {
+          await this.onAuthorize({ 
+            authorizationServer: authorizationUrl.origin as AuthorizationServerUrl, 
+            userId: this.userId 
+          });
+        }
+      } catch (authError) {
+        // Call onAuthorizeFailure callback if authorization fails
+        if (this.onAuthorizeFailure) {
+          await this.onAuthorizeFailure({ 
+            authorizationServer: authorizationUrl.origin as AuthorizationServerUrl, 
+            userId: this.userId,
+            error: authError as Error
+          });
+        }
+        throw authError;
+      }
     } else {
       // Else, we'll see if we've already got an OAuth token from OUR caller (if any). 
       // If we do, we'll use it to auth to the downstream resource

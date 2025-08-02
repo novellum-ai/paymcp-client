@@ -12,6 +12,15 @@ export function mockResourceServer(mock: FetchMock, baseUrl: string = 'https://e
       }
     }
   });
+  mock.route({
+    name: `GET ${baseUrl}${resourcePath}`,
+    url: `${baseUrl}${resourcePath}`,
+    method: 'get',
+    response: {
+      // Indicate that SSE is not supported - clients can only POST to this MCP server
+      status: 405
+    }
+  })
   return mock;
 }
 

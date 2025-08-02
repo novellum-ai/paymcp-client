@@ -25,6 +25,10 @@ export const DEFAULT_CLIENT_CONFIG: Required<Omit<OptionalClientConfig, Buildabl
   clientOptions: {
     capabilities: {}
   },
+  onAuthorize: async () => {},
+  onAuthorizeFailure: async () => {},
+  onPayment: async () => {},
+  onPaymentFailure: async () => {}
 };
 
 export function buildClientConfig(args: ClientArgs): ClientConfig {
@@ -51,7 +55,11 @@ export function buildStreamableTransport(args: ClientArgs): StreamableHTTPClient
     allowInsecureRequests: config.allowHttp,
     allowedAuthorizationServers: config.allowedAuthorizationServers,
     approvePayment: config.approvePayment,
-    logger: config.logger
+    logger: config.logger,
+    onAuthorize: config.onAuthorize,
+    onAuthorizeFailure: config.onAuthorizeFailure,
+    onPayment: config.onPayment,
+    onPaymentFailure: config.onPaymentFailure
   });
   const transport = new StreamableHTTPClientTransport(new URL(args.mcpServer), {fetch: fetcher.fetch});
   return transport;

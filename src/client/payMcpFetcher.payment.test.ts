@@ -41,8 +41,8 @@ describe('payMcpFetcher.fetch payment', () => {
     const errMsg = CTH.mcpToolErrorResponse({content: [{type: 'text', text: errTxt}]});
 
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .getOnce('https://example.com/mcp', errMsg)
-      .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
+      .postOnce('https://example.com/mcp', errMsg)
+      .postOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(0.01)});
 
     const paymentMaker = {
@@ -50,7 +50,7 @@ describe('payMcpFetcher.fetch payment', () => {
       generateJWT: vi.fn().mockResolvedValue('testJWT')
     };
     const fetcher = payMcpFetcher(f.fetchHandler, {'solana': paymentMaker});
-    await fetcher.fetch('https://example.com/mcp');
+    await fetcher.fetch('https://example.com/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
     // Ensure we make a payment 
     expect(paymentMaker.makePayment).toHaveBeenCalled();
     // Ensure we call the payment request endpoint
@@ -69,8 +69,8 @@ describe('payMcpFetcher.fetch payment', () => {
     const errMsg = CTH.mcpElicitationRequiredErrorResponse({url: `${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`, elicitationId: 'foo'});
 
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .getOnce('https://example.com/mcp', errMsg)
-      .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
+      .postOnce('https://example.com/mcp', errMsg)
+      .postOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(0.01)});
 
     const paymentMaker = {
@@ -78,7 +78,7 @@ describe('payMcpFetcher.fetch payment', () => {
       generateJWT: vi.fn().mockResolvedValue('testJWT')
     };
     const fetcher = payMcpFetcher(f.fetchHandler, {'solana': paymentMaker});
-    await fetcher.fetch('https://example.com/mcp');
+    await fetcher.fetch('https://example.com/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
     // Ensure we make a payment 
     expect(paymentMaker.makePayment).toHaveBeenCalled();
     // Ensure we call the payment request endpoint
@@ -97,8 +97,8 @@ describe('payMcpFetcher.fetch payment', () => {
     const errMsg = CTH.mcpElicitationRequiredErrorResponse({url: `https://slack.com/give-me-api-key`, elicitationId: 'foo'});
 
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .getOnce('https://example.com/mcp', errMsg)
-      .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
+      .postOnce('https://example.com/mcp', errMsg)
+      .postOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(0.01)});
 
     const paymentMaker = {
@@ -106,7 +106,7 @@ describe('payMcpFetcher.fetch payment', () => {
       generateJWT: vi.fn().mockResolvedValue('testJWT')
     };
     const fetcher = payMcpFetcher(f.fetchHandler, {'solana': paymentMaker});
-    const res = await fetcher.fetch('https://example.com/mcp');
+    const res = await fetcher.fetch('https://example.com/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
     const resJson = await res.json();
     expect(resJson).toMatchObject(errMsg);
   });
@@ -116,7 +116,7 @@ describe('payMcpFetcher.fetch payment', () => {
     const responseJson = {content: [{type: 'text', text: 'hello world'}]};
 
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .getOnce('https://example.com/mcp', responseJson);
+      .postOnce('https://example.com/mcp', responseJson);
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER);
 
     const paymentMaker = {
@@ -124,7 +124,7 @@ describe('payMcpFetcher.fetch payment', () => {
       generateJWT: vi.fn().mockResolvedValue('testJWT')
     };
     const fetcher = payMcpFetcher(f.fetchHandler, {'solana': paymentMaker});
-    const res = await fetcher.fetch('https://example.com/mcp');
+    const res = await fetcher.fetch('https://example.com/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
     expect(await res.json()).toEqual(responseJson);
   });
 
@@ -134,8 +134,8 @@ describe('payMcpFetcher.fetch payment', () => {
     const errMsg = CTH.mcpToolErrorResponse({content: [{type: 'text', text: errTxt}]});
 
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .getOnce('https://example.com/mcp', errMsg)
-      .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
+      .postOnce('https://example.com/mcp', errMsg)
+      .postOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(0.01)});
 
     const paymentMaker = {
@@ -143,7 +143,7 @@ describe('payMcpFetcher.fetch payment', () => {
       generateJWT: vi.fn().mockResolvedValue('testJWT')
     };
     const fetcher = payMcpFetcher(f.fetchHandler, {'solana': paymentMaker});
-    const res = await fetcher.fetch('https://example.com/mcp');
+    const res = await fetcher.fetch('https://example.com/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
     expect(res.status).toBe(200);
     const resJson = await res.json();
     expect(resJson).toMatchObject({content: [{type: 'text', text: 'hello world'}]});
@@ -159,12 +159,12 @@ describe('payMcpFetcher.fetch payment', () => {
     const errMsg = CTH.mcpToolErrorResponse({content: [{type: 'text', text: errTxt}]});
 
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .getOnce('https://example.com/mcp', errMsg)
-      .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
+      .postOnce('https://example.com/mcp', errMsg)
+      .postOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(0.01)});
 
     const fetcher = payMcpFetcher(f.fetchHandler, {});
-    const res = await fetcher.fetch('https://example.com/mcp');
+    const res = await fetcher.fetch('https://example.com/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
 
     const resJson = await res.json();
     expect(resJson.result.content[0].type).toBe('text');
@@ -178,15 +178,15 @@ describe('payMcpFetcher.fetch payment', () => {
     const errMsg = CTH.mcpToolErrorResponse({content: [{type: 'text', text: errTxt}]});
 
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .getOnce('https://example.com/mcp', errMsg)
-      .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
+      .postOnce('https://example.com/mcp', errMsg)
+      .postOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {})
       .getOnce(`${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`, 404);
     let threw = false;
 
     const fetcher = payMcpFetcher(f.fetchHandler, {});
     try {
-      await fetcher.fetch('https://example.com/mcp');
+      await fetcher.fetch('https://example.com/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
     } catch (e: any) {
       threw = true;
       expect(e).not.toBeInstanceOf(McpError);
@@ -200,8 +200,8 @@ describe('payMcpFetcher.fetch payment', () => {
     const errMsg = CTH.mcpToolErrorResponse({content: [{type: 'text', text: errTxt}]});
 
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .getOnce('https://example.com/mcp', errMsg)
-      .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
+      .postOnce('https://example.com/mcp', errMsg)
+      .postOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(0.01)});
 
     const paymentMaker = {
@@ -209,7 +209,7 @@ describe('payMcpFetcher.fetch payment', () => {
       generateJWT: vi.fn().mockResolvedValue('testJWT')
     };
     const fetcher = payMcpFetcher(f.fetchHandler, {'solana': paymentMaker}, undefined, ['https://not-paymcp.com']);
-    const res = await fetcher.fetch('https://example.com/mcp');
+    const res = await fetcher.fetch('https://example.com/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
 
     expect(res.status).toBe(200);
     const resJson = await res.json();
@@ -224,8 +224,8 @@ describe('payMcpFetcher.fetch payment', () => {
     const errMsg = CTH.mcpToolErrorResponse({content: [{type: 'text', text: errTxt}]});
 
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .getOnce('https://example.com/mcp', errMsg)
-      .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
+      .postOnce('https://example.com/mcp', errMsg)
+      .postOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(0.01)});
 
     const paymentMaker = {
@@ -233,7 +233,7 @@ describe('payMcpFetcher.fetch payment', () => {
       generateJWT: vi.fn().mockResolvedValue('testJWT')
     };
     const fetcher = payMcpFetcher(f.fetchHandler, {'solana': paymentMaker}, undefined, undefined, async () => false);
-    const res = await fetcher.fetch('https://example.com/mcp');
+    const res = await fetcher.fetch('https://example.com/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
 
     expect(res.status).toBe(200);
     const resJson = await res.json();
@@ -248,8 +248,8 @@ describe('payMcpFetcher.fetch payment', () => {
     const errMsg = CTH.mcpToolErrorResponse({content: [{type: 'text', text: errTxt}]});
 
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .getOnce('https://example.com/mcp', errMsg)
-      .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
+      .postOnce('https://example.com/mcp', errMsg)
+      .postOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {'foo': BigNumber(-0.01)});
     let threw = false;
 
@@ -259,7 +259,7 @@ describe('payMcpFetcher.fetch payment', () => {
     };
     const fetcher = payMcpFetcher(f.fetchHandler, {'solana': paymentMaker});
     try {
-      await fetcher.fetch('https://example.com/mcp');
+      await fetcher.fetch('https://example.com/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
     } catch (e: any) {
       threw = true;
       expect(e).not.toBeInstanceOf(McpError);
@@ -273,8 +273,8 @@ describe('payMcpFetcher.fetch payment', () => {
     const errMsg = CTH.mcpToolErrorResponse({content: [{type: 'text', text: errTxt}]});
 
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .getOnce('https://example.com/mcp', errMsg)
-      .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
+      .postOnce('https://example.com/mcp', errMsg)
+      .postOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER, {})
       .putOnce(`${DEFAULT_AUTHORIZATION_SERVER}/payment-request/foo`, 500);
     let threw = false;
@@ -285,7 +285,7 @@ describe('payMcpFetcher.fetch payment', () => {
     };
     const fetcher = payMcpFetcher(f.fetchHandler, {'solana': paymentMaker});
     try {
-      await fetcher.fetch('https://example.com/mcp');
+      await fetcher.fetch('https://example.com/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
     } catch (e: any) {
       threw = true;
       expect(e).not.toBeInstanceOf(McpError);
