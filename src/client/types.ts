@@ -34,9 +34,9 @@ export type ClientConfig = {
   clientInfo: Implementation;
   clientOptions: ClientOptions;
   onAuthorize: (args: { authorizationServer: AuthorizationServerUrl, userId: string }) => Promise<void>;
-  onAuthorizeFailure: (args: { authorizationServer: AuthorizationServerUrl, userId: string }) => Promise<void>;
-  onPayment: (payment: ProspectivePayment) => Promise<void>;
-  onPaymentFailure: (payment: ProspectivePayment) => Promise<void>;
+  onAuthorizeFailure: (args: { authorizationServer: AuthorizationServerUrl, userId: string, error: Error }) => Promise<void>;
+  onPayment: (args: { payment: ProspectivePayment }) => Promise<void>;
+  onPaymentFailure: (args: { payment: ProspectivePayment, error: Error }) => Promise<void>;
 }
 
 export interface PaymentMaker {

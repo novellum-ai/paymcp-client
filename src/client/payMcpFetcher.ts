@@ -21,9 +21,9 @@ export interface PayMcpFetcherConfig {
   approvePayment?: (payment: ProspectivePayment) => Promise<boolean>;
   logger?: Logger;
   onAuthorize?: (args: { authorizationServer: AuthorizationServerUrl, userId: string }) => Promise<void>;
-  onAuthorizeFailure?: (args: { authorizationServer: AuthorizationServerUrl, userId: string }) => Promise<void>;
-  onPayment?: (payment: ProspectivePayment) => Promise<void>;
-  onPaymentFailure?: (payment: ProspectivePayment) => Promise<void>;
+  onAuthorizeFailure?: (args: { authorizationServer: AuthorizationServerUrl, userId: string, error: Error }) => Promise<void>;
+  onPayment?: (args: { payment: ProspectivePayment }) => Promise<void>;
+  onPaymentFailure?: (args: { payment: ProspectivePayment, error: Error }) => Promise<void>;
 }
 
 export class PayMcpFetcher {
@@ -36,9 +36,9 @@ export class PayMcpFetcher {
   protected approvePayment: (payment: ProspectivePayment) => Promise<boolean>;
   protected logger: Logger;
   protected onAuthorize?: (args: { authorizationServer: AuthorizationServerUrl, userId: string }) => Promise<void>;
-  protected onAuthorizeFailure?: (args: { authorizationServer: AuthorizationServerUrl, userId: string }) => Promise<void>;
-  protected onPayment?: (payment: ProspectivePayment) => Promise<void>;
-  protected onPaymentFailure?: (payment: ProspectivePayment) => Promise<void>;
+  protected onAuthorizeFailure?: (args: { authorizationServer: AuthorizationServerUrl, userId: string, error: Error }) => Promise<void>;
+  protected onPayment?: (args: { payment: ProspectivePayment }) => Promise<void>;
+  protected onPaymentFailure?: (args: { payment: ProspectivePayment, error: Error }) => Promise<void>;
   constructor({
     userId,
     db,
@@ -164,12 +164,15 @@ export class PayMcpFetcher {
       
       // Call onPayment callback after successful payment
       if (this.onPayment) {
-        await this.onPayment(prospectivePayment);
+        await this.onPayment({ payment: prospectivePayment });
       }
     } catch (paymentError) {
       // Call onPaymentFailure callback if payment fails
       if (this.onPaymentFailure) {
-        await this.onPaymentFailure(prospectivePayment);
+        await this.onPaymentFailure({
+          payment: prospectivePayment,
+          error: paymentError as Error
+        });
       }
       throw paymentError;
     }
@@ -302,7 +305,8 @@ export class PayMcpFetcher {
         if (this.onAuthorizeFailure) {
           await this.onAuthorizeFailure({ 
             authorizationServer: authorizationUrl.origin as AuthorizationServerUrl, 
-            userId: this.userId 
+            userId: this.userId,
+            error: authError as Error
           });
         }
         throw authError;
