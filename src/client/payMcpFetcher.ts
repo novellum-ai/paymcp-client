@@ -338,8 +338,6 @@ export class PayMcpFetcher {
         // Retry the request once - we should be auth'd now
         response = await this.oauthClient.fetch(url, init);
         await this.checkForPayMcpResponse(response);
-        const rr = response.clone();
-        const x = await rr.json();
         return response;
       }
 

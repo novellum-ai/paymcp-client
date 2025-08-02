@@ -28,8 +28,8 @@ describe('payMcpFetcher.fetch oauth', () => {
   it('should auth using the payment maker if one is available', async () => {
     const f = fetchMock.createInstance();
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .getOnce('https://example.com/mcp', 401)
-      .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
+      .postOnce('https://example.com/mcp', 401)
+      .postOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER)
       // Respond to /authorize call 
       .get(`begin:${DEFAULT_AUTHORIZATION_SERVER}/authorize`, (req) => {
@@ -45,7 +45,7 @@ describe('payMcpFetcher.fetch oauth', () => {
       generateJWT: (params: {paymentIds?: string[], codeChallenge?: string}) => Promise.resolve(JSON.stringify(params))
     };
     const fetcher = payMcpFetcher(f.fetchHandler, {'solana': paymentMaker});
-    await fetcher.fetch('https://example.com/mcp');
+    await fetcher.fetch('https://example.com/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
 
     // Ensure we call the authorize endpoint
     const authCall = f.callHistory.lastCall(`begin:${DEFAULT_AUTHORIZATION_SERVER}/authorize`);
@@ -64,8 +64,8 @@ describe('payMcpFetcher.fetch oauth', () => {
   it('should throw an error if multiple payment makers are available (we dont know how to handle this yet)', async () => {
     const f = fetchMock.createInstance();
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .getOnce('https://example.com/mcp', 401)
-      .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
+      .postOnce('https://example.com/mcp', 401)
+      .postOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER)
       // Respond to /authorize call 
       .get(`begin:${DEFAULT_AUTHORIZATION_SERVER}/authorize`, (req) => {
@@ -83,7 +83,7 @@ describe('payMcpFetcher.fetch oauth', () => {
     const fetcher = payMcpFetcher(f.fetchHandler, {'solana': paymentMaker, 'ethereum': paymentMaker});
     let threw = false;
     try{
-      await fetcher.fetch('https://example.com/mcp');
+      await fetcher.fetch('https://example.com/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
     } catch (e: any) {
       threw = true;
       expect(e.message).to.include('multiple payment makers');
@@ -99,8 +99,8 @@ describe('payMcpFetcher.fetch oauth', () => {
     // Each downstream call will use OAuth token exchange to get a new token for the downstream server
     await db.saveAccessToken('bdj', '', {accessToken: 'testAccessToken', resourceUrl: 'https://my-current-url.com'});
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER)
-      .getOnce('https://example.com/mcp', 401)
-      .getOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
+      .postOnce('https://example.com/mcp', 401)
+      .postOnce('https://example.com/mcp', {content: [{type: 'text', text: 'hello world'}]});
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER)
       // Respond to /authorize call 
       .get(`begin:${DEFAULT_AUTHORIZATION_SERVER}/authorize`, (req) => {
@@ -114,7 +114,7 @@ describe('payMcpFetcher.fetch oauth', () => {
     expect(originalFromDb).toBeNull();
 
     const fetcher = payMcpFetcher(f.fetchHandler, {}, db);
-    const res = await fetcher.fetch('https://example.com/mcp');
+    const res = await fetcher.fetch('https://example.com/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
     expect(res.status).toBe(200);
     const resJson = await res.json();
     expect(resJson.content[0].type).toBe('text');
@@ -137,32 +137,32 @@ describe('payMcpFetcher.fetch oauth', () => {
   });
 
   it('should bubble up OAuthAuthenticationRequiredError on OAuth challenge with no paymentMakers or local token', async () => {
-    const f = fetchMock.createInstance().getOnce('https://example.com/mcp', 401);
+    const f = fetchMock.createInstance().postOnce('https://example.com/mcp', 401);
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER);
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER);
 
     const fetcher = payMcpFetcher(f.fetchHandler, {});
-    await expect(fetcher.fetch('https://example.com/mcp')).rejects.toThrow(OAuthAuthenticationRequiredError);
+    await expect(fetcher.fetch('https://example.com/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })).rejects.toThrow(OAuthAuthenticationRequiredError);
   });
 
   it('should throw if authorization server response is not successful', async () => {
     const f = fetchMock.createInstance()
       // 401, then succeed
-      .getOnce('https://example.com/mcp', 401)
-      .getOnce('https://example.com/mcp', {data: 'data'});
+      .postOnce('https://example.com/mcp', 401)
+      .postOnce('https://example.com/mcp', {data: 'data'});
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER);
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER)
       // Respond to /authorize call 
       .get(`begin:${DEFAULT_AUTHORIZATION_SERVER}/authorize`, 401, {});
     const fetcher = payMcpFetcher(f.fetchHandler);
 
-    await expect(fetcher.fetch('https://example.com/mcp')).rejects.toThrow('Expected redirect response from authorization URL, got 401');
+    await expect(fetcher.fetch('https://example.com/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })).rejects.toThrow('Expected redirect response from authorization URL, got 401');
   });
 
   it('should throw if authorization server authorization endpoint returns an error', async () => {
     // We can't save this - the authorization URL was constructed using the client_id, so 
     // if the client registration is no longer valid, there's nothing we can do.
-    const f = fetchMock.createInstance().getOnce('https://example.com/mcp', 401);
+    const f = fetchMock.createInstance().postOnce('https://example.com/mcp', 401);
     mockResourceServer(f, 'https://example.com', '/mcp', DEFAULT_AUTHORIZATION_SERVER);
     mockAuthorizationServer(f, DEFAULT_AUTHORIZATION_SERVER)
       // Respond to /authorize call 
@@ -177,6 +177,6 @@ describe('payMcpFetcher.fetch oauth', () => {
       });
 
     const fetcher = payMcpFetcher(f.fetchHandler);
-    await expect(fetcher.fetch('https://example.com/mcp')).rejects.toThrow('authorization response from the server is an error');
+    await expect(fetcher.fetch('https://example.com/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })).rejects.toThrow('authorization response from the server is an error');
   });
 });
