@@ -223,10 +223,6 @@ export class PayMcpFetcher {
       throw new Error(`Code challenge not provided`);
     }
 
-    if (!this.isAllowedAuthServer(authorizationUrl)) {
-      throw new Error(`PayMCP: authorization server ${oauthError.url} is requesting to use ${authorizationUrl} which is not in the allowed list of authorization servers ${this.allowedAuthorizationServers.join(', ')}`);
-    }
-
     const authToken = await paymentMaker.generateJWT({paymentRequestId: '', codeChallenge: codeChallenge});
 
     // Make a fetch call to the authorization URL with the payment ID
@@ -287,6 +283,10 @@ export class PayMcpFetcher {
         error.url, 
         error.resourceServerUrl
       );
+
+      if (!this.isAllowedAuthServer(authorizationUrl)) {
+        throw new Error(`PayMCP: resource server ${error.url} is requesting to use ${authorizationUrl} which is not in the allowed list of authorization servers ${this.allowedAuthorizationServers.join(', ')}`);
+      }
 
       try {
         const redirectUrl = await this.makeAuthRequestWithPaymentMaker(authorizationUrl, paymentMaker);
