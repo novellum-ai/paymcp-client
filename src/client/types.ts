@@ -19,6 +19,7 @@ export type ProspectivePayment = {
   network: Network;
   currency: Currency;
   amount: BigNumber;
+  iss: string;
 }
 
 export type ClientConfig = {

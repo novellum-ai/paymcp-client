@@ -127,7 +127,7 @@ export class PayMcpFetcher {
       return false;
     }
 
-    const prospectivePayment = {
+    const prospectivePayment : ProspectivePayment = {
       accountId: this.userId,
       resourceUrl: paymentRequest.resource?.toString() ?? '',
       resourceName: paymentRequest.resourceName ?? '',
