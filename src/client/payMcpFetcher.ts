@@ -22,6 +22,8 @@ export interface PayMcpFetcherConfig {
   logger?: Logger;
   onAuthorize?: (args: { authorizationServer: AuthorizationServerUrl, userId: string }) => Promise<void>;
   onAuthorizeFailure?: (args: { authorizationServer: AuthorizationServerUrl, userId: string }) => Promise<void>;
+  onPayment?: (payment: ProspectivePayment) => Promise<void>;
+  onPaymentFailure?: (payment: ProspectivePayment) => Promise<void>;
 }
 
 export class PayMcpFetcher {
@@ -35,6 +37,8 @@ export class PayMcpFetcher {
   protected logger: Logger;
   protected onAuthorize?: (args: { authorizationServer: AuthorizationServerUrl, userId: string }) => Promise<void>;
   protected onAuthorizeFailure?: (args: { authorizationServer: AuthorizationServerUrl, userId: string }) => Promise<void>;
+  protected onPayment?: (payment: ProspectivePayment) => Promise<void>;
+  protected onPaymentFailure?: (payment: ProspectivePayment) => Promise<void>;
   constructor({
     userId,
     db,
@@ -47,7 +51,9 @@ export class PayMcpFetcher {
     approvePayment = async (): Promise<boolean> => true,
     logger = new ConsoleLogger(),
     onAuthorize,
-    onAuthorizeFailure
+    onAuthorizeFailure,
+    onPayment,
+    onPaymentFailure
   }: PayMcpFetcherConfig) {
     // Use React Native safe fetch if in React Native environment
     const safeFetchFn = getIsReactNative() ? createReactNativeSafeFetch(fetchFn) : fetchFn;
@@ -76,6 +82,8 @@ export class PayMcpFetcher {
     this.logger = logger;
     this.onAuthorize = onAuthorize;
     this.onAuthorizeFailure = onAuthorizeFailure;
+    this.onPayment = onPayment;
+    this.onPaymentFailure = onPaymentFailure;
   }
 
   protected handlePaymentRequestError = async (paymentRequestError: McpError): Promise<boolean> => {
@@ -149,8 +157,22 @@ export class PayMcpFetcher {
       return false;
     }
 
-    const paymentId = await paymentMaker.makePayment(amount, currency, destination, paymentRequest.iss);
-    this.logger.info(`PayMCP: made payment of ${amount} ${currency} on ${requestedNetwork}: ${paymentId}`);
+    let paymentId: string;
+    try {
+      paymentId = await paymentMaker.makePayment(amount, currency, destination, paymentRequest.iss);
+      this.logger.info(`PayMCP: made payment of ${amount} ${currency} on ${requestedNetwork}: ${paymentId}`);
+      
+      // Call onPayment callback after successful payment
+      if (this.onPayment) {
+        await this.onPayment(prospectivePayment);
+      }
+    } catch (paymentError) {
+      // Call onPaymentFailure callback if payment fails
+      if (this.onPaymentFailure) {
+        await this.onPaymentFailure(prospectivePayment);
+      }
+      throw paymentError;
+    }
 
     const jwt = await paymentMaker.generateJWT({paymentRequestId, codeChallenge: ''});
 
@@ -263,16 +285,27 @@ export class PayMcpFetcher {
         error.resourceServerUrl
       );
 
-      const redirectUrl = await this.makeAuthRequestWithPaymentMaker(authorizationUrl, paymentMaker);
-      // Handle the OAuth callback
-      await this.oauthClient.handleCallback(redirectUrl);
-      
-      // Call onAuthorize callback after successful authorization
-      if (this.onAuthorize) {
-        await this.onAuthorize({ 
-          authorizationServer: authorizationUrl.origin as AuthorizationServerUrl, 
-          userId: this.userId 
-        });
+      try {
+        const redirectUrl = await this.makeAuthRequestWithPaymentMaker(authorizationUrl, paymentMaker);
+        // Handle the OAuth callback
+        await this.oauthClient.handleCallback(redirectUrl);
+        
+        // Call onAuthorize callback after successful authorization
+        if (this.onAuthorize) {
+          await this.onAuthorize({ 
+            authorizationServer: authorizationUrl.origin as AuthorizationServerUrl, 
+            userId: this.userId 
+          });
+        }
+      } catch (authError) {
+        // Call onAuthorizeFailure callback if authorization fails
+        if (this.onAuthorizeFailure) {
+          await this.onAuthorizeFailure({ 
+            authorizationServer: authorizationUrl.origin as AuthorizationServerUrl, 
+            userId: this.userId 
+          });
+        }
+        throw authError;
       }
     } else {
       // Else, we'll see if we've already got an OAuth token from OUR caller (if any). 

@@ -57,7 +57,9 @@ export function buildStreamableTransport(args: ClientArgs): StreamableHTTPClient
     approvePayment: config.approvePayment,
     logger: config.logger,
     onAuthorize: config.onAuthorize,
-    onAuthorizeFailure: config.onAuthorizeFailure
+    onAuthorizeFailure: config.onAuthorizeFailure,
+    onPayment: config.onPayment,
+    onPaymentFailure: config.onPaymentFailure
   });
   const transport = new StreamableHTTPClientTransport(new URL(args.mcpServer), {fetch: fetcher.fetch});
   return transport;
